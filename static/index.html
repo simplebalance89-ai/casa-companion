@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Casa Companion — Meet the Family</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        background: #0D0D1A;
+        color: #FFFEF7;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-x: hidden;
+    }
+
+    .header {
+        text-align: center;
+        padding: 18px 20px 6px;
+    }
+    .header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #D4A017, #FFE082, #D4A017);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 2px;
+    }
+    .header p {
+        color: #8A7A5A;
+        font-size: 0.7rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+
+    /* Animal Tabs */
+    .tab-bar {
+        display: flex;
+        gap: 6px;
+        padding: 8px 16px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 14px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.04);
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 72px;
+    }
+    .tab:hover {
+        background: rgba(212,160,23,0.1);
+    }
+    .tab.active {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.12);
+    }
+    .tab img {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: contain;
+        margin-bottom: 2px;
+    }
+    .tab .tab-name {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .tab.active .tab-name {
+        color: #D4A017;
+    }
+
+    /* Main container */
+    .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 800px;
+        padding: 6px 20px 16px;
+    }
+
+    /* Hero animal - BIG */
+    .hero-container {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        margin: 0 auto 8px;
+        cursor: pointer;
+    }
+    .hero-glow {
+        position: absolute;
+        inset: -20px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212,160,23,0.15) 0%, transparent 70%);
+        animation: breathe 3s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .hero-glow.listening {
+        background: radial-gradient(circle, rgba(66,135,245,0.25) 0%, transparent 70%);
+        animation: pulse-fast 1s ease-in-out infinite;
+    }
+    .hero-glow.thinking {
+        background: radial-gradient(circle, rgba(212,160,23,0.3) 0%, transparent 70%);
+        animation: pulse-fast 0.6s ease-in-out infinite;
+    }
+    .hero-glow.speaking {
+        background: radial-gradient(circle, rgba(76,175,80,0.25) 0%, transparent 70%);
+        animation: pulse-fast 1.2s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.05); opacity: 1; }
+    }
+    @keyframes pulse-fast {
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .hero-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 50%;
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 8px 30px rgba(212,160,23,0.2));
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .hero-container:hover .hero-img { transform: scale(1.03); }
+
+    /* Character name + meaning */
+    .char-info {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    .char-name {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #FFE082;
+    }
+    .char-meaning {
+        font-size: 0.85rem;
+        color: #8A7A5A;
+        font-style: italic;
+    }
+
+    /* Status */
+    .status {
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #D4A017;
+        min-height: 24px;
+        margin-bottom: 10px;
+    }
+
+    /* Feature pills */
+    .features {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 14px;
+        max-width: 600px;
+    }
+    .feature-pill {
+        padding: 6px 12px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(212,160,23,0.2);
+        font-size: 0.72rem;
+        color: #CCC;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .feature-pill:hover {
+        background: rgba(212,160,23,0.15);
+        border-color: rgba(212,160,23,0.5);
+        color: #FFE082;
+    }
+    .feature-pill .emoji { margin-right: 4px; }
+
+    /* Story Mode Button */
+    .story-btn {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: white;
+        font-size: 28px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 4px auto;
+    }
+    .story-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 10px 36px rgba(212,160,23,0.5);
+    }
+    .story-btn.listening {
+        background: linear-gradient(135deg, #4287f5, #2962c4);
+        animation: pulse-btn 1.5s ease-in-out infinite;
+        box-shadow: 0 6px 24px rgba(66,135,245,0.4);
+    }
+    .story-btn.speaking {
+        background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        animation: glow-btn 1s ease-in-out infinite;
+        box-shadow: 0 6px 24px rgba(76,175,80,0.4);
+    }
+    .story-btn.thinking {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        animation: pulse-btn 0.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse-btn {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    @keyframes glow-btn {
+        0%, 100% { box-shadow: 0 6px 24px rgba(76,175,80,0.4); }
+        50% { box-shadow: 0 10px 40px rgba(76,175,80,0.7); }
+    }
+
+    .story-label {
+        text-align: center;
+        font-size: 0.7rem;
+        color: #8A7A5A;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
+
+    /* Transcript */
+    .transcript {
+        width: 100%;
+        max-width: 500px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.06);
+        margin-top: 8px;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    .transcript p { margin-bottom: 4px; }
+    .transcript .user { color: #4287f5; font-weight: 700; }
+    .transcript .companion { color: #D4A017; font-weight: 700; }
+    .transcript::-webkit-scrollbar { width: 4px; }
+    .transcript::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.3); border-radius: 2px; }
+
+    /* Text input */
+    .input-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        max-width: 500px;
+        margin-top: 8px;
+    }
+    .input-row input {
+        flex: 1;
+        padding: 9px 14px;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.06);
+        color: #FFFEF7;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.85rem;
+        outline: none;
+    }
+    .input-row input::placeholder { color: #666; }
+    .input-row input:focus { border-color: rgba(212,160,23,0.5); }
+    .input-row button {
+        padding: 9px 16px;
+        border-radius: 24px;
+        border: none;
+        background: #D4A017;
+        color: #0D0D1A;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .input-row button:hover { background: #FFE082; }
+
+    /* Learning grid */
+    .learning-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 14px;
+    }
+    .learning-card {
+        padding: 10px 6px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        text-align: center;
+        font-size: 0.65rem;
+        color: #888;
+        transition: all 0.2s;
+    }
+    .learning-card .icon { font-size: 1.3rem; margin-bottom: 3px; }
+    .learning-card .label { line-height: 1.2; }
+    .learning-card:hover {
+        border-color: rgba(212,160,23,0.3);
+        background: rgba(212,160,23,0.08);
+        color: #CCC;
+    }
+    .learning-card.coming-soon { opacity: 0.4; }
+
+    .footer {
+        padding: 10px;
+        text-align: center;
+        color: #444;
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+    }
+
+    @media (max-width: 600px) {
+        .hero-container { width: 220px; height: 220px; }
+        .tab img { width: 36px; height: 36px; }
+        .tab { padding: 4px 10px; min-width: 60px; }
+        .tab .tab-name { font-size: 0.6rem; }
+        .learning-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .features { gap: 4px; }
+        .feature-pill { font-size: 0.65rem; padding: 5px 10px; }
+    }
+
+    @media (min-width: 900px) {
+        .hero-container { width: 340px; height: 340px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Casa Companion</h1>
+    <p>AI Family Companion</p>
+</div>
+
+<!-- Animal Tabs -->
+<div class="tab-bar">
+    <div class="tab active" onclick="switchAnimal('corvo')" id="tab-corvo">
+        <img src="/static/images/heroes/crow.png" alt="Corvo" onerror="this.style.display='none'">
+        <span class="tab-name">Corvo</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('gufo')" id="tab-gufo">
+        <img src="/static/images/heroes/owl.png" alt="Gufo" onerror="this.style.display='none'">
+        <span class="tab-name">Gufo</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('orsetto')" id="tab-orsetto">
+        <img src="/static/images/heroes/bear.png" alt="Orsetto" onerror="this.style.display='none'">
+        <span class="tab-name">Orsetto</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('volpe')" id="tab-volpe">
+        <img src="/static/images/heroes/fox.png" alt="Volpe" onerror="this.style.display='none'">
+        <span class="tab-name">Volpe</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('coniglio')" id="tab-coniglio">
+        <img src="/static/images/heroes/bunny.png" alt="Coniglio" onerror="this.style.display='none'">
+        <span class="tab-name">Coniglio</span>
+    </div>
+</div>
+
+<div class="main">
+    <!-- Hero animal -->
+    <div class="hero-container" onclick="toggleStoryMode()">
+        <div id="hero-glow" class="hero-glow"></div>
+        <img id="hero-img" src="/static/images/heroes/crow.png" alt="Corvo" class="hero-img"
+             onerror="this.style.display='none'">
+    </div>
+
+    <!-- Character info -->
+    <div class="char-info">
+        <div id="char-name" class="char-name">Corvo</div>
+        <div id="char-meaning" class="char-meaning">Corvo means Crow in Italian</div>
+    </div>
+
+    <div id="status" class="status">Tap Corvo to say hello</div>
+
+    <!-- Feature pills -->
+    <div class="features">
+        <div class="feature-pill"><span class="emoji">&#x1F3A4;</span>Voice Cloning</div>
+        <div class="feature-pill"><span class="emoji">&#x1F4D6;</span>Interactive Stories</div>
+        <div class="feature-pill"><span class="emoji">&#x1F9E0;</span>Emotional Support</div>
+        <div class="feature-pill"><span class="emoji">&#x1F310;</span>Bilingual</div>
+        <div class="feature-pill"><span class="emoji">&#x1F31C;</span>Bedtime Mode</div>
+        <div class="feature-pill"><span class="emoji">&#x1F50B;</span>10hr Battery</div>
+        <div class="feature-pill"><span class="emoji">&#x1F9F9;</span>Washable</div>
+        <div class="feature-pill"><span class="emoji">&#x1F512;</span>COPPA Safe</div>
+    </div>
+
+    <!-- Story Mode mic -->
+    <button id="story-btn" class="story-btn" onclick="toggleStoryMode()">&#x1F3A4;</button>
+    <div id="story-label" class="story-label">Click for Story Mode</div>
+
+    <!-- Transcript -->
+    <div id="transcript" class="transcript">
+        <p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>
+    </div>
+
+    <!-- Text input -->
+    <div class="input-row">
+        <input id="text-input" type="text" placeholder="Or type to talk..." onkeydown="if(event.key==='Enter')sendText()">
+        <button onclick="sendText()">Send</button>
+    </div>
+
+    <!-- Learning Modules -->
+    <div class="learning-grid">
+        <div class="learning-card">
+            <div class="icon">&#x1F4DA;</div>
+            <div class="label">Story Time</div>
+        </div>
+        <div class="learning-card">
+            <div class="icon">&#x1F9D8;</div>
+            <div class="label">Calm & Breathe</div>
+        </div>
+        <div class="learning-card">
+            <div class="icon">&#x1F52C;</div>
+            <div class="label">STEM Sparks</div>
+        </div>
+        <div class="learning-card">
+            <div class="icon">&#x1F3B5;</div>
+            <div class="label">Music & Rhythm</div>
+        </div>
+        <div class="learning-card coming-soon">
+            <div class="icon">&#x1F30E;</div>
+            <div class="label">Geography</div>
+        </div>
+        <div class="learning-card coming-soon">
+            <div class="icon">&#x1F1EE;&#x1F1F9;</div>
+            <div class="label">Italian</div>
+        </div>
+        <div class="learning-card coming-soon">
+            <div class="icon">&#x1F1F2;&#x1F1FD;</div>
+            <div class="label">Spanish</div>
+        </div>
+        <div class="learning-card coming-soon">
+            <div class="icon">&#x1F916;</div>
+            <div class="label">Coding</div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    Casa Companion &copy; 2026 &bull; Crafted in California &bull; Everyone else announced it. We built it.
+</div>
+
+<script>
+// Character data
+const CHARACTERS = {
+    corvo: {
+        name: 'Corvo',
+        meaning: 'Corvo means Crow in Italian',
+        img: '/static/images/heroes/crow.png',
+        greeting: "Well hello there! *ruffles feathers* I'm Corvo. I've been waiting to meet you. What's your name?",
+        greetTTS: "Well hello there! I'm Corvo. I've been waiting to meet you. What's your name?",
+        icon: '&#x1F426;'
+    },
+    gufo: {
+        name: 'Gufo',
+        meaning: 'Gufo means Owl in Italian',
+        img: '/static/images/heroes/owl.png',
+        greeting: "*blinks slowly* Whooo goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
+        greetTTS: "Who goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
+        icon: '&#x1F989;'
+    },
+    orsetto: {
+        name: 'Orsetto',
+        meaning: 'Orsetto means Little Bear in Italian',
+        img: '/static/images/heroes/bear.png',
+        greeting: "*stretches and yawns* Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
+        greetTTS: "Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
+        icon: '&#x1F43B;'
+    },
+    volpe: {
+        name: 'Volpe',
+        meaning: 'Volpe means Fox in Italian',
+        img: '/static/images/heroes/fox.png',
+        greeting: "*tilts head curiously* Ooh, a new friend! I'm Volpe. I was just solving a puzzle. Hey, want to try a riddle? Or we could figure out something else together!",
+        greetTTS: "Ooh, a new friend! I'm Volpe. I was just solving a puzzle. Hey, want to try a riddle? Or we could figure out something else together!",
+        icon: '&#x1F98A;'
+    },
+    coniglio: {
+        name: 'Coniglio',
+        meaning: 'Coniglio means Bunny in Italian',
+        img: '/static/images/heroes/bunny.png',
+        greeting: "*wiggles nose* Oh! Hi! I'm Coniglio! I was just... nibbling on a carrot. *hops closer* I'm so happy to meet you! What's your favorite thing to do?",
+        greetTTS: "Oh! Hi! I'm Coniglio! I was just nibbling on a carrot. I'm so happy to meet you! What's your favorite thing to do?",
+        icon: '&#x1F430;'
+    }
+};
+
+let currentCharacter = 'corvo';
+let conversationHistory = [];
+let isActive = false;
+let recognition = null;
+let isListening = false;
+let currentState = 'idle';
+
+const statusEl = document.getElementById('status');
+const transcriptEl = document.getElementById('transcript');
+const storyBtn = document.getElementById('story-btn');
+const heroGlow = document.getElementById('hero-glow');
+const heroImg = document.getElementById('hero-img');
+const charNameEl = document.getElementById('char-name');
+const charMeaningEl = document.getElementById('char-meaning');
+const storyLabelEl = document.getElementById('story-label');
+
+function switchAnimal(key) {
+    if (key === currentCharacter && !isActive) {
+        // Same tab, not active - just activate
+    } else if (key !== currentCharacter) {
+        // Switch character
+        currentCharacter = key;
+        const char = CHARACTERS[key];
+
+        // Update tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + key).classList.add('active');
+
+        // Update hero
+        heroImg.src = char.img;
+        heroImg.alt = char.name;
+        charNameEl.textContent = char.name;
+        charMeaningEl.textContent = char.meaning;
+
+        // Reset conversation
+        isActive = false;
+        conversationHistory = [];
+        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
+        setState('idle');
+        storyLabelEl.textContent = 'Click for Story Mode';
+
+        // Stop any audio
+        stopVoiceInput();
+    }
+}
+
+function setState(state) {
+    currentState = state;
+    storyBtn.className = 'story-btn ' + (state === 'idle' ? '' : state);
+    heroGlow.className = 'hero-glow ' + (state === 'idle' ? '' : state);
+    const name = CHARACTERS[currentCharacter].name;
+
+    if (state === 'idle') statusEl.textContent = isActive ? 'Tap mic or type to talk' : 'Tap ' + name + ' to say hello';
+    else if (state === 'listening') statusEl.textContent = 'Listening...';
+    else if (state === 'thinking') statusEl.textContent = name + ' is thinking...';
+    else if (state === 'speaking') statusEl.textContent = name + ' is speaking...';
+}
+
+function toggleStoryMode() {
+    const char = CHARACTERS[currentCharacter];
+    if (!isActive) {
+        isActive = true;
+        transcriptEl.innerHTML = '';
+        addMessage('companion', char.greeting);
+        setState('idle');
+        speakText(char.greetTTS);
+        conversationHistory = [
+            {role: 'assistant', content: char.greeting}
+        ];
+        storyLabelEl.textContent = 'Tap to speak';
+    } else {
+        startVoiceInput();
+    }
+}
+
+function addMessage(who, text) {
+    const p = document.createElement('p');
+    p.className = who;
+    const char = CHARACTERS[currentCharacter];
+    const icon = who === 'companion' ? char.icon + ' ' : '&#x1F464; ';
+    p.innerHTML = icon + text;
+    transcriptEl.appendChild(p);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+async function sendChat(userText) {
+    addMessage('user', userText);
+    conversationHistory.push({role: 'user', content: userText});
+    setState('thinking');
+
+    try {
+        const resp = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: userText,
+                history: conversationHistory,
+                character: currentCharacter
+            })
+        });
+        const data = await resp.json();
+        const reply = data.response || "Hmm, something got tangled. Can you say that again?";
+        conversationHistory.push({role: 'assistant', content: reply});
+        addMessage('companion', reply);
+        speakText(reply);
+    } catch (err) {
+        setState('idle');
+        addMessage('companion', "Oops! My connection got tangled. Try again?");
+    }
+}
+
+async function speakText(text) {
+    setState('speaking');
+    try {
+        const resp = await fetch('/api/tts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({text: text})
+        });
+        if (resp.ok) {
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audio.onended = () => { URL.revokeObjectURL(url); setState('idle'); };
+            audio.onerror = () => { setState('idle'); };
+            audio.play().catch(() => { setState('idle'); });
+        } else {
+            setState('idle');
+        }
+    } catch (err) {
+        setState('idle');
+    }
+}
+
+function sendText() {
+    const input = document.getElementById('text-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    if (!isActive) {
+        isActive = true;
+        transcriptEl.innerHTML = '';
+        conversationHistory = [];
+    }
+    sendChat(text);
+}
+
+function startVoiceInput() {
+    if (isListening) { stopVoiceInput(); return; }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        statusEl.textContent = 'Voice not supported. Type instead.';
+        return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+        isListening = true;
+        setState('listening');
+        storyBtn.innerHTML = '&#x1F534;';
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        isListening = false;
+        storyBtn.innerHTML = '&#x1F3A4;';
+        if (!isActive) {
+            isActive = true;
+            transcriptEl.innerHTML = '';
+            conversationHistory = [];
+        }
+        sendChat(transcript);
+    };
+
+    recognition.onerror = () => {
+        isListening = false;
+        storyBtn.innerHTML = '&#x1F3A4;';
+        setState('idle');
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        storyBtn.innerHTML = '&#x1F3A4;';
+    };
+
+    recognition.start();
+}
+
+function stopVoiceInput() {
+    if (recognition) { recognition.stop(); recognition = null; }
+    isListening = false;
+    storyBtn.innerHTML = '&#x1F3A4;';
+    if (currentState !== 'idle') setState('idle');
+}
+</script>
+</body>
+</html>
