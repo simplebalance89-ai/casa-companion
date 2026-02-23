@@ -3042,8 +3042,9 @@ async function startVoiceMode() {
     if (isListening) stopVoiceInput();
     stopCurrentAudio();
 
-    // Play intro greeting if first time meeting this companion
-    if (!introducedCompanions.has(currentCharacter)) {
+    // Mark as introduced + set up UI
+    const firstMeeting = !introducedCompanions.has(currentCharacter);
+    if (firstMeeting) {
         introducedCompanions.add(currentCharacter);
         isActive = true;
         conversationHistory = [];
@@ -3053,11 +3054,7 @@ async function startVoiceMode() {
         const bannerText = document.getElementById('mode-banner-text');
         bannerText.textContent = 'Meeting ' + CHARACTERS[currentCharacter].name;
         banner.classList.add('visible');
-        const introGreeting = getIntroGreeting();
         transcriptEl.innerHTML = '';
-        addMessage('companion', introGreeting);
-        conversationHistory.push({role: 'assistant', content: introGreeting});
-        await speakText(introGreeting);
     }
 
     setState('thinking');
@@ -3151,7 +3148,16 @@ async function startVoiceMode() {
 
             const char = CHARACTERS[currentCharacter];
             voiceResponseCount = 0;
-            // Don't auto-fire a greeting — TTS intro already played, let user speak first
+            // Greet on first meeting via WebRTC voice (mic mutes during AI speech to prevent feedback)
+            if (firstMeeting) {
+                const namePrefix = childName ? `The child's name is ${childName}. Use it warmly. ` : '';
+                rtcDC.send(JSON.stringify({
+                    type: 'response.create',
+                    response: {
+                        instructions: `${namePrefix}Greet the user warmly. Introduce yourself as ${char.name} (${char.meaning}). Then tell them what you can do: stories, calm breathing, science, music, languages, and games. Ask what they want to try first. Keep it to 3-4 sentences max. Be enthusiastic and in-character. Do NOT ask for the user's name. After speaking, WAIT for the user to respond. Do NOT keep talking.`
+                    }
+                }));
+            }
         };
 
         rtcDC.onmessage = (event) => {
