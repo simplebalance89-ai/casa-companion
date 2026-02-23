@@ -611,21 +611,67 @@ async function sendChat(userText) {
     conversationHistory.push({role: 'user', content: userText});
     setState('thinking');
 
+    // Trim history to last 10 messages to keep API fast
+    const recentHistory = conversationHistory.slice(-10);
+
     try {
-        const resp = await fetch('/api/chat', {
+        // Combined endpoint: chat + TTS in one round trip
+        const resp = await fetch('/api/chat-and-speak', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 message: userText,
-                history: conversationHistory,
+                history: recentHistory,
                 character: currentCharacter
             })
         });
-        const data = await resp.json();
-        const reply = data.response || "Hmm, something got tangled. Can you say that again?";
+
+        if (!resp.ok) {
+            // Fallback to separate endpoints
+            const chatResp = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter })
+            });
+            const data = await chatResp.json();
+            const reply = data.response || "Hmm, something got tangled.";
+            conversationHistory.push({role: 'assistant', content: reply});
+            addMessage('companion', reply);
+            speakText(reply);
+            return;
+        }
+
+        // Parse combined response: 4-byte length header + JSON + audio
+        const buffer = await resp.arrayBuffer();
+        const view = new DataView(buffer);
+        const headerLen = view.getUint32(0);
+        const headerBytes = new Uint8Array(buffer, 4, headerLen);
+        const headerText = new TextDecoder().decode(headerBytes);
+        const data = JSON.parse(headerText.trim());
+        const reply = data.response || "Hmm, something got tangled.";
+
         conversationHistory.push({role: 'assistant', content: reply});
         addMessage('companion', reply);
-        speakText(reply);
+
+        // Play audio directly from the combined response
+        const audioBytes = buffer.slice(4 + headerLen);
+        if (audioBytes.byteLength > 0) {
+            const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
+            const url = URL.createObjectURL(blob);
+            setState('speaking');
+            const audio = new Audio(url);
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+                setState('idle');
+                if (isActive) {
+                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                }
+            };
+            audio.onerror = () => { setState('idle'); };
+            audio.play().catch(() => { setState('idle'); });
+        } else {
+            setState('idle');
+        }
     } catch (err) {
         setState('idle');
         addMessage('companion', "Oops! My connection got tangled. Try again?");
@@ -635,6 +681,7 @@ async function sendChat(userText) {
 async function speakText(text) {
     setState('speaking');
     try {
+        // Fire TTS request
         const resp = await fetch('/api/tts', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -647,9 +694,9 @@ async function speakText(text) {
             audio.onended = () => {
                 URL.revokeObjectURL(url);
                 setState('idle');
-                // Auto-listen after companion finishes speaking
+                // Auto-listen right after companion finishes - tight loop
                 if (isActive) {
-                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 600);
+                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
                 }
             };
             audio.onerror = () => { setState('idle'); };

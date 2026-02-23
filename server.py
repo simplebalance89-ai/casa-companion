@@ -183,7 +183,7 @@ async def chat(request: ChatRequest):
 
     payload = {
         "messages": messages,
-        "max_tokens": 300,
+        "max_tokens": 150,
         "temperature": 0.85,
     }
 
@@ -295,6 +295,74 @@ async def stt(file: UploadFile = File(...)):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"STT request failed: {str(e)}")
+
+# ---------------------------------------------------------------------------
+# POST /api/chat-and-speak  (combined: chat + TTS in one round trip)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/chat-and-speak")
+async def chat_and_speak(request: ChatRequest):
+    if not AZURE_API_KEY:
+        raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
+
+    # Step 1: Get chat response
+    chat_url = (
+        f"{AZURE_BASE}/openai/deployments/{CHAT_DEPLOYMENT}"
+        f"/chat/completions?api-version={CHAT_API_VERSION}"
+    )
+
+    char_key = (request.character or "corvo").lower()
+    char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
+    system_prompt = char_data["prompt"]
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for msg in (request.history or []):
+        messages.append({"role": msg.role, "content": msg.content})
+    messages.append({"role": "user", "content": request.message})
+
+    headers = {"api-key": AZURE_API_KEY, "Content-Type": "application/json"}
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Chat
+            chat_resp = await client.post(
+                chat_url,
+                json={"messages": messages, "max_tokens": 150, "temperature": 0.85},
+                headers=headers,
+            )
+            chat_resp.raise_for_status()
+            reply = chat_resp.json()["choices"][0]["message"]["content"].strip()
+
+            # TTS
+            tts_url = (
+                f"{AZURE_BASE}/openai/deployments/{TTS_DEPLOYMENT}"
+                f"/audio/speech?api-version={TTS_API_VERSION}"
+            )
+            tts_resp = await client.post(
+                tts_url,
+                json={"model": "gpt-4o-mini-tts", "voice": "nova", "input": reply},
+                headers=headers,
+                timeout=60.0,
+            )
+            tts_resp.raise_for_status()
+
+            # Return multipart: JSON header line + audio bytes
+            import json as _json
+            header_bytes = (_json.dumps({"response": reply}) + "\n").encode("utf-8")
+            length_header = len(header_bytes).to_bytes(4, "big")
+
+            async def combined_stream():
+                yield length_header
+                yield header_bytes
+                yield tts_resp.content
+
+            return StreamingResponse(combined_stream(), media_type="application/octet-stream")
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=f"Azure error: {e.response.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat+speak failed: {str(e)}")
+
 
 # ---------------------------------------------------------------------------
 # Health check
