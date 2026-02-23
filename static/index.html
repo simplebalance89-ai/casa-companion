@@ -1217,13 +1217,15 @@
     /* ===== RESPONSIVE ===== */
     @media (max-width: 700px) {
         .companion-grid {
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
         }
-        .companion-card img { width: 56px; height: 56px; }
+        .companion-card img { width: 48px; height: 48px; }
+        .companion-card { padding: 10px 4px 8px; }
+        .companion-card .cc-name { font-size: 0.7rem; }
     }
     @media (max-width: 480px) {
-        .companion-grid { grid-template-columns: repeat(2, 1fr); }
+        .companion-grid { grid-template-columns: repeat(3, 1fr); }
         .learning-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .hero-container { width: 170px; height: 170px; }
         .context-banner { font-size: 0.6rem; flex-wrap: wrap; }
@@ -1293,6 +1295,10 @@
         </div>
         <div class="companion-grid" id="companion-grid">
             <!-- Populated by JS -->
+        </div>
+        <div id="name-your-companion" style="display:none; text-align:center; padding:12px 0;">
+            <label style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#FFE082; display:block; margin-bottom:8px;">Give them a name? <span style="font-size:0.7rem; color:#8A7A5A;">(optional)</span></label>
+            <input type="text" id="custom-name-input" placeholder="e.g. Sparkle, Mr. Crow, Buddy..." maxlength="20" autocomplete="off" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
         </div>
         <div class="modes-preview">
             <div class="modes-preview-header">
@@ -1908,6 +1914,17 @@ function selectCompanion(key) {
     const card = document.getElementById('cc-' + key);
     if (card) card.classList.add('selected');
     updatePickButton();
+    // Show the name input
+    const nameBox = document.getElementById('name-your-companion');
+    if (nameBox) {
+        nameBox.style.display = 'block';
+        document.getElementById('custom-name-input').placeholder = 'e.g. Sparkle, Mr. ' + CHARACTERS[key].name + ', Buddy...';
+    }
+    // On mobile, scroll the Meet button into view so user sees it
+    setTimeout(() => {
+        const btn = document.getElementById('pick-next-btn');
+        if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
 }
 
 function updatePickButton() {
@@ -1920,9 +1937,15 @@ function updatePickButton() {
 // Step 2: Talk initialization
 // =========================================================================
 function initTalkStep() {
+    // Capture custom name from Step 1 input
+    const nameInput = document.getElementById('custom-name-input');
+    if (nameInput && nameInput.value.trim()) {
+        CHARACTERS[currentCharacter].customName = nameInput.value.trim();
+        nameInput.value = '';
+    }
     const char = CHARACTERS[currentCharacter];
     heroImg.src = char.img;
-    heroImg.alt = char.name;
+    heroImg.alt = char.customName || char.name;
     charNameEl.textContent = char.name;
     charMeaningEl.textContent = char.meaning;
     document.getElementById('voice-btn-label').textContent = 'Talk to ' + char.name;
@@ -2135,9 +2158,12 @@ const MODE_NAMES = {
     milestones: 'Milestones'
 };
 
-// Dynamic introduction greeting — name + what they can do, no name ask
+// Dynamic introduction greeting — use custom name if given
 function getIntroGreeting() {
     const char = CHARACTERS[currentCharacter];
+    if (char.customName) {
+        return "Oh wow, you named me " + char.customName + "! I love it! " + char.greetTTS;
+    }
     return char.greetTTS;
 }
 
