@@ -6,8 +6,11 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2.5">
-<title>Casa Companion — Meet the Family</title>
+<meta name="version" content="3.0">
+<meta property="og:title" content="Casa Companion Demo - AI Plush Toy">
+<meta property="og:description" content="Talk to an AI companion right now. Live demo of Casa Companion, launching on Kickstarter May 5, 2026.">
+<meta property="og:type" content="website">
+<title>Casa Companion Demo — Guided Experience</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,48 +22,317 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
-        align-items: center;
         overflow-x: hidden;
     }
 
-    .header {
-        text-align: center;
-        padding: 18px 20px 6px;
-        position: relative;
+    /* ===== CONTEXT BANNER (persistent) ===== */
+    .context-banner {
         width: 100%;
+        background: rgba(196, 30, 58, 0.15);
+        border-bottom: 1px solid rgba(196, 30, 58, 0.3);
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 0.72rem;
+        color: #E0C8A0;
+        letter-spacing: 0.5px;
+        z-index: 100;
+        flex-shrink: 0;
     }
-    .header h1 {
+    .context-banner a {
+        color: #D4A017;
+        text-decoration: none;
+        font-weight: 700;
+    }
+    .context-banner a:hover { text-decoration: underline; }
+    .context-banner .banner-sep {
+        color: rgba(255,255,255,0.15);
+        margin: 0 2px;
+    }
+
+    /* ===== PROGRESS INDICATOR ===== */
+    .progress-bar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 16px 6px;
+        flex-shrink: 0;
+    }
+    .progress-bar.hidden { display: none; }
+    .progress-step {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .progress-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        border: 1.5px solid rgba(255,255,255,0.15);
+        transition: all 0.4s ease;
+    }
+    .progress-dot.active {
+        background: #D4A017;
+        border-color: #D4A017;
+        box-shadow: 0 0 8px rgba(212,160,23,0.4);
+    }
+    .progress-dot.done {
+        background: #4CAF50;
+        border-color: #4CAF50;
+    }
+    .progress-line {
+        width: 24px;
+        height: 2px;
+        background: rgba(255,255,255,0.08);
+        transition: background 0.4s ease;
+    }
+    .progress-line.done { background: #4CAF50; }
+    .progress-label {
+        font-size: 0.6rem;
+        color: #666;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-left: 8px;
+    }
+
+    /* ===== STEPS CONTAINER ===== */
+    .steps-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        overflow-y: auto;
+    }
+
+    .step {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 900px;
+        padding: 0 20px;
+        animation: fadeIn 0.5s ease;
+    }
+    .step.active { display: flex; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== STEP 0: WELCOME ===== */
+    .welcome-screen {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px 20px;
+        min-height: 70vh;
+    }
+    .welcome-eyebrow {
+        font-size: 0.65rem;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        color: #C41E3A;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+    .welcome-title {
         font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        font-weight: 900;
         background: linear-gradient(135deg, #D4A017, #FFE082, #D4A017);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        letter-spacing: 2px;
+        margin-bottom: 16px;
+        line-height: 1.2;
     }
-    .header p {
+    .welcome-desc {
+        font-size: clamp(0.9rem, 2.2vw, 1.1rem);
         color: #8A7A5A;
-        font-size: 0.7rem;
-        letter-spacing: 3px;
+        max-width: 480px;
+        line-height: 1.6;
+        margin-bottom: 8px;
+    }
+    .welcome-kickstarter {
+        font-size: 0.8rem;
+        color: #C41E3A;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-bottom: 32px;
+    }
+    .welcome-cta {
+        padding: 16px 48px;
+        border-radius: 32px;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
+        letter-spacing: 1px;
+    }
+    .welcome-cta:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 40px rgba(212,160,23,0.5);
+    }
+    .welcome-powered {
+        margin-top: 32px;
+        font-size: 0.65rem;
+        color: #444;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        margin-top: 2px;
+    }
+
+    /* ===== STEP 1: PICK COMPANION ===== */
+    .pick-header {
+        text-align: center;
+        margin: 20px 0 8px;
+    }
+    .pick-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        color: #FFE082;
+        margin-bottom: 4px;
+    }
+    .pick-header p {
+        font-size: 0.85rem;
+        color: #8A7A5A;
+    }
+    .companion-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 12px;
+        width: 100%;
+        max-width: 700px;
+        padding: 12px 0 20px;
+    }
+    .companion-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 14px 8px 10px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.03);
+        border: 2px solid rgba(255,255,255,0.06);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+    .companion-card:hover {
+        border-color: rgba(212,160,23,0.4);
+        background: rgba(212,160,23,0.06);
+        transform: translateY(-2px);
+    }
+    .companion-card.selected {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.12);
+        box-shadow: 0 4px 20px rgba(212,160,23,0.2);
+    }
+    .companion-card img {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        object-fit: contain;
+        margin-bottom: 6px;
+        filter: drop-shadow(0 4px 12px rgba(212,160,23,0.15));
+    }
+    .companion-card .cc-name {
+        font-family: 'Playfair Display', serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #FFE082;
+        margin-bottom: 2px;
+    }
+    .companion-card .cc-animal {
+        font-size: 0.6rem;
+        color: #8A7A5A;
+        font-style: italic;
+        line-height: 1.2;
+    }
+    .companion-card .cc-personality {
+        font-size: 0.58rem;
+        color: #666;
+        margin-top: 4px;
+        line-height: 1.2;
+    }
+
+    .step-nav {
+        display: flex;
+        gap: 12px;
+        margin: 8px 0 20px;
+    }
+    .nav-btn {
+        padding: 10px 28px;
+        border-radius: 24px;
+        border: none;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 0.5px;
+    }
+    .nav-btn.primary {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+    }
+    .nav-btn.primary:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 24px rgba(212,160,23,0.5);
+    }
+    .nav-btn.primary:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .nav-btn.secondary {
+        background: rgba(255,255,255,0.06);
+        color: #999;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .nav-btn.secondary:hover {
+        background: rgba(255,255,255,0.1);
+        color: #CCC;
+    }
+
+    /* ===== STEP 2: TALK ===== */
+    .talk-layout {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        padding-top: 8px;
     }
 
     /* Battery indicator */
     .battery-indicator {
         position: absolute;
-        top: 16px;
-        right: 20px;
+        top: 4px;
+        right: 0;
         display: flex;
         align-items: center;
         gap: 4px;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 700;
         color: #4CAF50;
     }
     .battery-icon {
-        width: 24px;
-        height: 12px;
+        width: 22px;
+        height: 11px;
         border: 1.5px solid currentColor;
         border-radius: 2px;
         position: relative;
@@ -74,7 +346,7 @@
         right: -4px;
         top: 2px;
         width: 2px;
-        height: 6px;
+        height: 5px;
         background: currentColor;
         border-radius: 0 1px 1px 0;
     }
@@ -88,68 +360,20 @@
     .battery-indicator.yellow { color: #FFC107; }
     .battery-indicator.red { color: #F44336; }
 
-    /* Animal Tabs */
-    .tab-bar {
-        display: flex;
-        gap: 4px;
-        padding: 8px 12px;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    .tab {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 4px 8px;
-        border-radius: 16px;
-        background: rgba(255,255,255,0.04);
-        border: 2px solid transparent;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        min-width: 56px;
-    }
-    .tab:hover {
-        background: rgba(212,160,23,0.1);
-    }
-    .tab.active {
-        border-color: #D4A017;
-        background: rgba(212,160,23,0.12);
-    }
-    .tab img {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        object-fit: contain;
-        margin-bottom: 1px;
-    }
-    .tab .tab-name {
-        font-size: 0.55rem;
-        font-weight: 700;
-        color: #999;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .tab.active .tab-name {
-        color: #D4A017;
-    }
-
-    /* Main container */
-    .main {
-        flex: 1;
+    .talk-hero-area {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
         width: 100%;
-        max-width: 800px;
-        padding: 6px 20px 16px;
+        max-width: 500px;
     }
 
-    /* Hero animal - BIG */
     .hero-container {
         position: relative;
-        width: 280px;
-        height: 280px;
-        margin: 0 auto 8px;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto 4px;
         cursor: pointer;
     }
     .hero-glow {
@@ -194,125 +418,224 @@
     }
     .hero-container:hover .hero-img { transform: scale(1.03); }
 
-    /* Character name + meaning */
     .char-info {
         text-align: center;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
     .char-name {
         font-family: 'Playfair Display', serif;
-        font-size: 1.6rem;
+        font-size: 1.4rem;
         font-weight: 700;
         color: #FFE082;
     }
     .char-meaning {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         color: #8A7A5A;
         font-style: italic;
     }
 
-    /* Status */
     .status {
         text-align: center;
-        font-size: 1rem;
+        font-size: 0.9rem;
         font-weight: 700;
         color: #D4A017;
-        min-height: 24px;
-        margin-bottom: 10px;
+        min-height: 22px;
+        margin-bottom: 8px;
     }
 
-    /* Feature pills */
-    .features {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 6px;
-        margin-bottom: 14px;
-        max-width: 600px;
+    .mode-banner {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 14px;
+        border-radius: 20px;
+        background: rgba(212,160,23,0.12);
+        border: 1px solid rgba(212,160,23,0.3);
+        font-size: 0.7rem;
+        color: #D4A017;
+        font-weight: 700;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
     }
-    .feature-pill {
-        padding: 6px 12px;
-        border-radius: 18px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(212,160,23,0.2);
-        font-size: 0.72rem;
-        color: #CCC;
-        white-space: nowrap;
-        transition: all 0.2s;
-    }
-    .feature-pill:hover {
-        background: rgba(212,160,23,0.15);
-        border-color: rgba(212,160,23,0.5);
-        color: #FFE082;
-    }
-    .feature-pill .emoji { margin-right: 4px; }
-
-    /* Story Mode Button */
-    .story-btn {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
+    .mode-banner.visible { display: inline-flex; }
+    .mode-banner .mode-exit {
+        background: none;
         border: none;
-        background: linear-gradient(135deg, #D4A017, #B8860B);
-        color: white;
-        font-size: 28px;
+        color: #DC3C3C;
+        font-size: 0.85rem;
         cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
+        padding: 0 4px;
+        font-weight: 700;
+    }
+
+    /* Interaction buttons */
+    .interaction-buttons {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 0;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .voice-primary-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 4px auto;
+        gap: 8px;
+        padding: 14px 32px;
+        border-radius: 28px;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
+        letter-spacing: 0.5px;
+        width: 100%;
+        max-width: 320px;
     }
-    .story-btn:hover {
-        transform: scale(1.08);
+    .voice-primary-btn:hover {
+        transform: scale(1.03);
         box-shadow: 0 10px 36px rgba(212,160,23,0.5);
     }
-    .story-btn.listening {
-        background: linear-gradient(135deg, #4287f5, #2962c4);
-        animation: pulse-btn 1.5s ease-in-out infinite;
-        box-shadow: 0 6px 24px rgba(66,135,245,0.4);
+    .voice-primary-btn .vp-icon { font-size: 1.2rem; }
+    .voice-primary-btn .vp-rec {
+        font-size: 0.55rem;
+        color: rgba(0,0,0,0.5);
+        font-weight: 600;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
     }
-    .story-btn.speaking {
+    .voice-primary-btn.active {
         background: linear-gradient(135deg, #4CAF50, #2E7D32);
-        animation: glow-btn 1s ease-in-out infinite;
-        box-shadow: 0 6px 24px rgba(76,175,80,0.4);
+        color: #FFF;
+        animation: glow-btn 1.5s ease-in-out infinite;
     }
-    .story-btn.thinking {
-        background: linear-gradient(135deg, #D4A017, #B8860B);
-        animation: pulse-btn 0.6s ease-in-out infinite;
+
+    .voice-secondary-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
     }
+    .type-chat-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.04);
+        color: #888;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .type-chat-btn:hover {
+        border-color: rgba(255,255,255,0.25);
+        color: #CCC;
+        background: rgba(255,255,255,0.08);
+    }
+
+    .tap-talk-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(66,135,245,0.2);
+        background: rgba(66,135,245,0.06);
+        color: #6AA3F5;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .tap-talk-btn:hover {
+        border-color: rgba(66,135,245,0.4);
+        background: rgba(66,135,245,0.12);
+    }
+    .tap-talk-btn.listening {
+        background: rgba(66,135,245,0.2);
+        border-color: #4287f5;
+        color: #FFF;
+        animation: pulse-btn 1.5s ease-in-out infinite;
+    }
+
+    .end-voice-btn {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(220,60,60,0.4);
+        background: rgba(220,60,60,0.1);
+        color: #DC3C3C;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .end-voice-btn:hover { background: rgba(220,60,60,0.2); }
 
     @keyframes pulse-btn {
         0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+        50% { transform: scale(1.06); }
     }
     @keyframes glow-btn {
-        0%, 100% { box-shadow: 0 6px 24px rgba(76,175,80,0.4); }
-        50% { box-shadow: 0 10px 40px rgba(76,175,80,0.7); }
+        0%, 100% { box-shadow: 0 6px 24px rgba(76,175,80,0.3); }
+        50% { box-shadow: 0 10px 40px rgba(76,175,80,0.6); }
     }
 
-    .story-label {
-        text-align: center;
-        font-size: 0.7rem;
-        color: #8A7A5A;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        margin-top: 4px;
+    /* Stop button */
+    .stop-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid rgba(220,60,60,0.6);
+        background: rgba(220,60,60,0.15);
+        color: #DC3C3C;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: fixed;
+        bottom: 16px;
+        right: 16px;
+        z-index: 50;
+        backdrop-filter: blur(10px);
     }
+    .stop-btn:hover {
+        background: rgba(220,60,60,0.3);
+        border-color: #DC3C3C;
+        transform: scale(1.1);
+    }
+    .stop-btn.visible { display: flex; }
 
     /* Transcript */
     .transcript {
         width: 100%;
         max-width: 500px;
-        max-height: 120px;
+        max-height: 150px;
         overflow-y: auto;
         padding: 10px 14px;
         background: rgba(255,255,255,0.04);
         border-radius: 12px;
         border: 1px solid rgba(255,255,255,0.06);
-        margin-top: 8px;
-        font-size: 0.85rem;
+        margin-top: 6px;
+        font-size: 0.82rem;
         line-height: 1.4;
     }
     .transcript p { margin-bottom: 4px; }
@@ -323,12 +646,13 @@
 
     /* Text input */
     .input-row {
-        display: flex;
+        display: none;
         gap: 8px;
         width: 100%;
         max-width: 500px;
         margin-top: 8px;
     }
+    .input-row.visible { display: flex; }
     .input-row input {
         flex: 1;
         padding: 9px 14px;
@@ -354,32 +678,88 @@
     }
     .input-row button:hover { background: #FFE082; }
 
-    /* Learning grid */
+    /* Companion switcher (small, in step 2) */
+    .companion-switcher {
+        display: flex;
+        gap: 4px;
+        padding: 6px 8px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .cs-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 3px 6px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 44px;
+    }
+    .cs-tab:hover { background: rgba(212,160,23,0.08); }
+    .cs-tab.active {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.1);
+    }
+    .cs-tab img {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: contain;
+    }
+    .cs-tab .cs-name {
+        font-size: 0.45rem;
+        font-weight: 700;
+        color: #777;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .cs-tab.active .cs-name { color: #D4A017; }
+
+    /* ===== STEP 3: EXPLORE MODES ===== */
+    .modes-header {
+        text-align: center;
+        margin: 16px 0 8px;
+    }
+    .modes-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        color: #FFE082;
+        margin-bottom: 4px;
+    }
+    .modes-header p {
+        font-size: 0.82rem;
+        color: #8A7A5A;
+    }
+
     .learning-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        gap: 8px;
         width: 100%;
         max-width: 600px;
-        margin-top: 14px;
+        padding: 8px 0;
     }
     .learning-card {
-        padding: 10px 6px;
-        border-radius: 10px;
+        padding: 12px 8px;
+        border-radius: 12px;
         background: rgba(255,255,255,0.04);
         border: 1px solid rgba(255,255,255,0.06);
         text-align: center;
-        font-size: 0.65rem;
+        font-size: 0.7rem;
         color: #888;
         transition: all 0.2s;
+        cursor: pointer;
     }
-    .learning-card .icon { font-size: 1.3rem; margin-bottom: 3px; }
+    .learning-card .icon { font-size: 1.5rem; margin-bottom: 4px; }
     .learning-card .label { line-height: 1.2; }
     .learning-card:hover {
         border-color: rgba(212,160,23,0.3);
         background: rgba(212,160,23,0.08);
         color: #CCC;
-        cursor: pointer;
     }
     .learning-card.active {
         border-color: #D4A017;
@@ -389,7 +769,6 @@
     }
     .learning-card.active .label { font-weight: 700; }
 
-    /* Parent-facing cards */
     .learning-card.parent-card {
         border-color: rgba(100,100,255,0.15);
         background: rgba(100,100,255,0.04);
@@ -400,219 +779,160 @@
         color: #AAF;
     }
 
-    .mode-banner {
-        display: none;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
-        border-radius: 20px;
-        background: rgba(212,160,23,0.12);
-        border: 1px solid rgba(212,160,23,0.3);
-        font-size: 0.75rem;
-        color: #D4A017;
-        font-weight: 700;
-        margin-bottom: 8px;
-        letter-spacing: 1px;
-    }
-    .mode-banner.visible { display: inline-flex; }
-    .mode-banner .mode-exit {
-        background: none;
-        border: none;
-        color: #DC3C3C;
-        font-size: 0.85rem;
-        cursor: pointer;
-        padding: 0 4px;
-        font-weight: 700;
-    }
-
-    .footer {
-        padding: 10px;
-        text-align: center;
-        color: #444;
-        font-size: 0.6rem;
-        letter-spacing: 1px;
-    }
-
-    @media (max-width: 600px) {
-        .hero-container { width: 220px; height: 220px; }
-        .tab img { width: 30px; height: 30px; }
-        .tab { padding: 3px 6px; min-width: 48px; }
-        .tab .tab-name { font-size: 0.5rem; }
-        .learning-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-        .features { gap: 4px; }
-        .feature-pill { font-size: 0.65rem; padding: 5px 10px; }
-    }
-
-    /* Voice Mode button */
-    .voice-mode-btn {
+    /* Feature pills */
+    .features-row {
         display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        border-radius: 24px;
-        border: 1px solid rgba(212,160,23,0.3);
-        background: rgba(212,160,23,0.08);
-        color: #D4A017;
-        font-family: 'Nunito', sans-serif;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 6px auto;
-    }
-    .voice-mode-btn:hover {
-        background: rgba(212,160,23,0.18);
-        border-color: rgba(212,160,23,0.6);
-    }
-    .voice-mode-btn.active {
-        background: linear-gradient(135deg, #D4A017, #B8860B);
-        color: #0D0D1A;
-        border-color: transparent;
-        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
-    }
-    .voice-mode-btn .vm-icon {
-        font-size: 1rem;
-    }
-
-    .end-voice-btn {
-        display: none;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        border-radius: 24px;
-        border: 1px solid rgba(220,60,60,0.4);
-        background: rgba(220,60,60,0.1);
-        color: #DC3C3C;
-        font-family: 'Nunito', sans-serif;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 4px auto;
-    }
-    .end-voice-btn:hover {
-        background: rgba(220,60,60,0.2);
-    }
-
-    /* Stop / Kill Switch Button */
-    .stop-btn {
-        display: none;
-        align-items: center;
+        flex-wrap: wrap;
         justify-content: center;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        border: 2px solid rgba(220,60,60,0.6);
-        background: rgba(220,60,60,0.15);
-        color: #DC3C3C;
-        font-size: 1.2rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 50;
-        backdrop-filter: blur(10px);
+        gap: 6px;
+        max-width: 600px;
+        margin: 12px 0;
     }
-    .stop-btn:hover {
-        background: rgba(220,60,60,0.3);
-        border-color: #DC3C3C;
-        transform: scale(1.1);
+    .feature-pill {
+        padding: 5px 10px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(212,160,23,0.15);
+        font-size: 0.65rem;
+        color: #AAA;
+        white-space: nowrap;
     }
-    .stop-btn.visible {
-        display: flex;
-    }
+    .feature-pill .emoji { margin-right: 3px; }
 
-    /* Intro overlay — first-time prompt */
-    .intro-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(13,13,26,0.92);
-        z-index: 90;
+    /* ===== STEP 4: CTA ===== */
+    .cta-screen {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
         text-align: center;
-        padding: 20px;
-        backdrop-filter: blur(8px);
+        padding: 24px 20px 40px;
+        min-height: 70vh;
+        justify-content: center;
     }
-    .intro-overlay.hidden { display: none; }
-    .intro-title {
+    .cta-headline {
         font-family: 'Playfair Display', serif;
-        font-size: clamp(1.4rem, 4vw, 2.2rem);
+        font-size: clamp(1.5rem, 4vw, 2.2rem);
         color: #FFE082;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
+        line-height: 1.2;
     }
-    .intro-subtitle {
-        font-size: clamp(0.85rem, 2vw, 1.1rem);
+    .cta-subtext {
+        font-size: clamp(0.85rem, 2vw, 1rem);
         color: #8A7A5A;
+        max-width: 480px;
+        line-height: 1.6;
+        margin-bottom: 20px;
+    }
+    .cta-summary {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(212,160,23,0.15);
+        border-radius: 16px;
+        padding: 16px 24px;
         margin-bottom: 24px;
         max-width: 400px;
+        width: 100%;
     }
-    .intro-name-input {
-        padding: 12px 20px;
+    .cta-summary h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 0.85rem;
+        color: #D4A017;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+    .cta-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        font-size: 0.8rem;
+    }
+    .cta-stat .label { color: #888; }
+    .cta-stat .value { color: #FFE082; font-weight: 700; }
+
+    .cta-kickstarter-badge {
+        font-size: 0.75rem;
+        color: #C41E3A;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .email-form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        max-width: 360px;
+        margin-bottom: 20px;
+    }
+    .email-form input {
+        width: 100%;
+        padding: 12px 18px;
         border-radius: 28px;
-        border: 2px solid rgba(212,160,23,0.4);
+        border: 2px solid rgba(212,160,23,0.3);
         background: rgba(255,255,255,0.06);
         color: #FFFEF7;
         font-family: 'Nunito', sans-serif;
-        font-size: 1rem;
-        text-align: center;
-        width: 260px;
+        font-size: 0.95rem;
         outline: none;
-        margin-bottom: 12px;
+        text-align: center;
     }
-    .intro-name-input::placeholder { color: #666; }
-    .intro-name-input:focus { border-color: #D4A017; }
-    .intro-start-btn {
-        padding: 12px 32px;
+    .email-form input::placeholder { color: #666; }
+    .email-form input:focus { border-color: #D4A017; }
+    .email-form button {
+        width: 100%;
+        padding: 12px 24px;
         border-radius: 28px;
         border: none;
-        background: linear-gradient(135deg, #D4A017, #B8860B);
-        color: #0D0D1A;
+        background: linear-gradient(135deg, #C41E3A, #9B1B30);
+        color: #FFFEF7;
         font-family: 'Nunito', sans-serif;
-        font-size: 1rem;
-        font-weight: 700;
+        font-size: 0.95rem;
+        font-weight: 800;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+        box-shadow: 0 4px 16px rgba(196,30,58,0.3);
+        letter-spacing: 0.5px;
     }
-    .intro-start-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 24px rgba(212,160,23,0.5);
+    .email-form button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 24px rgba(196,30,58,0.5);
     }
-    .intro-skip {
-        margin-top: 12px;
-        background: none;
-        border: none;
-        color: #666;
-        font-size: 0.75rem;
-        cursor: pointer;
-        text-decoration: underline;
+    .email-success {
+        display: none;
+        color: #4CAF50;
+        font-weight: 700;
+        font-size: 0.9rem;
     }
 
-    .voice-controls {
+    .cta-actions {
         display: flex;
-        gap: 8px;
+        gap: 12px;
+        flex-wrap: wrap;
         justify-content: center;
-        align-items: center;
-        margin: 4px auto;
+    }
+    .cta-action-btn {
+        padding: 10px 24px;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(255,255,255,0.04);
+        color: #AAA;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    .cta-action-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: #FFF;
+        border-color: rgba(255,255,255,0.3);
     }
 
-    /* Hide tap-to-talk controls in voice mode */
-    body.voice-mode-active .story-btn,
-    body.voice-mode-active .story-label { display: none; }
-
-    @media (min-width: 900px) {
-        .hero-container { width: 340px; height: 340px; }
-    }
-
-    /* Overlay styles for Parent Mode and Usage Log */
+    /* ===== OVERLAYS ===== */
     .overlay {
         display: none;
         position: fixed;
@@ -635,7 +955,7 @@
     }
     .overlay-header h2 {
         font-family: 'Playfair Display', serif;
-        font-size: 1.4rem;
+        font-size: 1.3rem;
         color: #FFE082;
     }
     .overlay-close {
@@ -692,182 +1012,304 @@
     }
     .log-entry .log-time { color: #666; font-size: 0.7rem; }
     .log-entry .log-action { color: #D4A017; font-weight: 600; }
+
+    /* ===== FOOTER ===== */
+    .app-footer {
+        padding: 12px;
+        text-align: center;
+        color: #333;
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+        flex-shrink: 0;
+    }
+    .app-footer a { color: #555; text-decoration: none; }
+    .app-footer a:hover { color: #D4A017; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 700px) {
+        .companion-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .companion-card img { width: 56px; height: 56px; }
+    }
+    @media (max-width: 480px) {
+        .companion-grid { grid-template-columns: repeat(2, 1fr); }
+        .learning-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .hero-container { width: 170px; height: 170px; }
+        .context-banner { font-size: 0.6rem; flex-wrap: wrap; }
+        .cs-tab img { width: 24px; height: 24px; }
+        .cs-tab .cs-name { font-size: 0.4rem; }
+    }
+    @media (min-width: 900px) {
+        .hero-container { width: 240px; height: 240px; }
+    }
+
+    /* Hide tap-to-talk controls in voice mode */
+    body.voice-mode-active .tap-talk-btn { display: none; }
 </style>
 </head>
 <body>
 
-<!-- Intro Overlay removed — demo starts immediately on tap -->
-
-<div class="header">
-    <h1>Casa Companion</h1>
-    <p>AI Family Companion</p>
-    <div id="battery" class="battery-indicator green">
-        <div class="battery-icon">
-            <div id="battery-fill" class="battery-fill" style="width:87%"></div>
-        </div>
-        <span id="battery-pct">87%</span>
-    </div>
+<!-- CONTEXT BANNER (persistent) -->
+<div class="context-banner">
+    <span>Live AI Demo</span>
+    <span class="banner-sep">|</span>
+    <span>Casa Companion</span>
+    <span class="banner-sep">|</span>
+    <a href="https://simplebalance89-ai.github.io/casa-companion-site/" target="_blank">Kickstarter May 5</a>
 </div>
 
-<!-- Animal Tabs — 10 Heroes -->
-<div class="tab-bar">
-    <div class="tab active" onclick="switchAnimal('corvo')" id="tab-corvo">
-        <img src="/static/images/heroes/crow.png" alt="Corvo" onerror="this.style.display='none'">
-        <span class="tab-name">Corvo</span>
+<!-- PROGRESS BAR -->
+<div class="progress-bar" id="progress-bar">
+    <div class="progress-step">
+        <div class="progress-dot active" id="pdot-0"></div>
+        <div class="progress-line" id="pline-0"></div>
+        <div class="progress-dot" id="pdot-1"></div>
+        <div class="progress-line" id="pline-1"></div>
+        <div class="progress-dot" id="pdot-2"></div>
+        <div class="progress-line" id="pline-2"></div>
+        <div class="progress-dot" id="pdot-3"></div>
+        <div class="progress-line" id="pline-3"></div>
+        <div class="progress-dot" id="pdot-4"></div>
     </div>
-    <div class="tab" onclick="switchAnimal('gufo')" id="tab-gufo">
-        <img src="/static/images/heroes/owl.png" alt="Gufo" onerror="this.style.display='none'">
-        <span class="tab-name">Gufo</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('orsetto')" id="tab-orsetto">
-        <img src="/static/images/heroes/bear.png" alt="Orsetto" onerror="this.style.display='none'">
-        <span class="tab-name">Orsetto</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('coniglio')" id="tab-coniglio">
-        <img src="/static/images/heroes/bunny.png" alt="Coniglio" onerror="this.style.display='none'">
-        <span class="tab-name">Coniglio</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('tartaruga')" id="tab-tartaruga">
-        <img src="/static/images/heroes/turtle.png" alt="Tartaruga" onerror="this.style.display='none'">
-        <span class="tab-name">Tartaruga</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('elefante')" id="tab-elefante">
-        <img src="/static/images/heroes/elephant.png" alt="Elefante" onerror="this.style.display='none'">
-        <span class="tab-name">Elefante</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('leone')" id="tab-leone">
-        <img src="/static/images/heroes/lion.png" alt="Leone" onerror="this.style.display='none'">
-        <span class="tab-name">Leone</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('delfino')" id="tab-delfino">
-        <img src="/static/images/heroes/dolphin.png" alt="Delfino" onerror="this.style.display='none'">
-        <span class="tab-name">Delfino</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('drago')" id="tab-drago">
-        <img src="/static/images/heroes/dragon.png" alt="Drago" onerror="this.style.display='none'">
-        <span class="tab-name">Drago</span>
-    </div>
-    <div class="tab" onclick="switchAnimal('xolo')" id="tab-xolo">
-        <img src="/static/images/heroes/xolo.png" alt="Xolo" onerror="this.style.display='none'">
-        <span class="tab-name">Xolo</span>
-    </div>
+    <span class="progress-label" id="progress-label">Welcome</span>
 </div>
 
-<div class="main">
-    <!-- Hero animal -->
-    <div class="hero-container" onclick="toggleStoryMode()">
-        <div id="hero-glow" class="hero-glow"></div>
-        <img id="hero-img" src="/static/images/heroes/crow.png" alt="Corvo" class="hero-img"
-             onerror="this.style.display='none'">
+<!-- STEPS CONTAINER -->
+<div class="steps-container">
+
+    <!-- ===== STEP 0: WELCOME ===== -->
+    <div class="step active" id="step-0">
+        <div class="welcome-screen">
+            <div class="welcome-eyebrow">Live AI Demo</div>
+            <h1 class="welcome-title">Welcome to<br>Casa Companion</h1>
+            <p class="welcome-desc">
+                This is a live preview of an AI plush toy launching on Kickstarter May 5, 2026.
+            </p>
+            <p class="welcome-desc" style="margin-bottom:4px;">
+                Pick a companion. Talk to them. See what the future of children's toys feels like.
+            </p>
+            <div class="welcome-kickstarter">Coming to Kickstarter May 5, 2026</div>
+            <button class="welcome-cta" onclick="goToStep(1)">Meet Your Companion</button>
+            <div class="welcome-powered">Powered by Capo AI</div>
+        </div>
     </div>
 
-    <!-- Character info -->
-    <div class="char-info">
-        <div id="char-name" class="char-name">Corvo</div>
-        <div id="char-meaning" class="char-meaning">Corvo means Crow in Italian</div>
-    </div>
-
-    <div id="mode-banner" class="mode-banner">
-        <span id="mode-banner-text"></span>
-        <button class="mode-exit" onclick="exitMode()">&times;</button>
-    </div>
-    <div id="status" class="status">Tap Corvo to say hello</div>
-
-    <!-- Feature pills -->
-    <div class="features">
-        <div class="feature-pill"><span class="emoji">&#x1F3A4;</span>Voice Cloning</div>
-        <div class="feature-pill"><span class="emoji">&#x1F4D6;</span>Interactive Stories</div>
-        <div class="feature-pill"><span class="emoji">&#x1F9E0;</span>Emotional Support</div>
-        <div class="feature-pill"><span class="emoji">&#x1F310;</span>Bilingual</div>
-        <div class="feature-pill"><span class="emoji">&#x1F31C;</span>Bedtime Mode</div>
-        <div class="feature-pill"><span class="emoji">&#x1F50B;</span>10hr Battery</div>
-        <div class="feature-pill"><span class="emoji">&#x1F9F9;</span>Washable</div>
-        <div class="feature-pill"><span class="emoji">&#x1F512;</span>COPPA Safe</div>
-    </div>
-
-    <!-- Story Mode mic (tap-to-talk fallback) -->
-    <button id="story-btn" class="story-btn" onclick="toggleStoryMode()">&#x1F3A4;</button>
-    <div id="story-label" class="story-label">Tap to talk</div>
-
-    <!-- Voice Mode (WebRTC realtime) -->
-    <div class="voice-controls">
-        <button id="voice-mode-btn" class="voice-mode-btn" onclick="toggleVoiceMode()">
-            <span class="vm-icon">&#x1F50A;</span> Voice Mode
-        </button>
-        <button id="end-voice-btn" class="end-voice-btn" onclick="endVoiceMode()">
-            End Voice
-        </button>
-    </div>
-
-    <!-- Stop / Kill Switch -->
-    <button id="stop-btn" class="stop-btn" onclick="killAllAudio()" title="Stop all audio">&#x23F9;</button>
-
-    <!-- Transcript -->
-    <div id="transcript" class="transcript">
-        <p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>
-    </div>
-
-    <!-- Text input -->
-    <div class="input-row">
-        <input id="text-input" type="text" placeholder="Or type to talk..." onkeydown="if(event.key==='Enter')sendText()">
-        <button onclick="sendText()">Send</button>
-    </div>
-
-    <!-- Learning Modules — 11 cards (8 kid + 3 parent/teaching) -->
-    <div class="learning-grid">
-        <div class="learning-card" onclick="activateMode('story_time')" id="mode-story_time">
-            <div class="icon">&#x1F4DA;</div>
-            <div class="label">Story Time</div>
+    <!-- ===== STEP 1: PICK YOUR COMPANION ===== -->
+    <div class="step" id="step-1">
+        <div class="pick-header">
+            <h2>Pick Your Companion</h2>
+            <p>Tap to meet your new friend</p>
         </div>
-        <div class="learning-card" onclick="activateMode('calm_breathe')" id="mode-calm_breathe">
-            <div class="icon">&#x1F9D8;</div>
-            <div class="label">Calm & Breathe</div>
+        <div class="companion-grid" id="companion-grid">
+            <!-- Populated by JS -->
         </div>
-        <div class="learning-card" onclick="activateMode('stem_sparks')" id="mode-stem_sparks">
-            <div class="icon">&#x1F52C;</div>
-            <div class="label">STEM Sparks</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('music_rhythm')" id="mode-music_rhythm">
-            <div class="icon">&#x1F3B5;</div>
-            <div class="label">Music & Rhythm</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('geography')" id="mode-geography">
-            <div class="icon">&#x1F30E;</div>
-            <div class="label">Geography</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('italian')" id="mode-italian">
-            <div class="icon">&#x1F1EE;&#x1F1F9;</div>
-            <div class="label">Italian</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('spanish')" id="mode-spanish">
-            <div class="icon">&#x1F1F2;&#x1F1FD;</div>
-            <div class="label">Spanish</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('coding')" id="mode-coding">
-            <div class="icon">&#x1F916;</div>
-            <div class="label">Coding</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('teaching')" id="mode-teaching">
-            <div class="icon">&#x1F393;</div>
-            <div class="label">Teaching</div>
-        </div>
-        <div class="learning-card" onclick="activateMode('milestones')" id="mode-milestones">
-            <div class="icon">&#x1F3C6;</div>
-            <div class="label">Milestones</div>
-        </div>
-        <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
-            <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
-            <div class="label">Parent Mode</div>
-        </div>
-        <div class="learning-card parent-card" onclick="openUsageLog()" id="mode-usage">
-            <div class="icon">&#x1F4CA;</div>
-            <div class="label">Usage Log</div>
+        <div class="step-nav">
+            <button class="nav-btn secondary" onclick="goToStep(0)">Back</button>
+            <button class="nav-btn primary" id="pick-next-btn" onclick="goToStep(2)" disabled>Meet Them</button>
         </div>
     </div>
+
+    <!-- ===== STEP 2: TALK TO YOUR COMPANION ===== -->
+    <div class="step" id="step-2">
+        <div class="talk-layout">
+            <div class="talk-hero-area">
+                <div id="battery" class="battery-indicator green">
+                    <div class="battery-icon">
+                        <div id="battery-fill" class="battery-fill" style="width:87%"></div>
+                    </div>
+                    <span id="battery-pct">87%</span>
+                </div>
+
+                <div class="hero-container" onclick="handleHeroTap()">
+                    <div id="hero-glow" class="hero-glow"></div>
+                    <img id="hero-img" src="/static/images/heroes/crow.png" alt="Corvo" class="hero-img"
+                         onerror="this.style.display='none'">
+                </div>
+
+                <div class="char-info">
+                    <div id="char-name" class="char-name">Corvo</div>
+                    <div id="char-meaning" class="char-meaning">Corvo means Crow in Italian</div>
+                </div>
+            </div>
+
+            <div id="mode-banner" class="mode-banner">
+                <span id="mode-banner-text"></span>
+                <button class="mode-exit" onclick="exitMode()">&times;</button>
+            </div>
+            <div id="status" class="status">Ready</div>
+
+            <!-- Interaction Buttons -->
+            <div class="interaction-buttons">
+                <button class="voice-primary-btn" id="voice-primary-btn" onclick="toggleVoiceMode()">
+                    <span class="vp-icon">&#x1F50A;</span>
+                    <span id="voice-btn-label">Talk to Corvo</span>
+                    <span class="vp-rec">RECOMMENDED</span>
+                </button>
+                <div class="voice-secondary-row">
+                    <button class="tap-talk-btn" id="tap-talk-btn" onclick="toggleStoryMode()">
+                        &#x1F3A4; Tap to Talk
+                    </button>
+                    <button class="type-chat-btn" id="type-chat-btn" onclick="showTextInput()">
+                        &#x2328; Type to Chat
+                    </button>
+                    <button id="end-voice-btn" class="end-voice-btn" onclick="endVoiceMode()">
+                        End Voice
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stop / Kill Switch -->
+            <button id="stop-btn" class="stop-btn" onclick="killAllAudio()" title="Stop all audio">&#x23F9;</button>
+
+            <!-- Transcript -->
+            <div id="transcript" class="transcript">
+                <p style="color:#555; font-style:italic;">Your conversation will appear here...</p>
+            </div>
+
+            <!-- Text input (hidden until toggled) -->
+            <div class="input-row" id="input-row">
+                <input id="text-input" type="text" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendText()">
+                <button onclick="sendText()">Send</button>
+            </div>
+
+            <!-- Companion switcher (small tabs) -->
+            <div class="companion-switcher" id="companion-switcher">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="step-nav" style="margin-top:12px;">
+                <button class="nav-btn secondary" onclick="goToStep(1)">Change Companion</button>
+                <button class="nav-btn primary" onclick="goToStep(3)">Explore Modes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== STEP 3: EXPLORE MODES ===== -->
+    <div class="step" id="step-3">
+        <div class="modes-header">
+            <h2>Explore Learning Modes</h2>
+            <p>Tap a mode to try it with your companion</p>
+        </div>
+
+        <div class="learning-grid">
+            <div class="learning-card" onclick="activateModeFromStep3('story_time')" id="mode-story_time">
+                <div class="icon">&#x1F4DA;</div>
+                <div class="label">Story Time</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('calm_breathe')" id="mode-calm_breathe">
+                <div class="icon">&#x1F9D8;</div>
+                <div class="label">Calm & Breathe</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('stem_sparks')" id="mode-stem_sparks">
+                <div class="icon">&#x1F52C;</div>
+                <div class="label">STEM Sparks</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('music_rhythm')" id="mode-music_rhythm">
+                <div class="icon">&#x1F3B5;</div>
+                <div class="label">Music & Rhythm</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('geography')" id="mode-geography">
+                <div class="icon">&#x1F30E;</div>
+                <div class="label">Geography</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('italian')" id="mode-italian">
+                <div class="icon">&#x1F1EE;&#x1F1F9;</div>
+                <div class="label">Italian</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('spanish')" id="mode-spanish">
+                <div class="icon">&#x1F1F2;&#x1F1FD;</div>
+                <div class="label">Spanish</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('coding')" id="mode-coding">
+                <div class="icon">&#x1F916;</div>
+                <div class="label">Coding</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('teaching')" id="mode-teaching">
+                <div class="icon">&#x1F393;</div>
+                <div class="label">Teaching</div>
+            </div>
+            <div class="learning-card" onclick="activateModeFromStep3('milestones')" id="mode-milestones">
+                <div class="icon">&#x1F3C6;</div>
+                <div class="label">Milestones</div>
+            </div>
+            <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
+                <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
+                <div class="label">Parent Mode</div>
+            </div>
+            <div class="learning-card parent-card" onclick="openUsageLog()" id="mode-usage">
+                <div class="icon">&#x1F4CA;</div>
+                <div class="label">Usage Log</div>
+            </div>
+        </div>
+
+        <div class="features-row">
+            <div class="feature-pill"><span class="emoji">&#x1F3A4;</span>Voice Cloning</div>
+            <div class="feature-pill"><span class="emoji">&#x1F4D6;</span>Interactive Stories</div>
+            <div class="feature-pill"><span class="emoji">&#x1F9E0;</span>Emotional Support</div>
+            <div class="feature-pill"><span class="emoji">&#x1F310;</span>Bilingual</div>
+            <div class="feature-pill"><span class="emoji">&#x1F31C;</span>Bedtime Mode</div>
+            <div class="feature-pill"><span class="emoji">&#x1F50B;</span>10hr Battery</div>
+            <div class="feature-pill"><span class="emoji">&#x1F9F9;</span>Washable</div>
+            <div class="feature-pill"><span class="emoji">&#x1F512;</span>COPPA Safe</div>
+        </div>
+
+        <div class="step-nav">
+            <button class="nav-btn secondary" onclick="goToStep(2)">Back to Chat</button>
+            <button class="nav-btn primary" onclick="goToStep(4)">Finish Demo</button>
+        </div>
+    </div>
+
+    <!-- ===== STEP 4: CTA / WRAP-UP ===== -->
+    <div class="step" id="step-4">
+        <div class="cta-screen">
+            <h2 class="cta-headline">You just experienced<br>Casa Companion.</h2>
+            <p class="cta-subtext">
+                In real life, this conversation happens through a plush toy your child holds. In YOUR voice.
+            </p>
+
+            <div class="cta-summary" id="cta-summary">
+                <h3>Your Session</h3>
+                <div class="cta-stat">
+                    <span class="label">Time spent</span>
+                    <span class="value" id="cta-time">0m</span>
+                </div>
+                <div class="cta-stat">
+                    <span class="label">Companion</span>
+                    <span class="value" id="cta-companion">-</span>
+                </div>
+                <div class="cta-stat">
+                    <span class="label">Messages</span>
+                    <span class="value" id="cta-messages">0</span>
+                </div>
+                <div class="cta-stat" style="border-bottom:none;">
+                    <span class="label">Modes tried</span>
+                    <span class="value" id="cta-modes">-</span>
+                </div>
+            </div>
+
+            <div class="cta-kickstarter-badge">Coming to Kickstarter May 5, 2026</div>
+
+            <form class="email-form" id="email-form" onsubmit="handleEmailSubmit(event)">
+                <input type="email" placeholder="your@email.com" required id="email-input">
+                <button type="submit">Notify Me When We Launch</button>
+            </form>
+            <div class="email-success" id="email-success">You're on the list. We'll see you May 5.</div>
+
+            <div class="cta-actions">
+                <button class="cta-action-btn" onclick="goToStep(1)">Try Another Companion</button>
+                <a class="cta-action-btn" href="https://simplebalance89-ai.github.io/casa-companion-site/" target="_blank">Learn More</a>
+                <button class="cta-action-btn" onclick="shareDemo()">Share This Demo</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<div class="footer">
-    Casa Companion &copy; 2026 &bull; Crafted in California &bull; Everyone else announced it. We built it.
+<!-- FOOTER -->
+<div class="app-footer">
+    Casa Companion &copy; 2026 &bull; Crafted in California &bull; Powered by <a href="https://simplebalance89-ai.github.io/casa-companion-site/" target="_blank">Capo AI</a>
 </div>
 
 <!-- Parent Mode Overlay -->
@@ -964,116 +1406,306 @@ function updateBattery() {
     batteryFillEl.style.width = rounded + '%';
     batteryEl.className = 'battery-indicator ' + (rounded > 50 ? 'green' : rounded > 20 ? 'yellow' : 'red');
 }
-setInterval(updateBattery, 30000); // drain every 30s
+setInterval(updateBattery, 30000);
 
 // =========================================================================
-// Character data — 10 Heroes
+// Character data - 10 Heroes
 // =========================================================================
 const CHARACTERS = {
     corvo: {
         name: 'Corvo',
+        animal: 'Crow',
         meaning: 'Corvo means Crow in Italian',
         img: '/static/images/heroes/crow.png',
+        personality: 'Wise, curious storyteller',
         greeting: "Well hello there! *ruffles feathers* I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
         greetTTS: "Well hello there! I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
         icon: '&#x1F426;'
     },
     gufo: {
         name: 'Gufo',
+        animal: 'Owl',
         meaning: 'Gufo means Owl in Italian',
         img: '/static/images/heroes/owl.png',
+        personality: 'Stargazing night philosopher',
         greeting: "*blinks slowly* Whooo goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
         greetTTS: "Who goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
         icon: '&#x1F989;'
     },
     orsetto: {
         name: 'Orsetto',
+        animal: 'Bear',
         meaning: 'Orsetto means Little Bear in Italian',
         img: '/static/images/heroes/bear.png',
+        personality: 'Adventurous gentle explorer',
         greeting: "*stretches and yawns* Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
         greetTTS: "Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
         icon: '&#x1F43B;'
     },
     coniglio: {
         name: 'Coniglio',
+        animal: 'Bunny',
         meaning: 'Coniglio means Bunny in Italian',
         img: '/static/images/heroes/bunny.png',
+        personality: 'Energetic, playful friend',
         greeting: "*wiggles nose* Oh! Hi! I'm Coniglio! I was just... nibbling on a carrot. *hops closer* I'm so happy to meet you! What's your favorite thing to do?",
         greetTTS: "Oh! Hi! I'm Coniglio! I was just nibbling on a carrot. I'm so happy to meet you! What's your favorite thing to do?",
         icon: '&#x1F430;'
     },
     tartaruga: {
         name: 'Tartaruga',
+        animal: 'Sea Turtle',
         meaning: 'Tartaruga means Sea Turtle in Italian',
         img: '/static/images/heroes/turtle.png',
+        personality: 'Calm ocean traveler',
         greeting: "*emerges slowly from shell* Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
         greetTTS: "Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
         icon: '&#x1F422;'
     },
     elefante: {
         name: 'Elefante',
+        animal: 'Elephant',
         meaning: 'Elefante means Elephant in Italian',
         img: '/static/images/heroes/elephant.png',
+        personality: 'Warm, never forgets a friend',
         greeting: "*flaps ears happily* Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
         greetTTS: "Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
         icon: '&#x1F418;'
     },
     leone: {
         name: 'Leone',
+        animal: 'Lion',
         meaning: 'Leone means Lion in Italian',
         img: '/static/images/heroes/lion.png',
+        personality: 'Brave, encouraging leader',
         greeting: "*shakes mane proudly* ROAR! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
         greetTTS: "Roar! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
         icon: '&#x1F981;'
     },
     delfino: {
         name: 'Delfino',
+        animal: 'Dolphin',
         meaning: 'Delfino means Dolphin in Italian',
         img: '/static/images/heroes/dolphin.png',
+        personality: 'Playful, loves games',
         greeting: "*splashes excitedly* Ee-ee-ee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know SO many!",
         greetTTS: "Eee eee eee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know so many!",
         icon: '&#x1F42C;'
     },
     drago: {
         name: 'Drago',
+        animal: 'Dragon',
         meaning: 'Drago means Dragon in Italian',
         img: '/static/images/heroes/dragon.png',
+        personality: 'Magical storyteller',
         greeting: "*sparkles shimmer* Greetings, brave one! I'm Drago. I don't breathe fire... I breathe STORIES! Want to hear one, or shall we create our own?",
         greetTTS: "Greetings, brave one! I'm Drago. I don't breathe fire, I breathe stories! Want to hear one, or shall we create our own?",
         icon: '&#x1F409;'
     },
     xolo: {
         name: 'Xolo',
+        animal: 'Xoloitzcuintli',
         meaning: 'Xolo is a Xoloitzcuintli, the ancient Aztec dog',
         img: '/static/images/heroes/xolo.png',
+        personality: 'Noble ancient guardian',
         greeting: "*wags tail with dignity* Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
         greetTTS: "Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
         icon: '&#x1F415;'
     }
 };
 
-// Custom name storage
-function setCustomName(charKey, name) {
-    if (name && name.trim()) {
-        CHARACTERS[charKey].customName = name.trim();
+// =========================================================================
+// Step Navigation
+// =========================================================================
+let currentStep = 0;
+const STEP_LABELS = ['Welcome', 'Step 1 of 3', 'Step 2 of 3', 'Step 3 of 3', 'Finish'];
+
+function goToStep(step) {
+    // Clean up before leaving step 2
+    if (currentStep === 2 && step !== 2) {
+        stopCurrentAudio();
+        if (isListening) stopVoiceInput();
+        if (voiceModeActive) endVoiceMode();
+    }
+
+    // Hide current step
+    const cur = document.getElementById('step-' + currentStep);
+    if (cur) cur.classList.remove('active');
+
+    currentStep = step;
+
+    // Show new step
+    const next = document.getElementById('step-' + step);
+    if (next) next.classList.add('active');
+
+    // Update progress bar
+    updateProgress(step);
+
+    // Step-specific initialization
+    if (step === 1) buildCompanionGrid();
+    if (step === 2) initTalkStep();
+    if (step === 4) buildCtaSummary();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+function updateProgress(step) {
+    for (let i = 0; i <= 4; i++) {
+        const dot = document.getElementById('pdot-' + i);
+        dot.className = 'progress-dot';
+        if (i < step) dot.classList.add('done');
+        else if (i === step) dot.classList.add('active');
+    }
+    for (let i = 0; i <= 3; i++) {
+        const line = document.getElementById('pline-' + i);
+        line.className = 'progress-line';
+        if (i < step) line.classList.add('done');
+    }
+    document.getElementById('progress-label').textContent = STEP_LABELS[step] || '';
+}
+
+// =========================================================================
+// Step 1: Companion Grid
+// =========================================================================
+function buildCompanionGrid() {
+    const grid = document.getElementById('companion-grid');
+    grid.innerHTML = '';
+    for (const [key, char] of Object.entries(CHARACTERS)) {
+        const card = document.createElement('div');
+        card.className = 'companion-card' + (key === currentCharacter ? ' selected' : '');
+        card.id = 'cc-' + key;
+        card.onclick = () => selectCompanion(key);
+        card.innerHTML = `
+            <img src="${char.img}" alt="${char.name}" onerror="this.style.display='none'">
+            <div class="cc-name">${char.name}</div>
+            <div class="cc-animal">${char.meaning.split(' means ')[1] || char.animal}</div>
+            <div class="cc-personality">${char.personality}</div>
+        `;
+        grid.appendChild(card);
+    }
+    updatePickButton();
+}
+
+function selectCompanion(key) {
+    currentCharacter = key;
+    document.querySelectorAll('.companion-card').forEach(c => c.classList.remove('selected'));
+    const card = document.getElementById('cc-' + key);
+    if (card) card.classList.add('selected');
+    updatePickButton();
+}
+
+function updatePickButton() {
+    const btn = document.getElementById('pick-next-btn');
+    btn.disabled = false;
+    btn.textContent = 'Meet ' + CHARACTERS[currentCharacter].name;
+}
+
+// =========================================================================
+// Step 2: Talk initialization
+// =========================================================================
+function initTalkStep() {
+    const char = CHARACTERS[currentCharacter];
+    heroImg.src = char.img;
+    heroImg.alt = char.name;
+    charNameEl.textContent = char.name;
+    charMeaningEl.textContent = char.meaning;
+    document.getElementById('voice-btn-label').textContent = 'Talk to ' + char.name;
+
+    sessionLog.companionsUsed.add(char.name);
+    logEvent('companion_selected', char.name);
+
+    // Reset conversation state
+    isActive = false;
+    demoRunning = false;
+    conversationHistory = [];
+    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
+    setState('idle');
+
+    // Build companion switcher
+    buildCompanionSwitcher();
+
+    // Hide text input by default
+    document.getElementById('input-row').classList.remove('visible');
+}
+
+function buildCompanionSwitcher() {
+    const switcher = document.getElementById('companion-switcher');
+    switcher.innerHTML = '';
+    for (const [key, char] of Object.entries(CHARACTERS)) {
+        const tab = document.createElement('div');
+        tab.className = 'cs-tab' + (key === currentCharacter ? ' active' : '');
+        tab.id = 'cs-' + key;
+        tab.onclick = () => switchAnimal(key);
+        tab.innerHTML = `
+            <img src="${char.img}" alt="${char.name}" onerror="this.style.display='none'">
+            <span class="cs-name">${char.name}</span>
+        `;
+        switcher.appendChild(tab);
     }
 }
 
-function getDisplayName(charKey) {
-    const char = CHARACTERS[charKey || currentCharacter];
-    return char.customName || char.name;
+function showTextInput() {
+    const row = document.getElementById('input-row');
+    row.classList.add('visible');
+    document.getElementById('text-input').focus();
 }
 
-function startWithName() {
-    // Intro overlay removed — no-op
+function handleHeroTap() {
     toggleStoryMode();
 }
 
-function skipIntro() {
-    // Intro overlay removed — no-op
-    toggleStoryMode();
+// =========================================================================
+// Step 3: Mode activation from step 3
+// =========================================================================
+function activateModeFromStep3(modeKey) {
+    activateMode(modeKey);
+    goToStep(2);
 }
 
+// =========================================================================
+// Step 4: CTA summary
+// =========================================================================
+function buildCtaSummary() {
+    const elapsed = Math.round((Date.now() - sessionLog.startTime) / 60000);
+    document.getElementById('cta-time').textContent = elapsed + 'm';
+    document.getElementById('cta-companion').textContent =
+        sessionLog.companionsUsed.size > 0 ? [...sessionLog.companionsUsed].join(', ') : 'None yet';
+    document.getElementById('cta-messages').textContent = sessionLog.messages;
+    document.getElementById('cta-modes').textContent =
+        sessionLog.modesActivated.size > 0 ? [...sessionLog.modesActivated].join(', ') : 'None yet';
+}
+
+function handleEmailSubmit(e) {
+    e.preventDefault();
+    const email = document.getElementById('email-input').value;
+    // Placeholder: in production this would POST to an email capture endpoint
+    console.log('Email captured:', email);
+    logEvent('email_captured', email);
+    document.getElementById('email-form').style.display = 'none';
+    document.getElementById('email-success').style.display = 'block';
+}
+
+function shareDemo() {
+    const url = window.location.origin;
+    if (navigator.share) {
+        navigator.share({
+            title: 'Casa Companion Demo',
+            text: 'Talk to an AI companion. Live demo of Casa Companion, launching on Kickstarter May 5, 2026.',
+            url: url
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Demo link copied to clipboard!');
+        }).catch(() => {
+            prompt('Copy this link:', url);
+        });
+    }
+}
+
+// =========================================================================
+// Core State
+// =========================================================================
 let currentCharacter = 'corvo';
 let conversationHistory = [];
 let isActive = false;
@@ -1113,12 +1745,10 @@ let currentState = 'idle';
 
 const statusEl = document.getElementById('status');
 const transcriptEl = document.getElementById('transcript');
-const storyBtn = document.getElementById('story-btn');
 const heroGlow = document.getElementById('hero-glow');
 const heroImg = document.getElementById('hero-img');
 const charNameEl = document.getElementById('char-name');
 const charMeaningEl = document.getElementById('char-meaning');
-const storyLabelEl = document.getElementById('story-label');
 
 // =========================================================================
 // Guided Demo
@@ -1137,20 +1767,17 @@ const DEMO_STEPS = [
 
 let demoRunning = false;
 let demoStepIndex = 0;
-
 let waitingForName = false;
-let voiceResponseCount = 0;  // Track voice mode responses for capabilities intro
+let voiceResponseCount = 0;
 
 async function startGuidedDemo() {
     if (demoCompleted || demoRunning) return;
-    // Immediately offer capabilities — no name step
     showCapabilitiesIntro();
 }
 
 async function showCapabilitiesIntro() {
     demoRunning = true;
     demoStepIndex = 0;
-    const char = CHARACTERS[currentCharacter];
     const introText = "I can do SO many things! Would you like me to show you? Say 'yes' and I'll give you a quick tour, or just tell me what you want to do!";
     addMessage('companion', introText);
     conversationHistory.push({role: 'assistant', content: introText});
@@ -1159,7 +1786,6 @@ async function showCapabilitiesIntro() {
 
 async function runDemoStep() {
     if (demoStepIndex >= DEMO_STEPS.length) {
-        // Demo complete
         const endText = "Those are just some things I can do! You can also just talk to me about anything. What would you like to do?";
         addMessage('companion', endText);
         conversationHistory.push({role: 'assistant', content: endText});
@@ -1169,7 +1795,6 @@ async function runDemoStep() {
         logEvent('demo_completed');
         return;
     }
-
     const step = DEMO_STEPS[demoStepIndex];
     demoStepIndex++;
     addMessage('companion', step.teaser);
@@ -1180,11 +1805,9 @@ async function runDemoStep() {
 function handleDemoResponse(userText) {
     const lower = userText.toLowerCase().trim();
     if (lower.includes('yes') || lower.includes('sure') || lower.includes('show me') || lower.includes('okay') || lower.includes('ok')) {
-        // Start cycling through demo steps
         runDemoStep();
         return true;
     } else if (lower.includes('no') || lower.includes('skip') || lower.includes('play') || lower.includes('myself') || lower.includes('talk')) {
-        // Skip demo
         demoRunning = false;
         demoCompleted = true;
         const skipText = "No problem! I'm here whenever you want to chat. What's on your mind?";
@@ -1196,7 +1819,6 @@ function handleDemoResponse(userText) {
         runDemoStep();
         return true;
     }
-    // Not a demo response — end demo and treat as normal chat
     demoRunning = false;
     demoCompleted = true;
     return false;
@@ -1211,7 +1833,6 @@ function activateMode(modeKey) {
         return;
     }
 
-    // End voice mode and stop any playing audio first
     if (voiceModeActive) endVoiceMode();
     stopCurrentAudio();
     if (isListening) stopVoiceInput();
@@ -1220,25 +1841,21 @@ function activateMode(modeKey) {
     sessionLog.modesActivated.add(MODE_NAMES[modeKey] || modeKey);
     logEvent('mode_activated', MODE_NAMES[modeKey] || modeKey);
 
-    // Update card styles
     document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
     const card = document.getElementById('mode-' + modeKey);
     if (card) card.classList.add('active');
 
-    // Show mode banner
     const banner = document.getElementById('mode-banner');
     const bannerText = document.getElementById('mode-banner-text');
     bannerText.textContent = MODE_NAMES[modeKey] || modeKey;
     banner.classList.add('visible');
 
-    // Reset conversation for new mode
     conversationHistory = [];
     isActive = true;
     demoRunning = false;
     demoCompleted = true;
     transcriptEl.innerHTML = '';
 
-    // Send mode greeting from the character
     addMessage('companion', MODE_GREETINGS[modeKey] || 'Let\'s get started!');
     conversationHistory.push({role: 'assistant', content: MODE_GREETINGS[modeKey]});
     speakText(MODE_GREETINGS[modeKey] || 'Let\'s get started!');
@@ -1250,10 +1867,9 @@ function exitMode() {
     document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
     document.getElementById('mode-banner').classList.remove('visible');
 
-    // Reset
     conversationHistory = [];
     isActive = false;
-    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>';
+    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Choose a mode or start a conversation...</p>';
     setState('idle');
 }
 
@@ -1261,7 +1877,6 @@ function exitMode() {
 // Parent Mode & Usage Log Overlays
 // =========================================================================
 function openParentMode() {
-    // Populate stats
     const elapsed = Math.round((Date.now() - sessionLog.startTime) / 60000);
     document.getElementById('parent-duration').textContent = elapsed + 'm';
     document.getElementById('parent-messages').textContent = sessionLog.messages;
@@ -1270,13 +1885,11 @@ function openParentMode() {
     document.getElementById('parent-modes').textContent =
         sessionLog.modesActivated.size > 0 ? [...sessionLog.modesActivated].join(', ') : 'None yet';
 
-    // Conversation summary
     if (conversationHistory.length > 0) {
         const lastFew = conversationHistory.slice(-6).map(m => m.content).join(' | ');
         document.getElementById('parent-summary').textContent = lastFew;
     }
 
-    // Topics
     if (sessionLog.topics.length > 0) {
         document.getElementById('parent-topics').textContent = [...new Set(sessionLog.topics)].join(', ');
     }
@@ -1312,21 +1925,18 @@ function closeOverlay(id) {
 // =========================================================================
 // Character Switching
 // =========================================================================
+let switchGeneration = 0;
+
 function switchAnimal(key) {
-    if (key === currentCharacter && !isActive) {
-        return;
-    }
+    if (key === currentCharacter && !isActive) return;
     if (key !== currentCharacter) {
-        // Increment generation to invalidate any in-flight audio
         switchGeneration++;
         const thisGeneration = switchGeneration;
 
-        // Kill everything from previous character
         stopCurrentAudio();
-        endVoiceMode();  // Always call — no conditional on voiceModeActive (race condition fix)
+        endVoiceMode();
         if (isListening) stopVoiceInput();
 
-        // Kill WebRTC audio stream directly
         if (rtcAudioEl && rtcAudioEl.srcObject) {
             rtcAudioEl.srcObject.getTracks().forEach(t => t.stop());
             rtcAudioEl.srcObject = null;
@@ -1337,15 +1947,17 @@ function switchAnimal(key) {
         sessionLog.companionsUsed.add(char.name);
         logEvent('companion_switched', char.name);
 
-        // Update tabs
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.getElementById('tab-' + key).classList.add('active');
+        // Update switcher tabs
+        document.querySelectorAll('.cs-tab').forEach(t => t.classList.remove('active'));
+        const csTab = document.getElementById('cs-' + key);
+        if (csTab) csTab.classList.add('active');
 
         // Update hero
         heroImg.src = char.img;
         heroImg.alt = char.name;
         charNameEl.textContent = char.name;
         charMeaningEl.textContent = char.meaning;
+        document.getElementById('voice-btn-label').textContent = 'Talk to ' + char.name;
 
         // Reset conversation
         isActive = false;
@@ -1356,31 +1968,40 @@ function switchAnimal(key) {
             currentMode = null;
             transcriptEl.innerHTML = '';
             setTimeout(() => {
-                // Only activate if generation is still current (no rapid switch happened)
                 if (switchGeneration === thisGeneration) {
                     activateMode(savedMode);
                 }
-            }, 300);  // Increased from 100ms to 300ms for cleanup
+            }, 300);
         } else {
-            transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
+            transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
         }
         setState('idle');
-        storyLabelEl.textContent = 'Tap to talk';
-        storyBtn.innerHTML = '&#x1F3A4;';
     }
 }
 
 function setState(state) {
     currentState = state;
-    storyBtn.className = 'story-btn ' + (state === 'idle' ? '' : state);
     heroGlow.className = 'hero-glow ' + (state === 'idle' ? '' : state);
-    const name = getDisplayName(currentCharacter);
+    const name = CHARACTERS[currentCharacter].name;
 
-    if (state === 'idle') statusEl.textContent = isActive ? 'Tap mic or type to talk' : 'Tap ' + name + ' to say hello';
+    if (state === 'idle') statusEl.textContent = isActive ? 'Tap mic or type to talk' : 'Ready';
     else if (state === 'listening') statusEl.textContent = 'Listening...';
     else if (state === 'thinking') statusEl.textContent = name + ' is thinking...';
     else if (state === 'speaking') statusEl.textContent = name + ' is speaking...';
     updateStopButton();
+    updateTapTalkButton();
+}
+
+function updateTapTalkButton() {
+    const btn = document.getElementById('tap-talk-btn');
+    if (!btn) return;
+    if (isListening) {
+        btn.classList.add('listening');
+        btn.innerHTML = '&#x1F534; Stop';
+    } else {
+        btn.classList.remove('listening');
+        btn.innerHTML = '&#x1F3A4; Tap to Talk';
+    }
 }
 
 function toggleStoryMode() {
@@ -1391,31 +2012,21 @@ function toggleStoryMode() {
         logEvent('conversation_started', char.name);
         transcriptEl.innerHTML = '';
 
-        const customGreeting = char.customName
-            ? `Hi! I'm ${char.name}... but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
-            : char.greeting;
-        const customGreetTTS = char.customName
-            ? `Hi! I'm ${char.name}, but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
-            : char.greetTTS;
-
-        addMessage('companion', customGreeting);
+        addMessage('companion', char.greeting);
         setState('idle');
         conversationHistory = [
-            {role: 'assistant', content: customGreeting}
+            {role: 'assistant', content: char.greeting}
         ];
 
-        // Start guided demo on first interaction (greeting + demo offer)
         if (!demoCompleted) {
-            speakText(customGreetTTS).then(() => {
+            speakText(char.greetTTS).then(() => {
                 if (!demoCompleted && !demoRunning) {
                     startGuidedDemo();
                 }
             });
         } else {
-            speakText(customGreetTTS);
+            speakText(char.greetTTS);
         }
-
-        storyLabelEl.textContent = 'Tap to talk';
     } else if (isListening) {
         stopVoiceInput();
     } else if (currentState === 'idle') {
@@ -1494,14 +2105,11 @@ function checkVoiceTrigger(text) {
 async function sendChat(userText) {
     sessionLog.messages++;
 
-    // If guided demo is running, handle demo response first
     if (demoRunning) {
         addMessage('user', userText);
         if (handleDemoResponse(userText)) return;
-        // If not handled, falls through to normal chat
     }
 
-    // Check for voice-activated mode triggers
     const trigger = checkVoiceTrigger(userText);
     if (trigger.matched) {
         if (trigger.mode === null) {
@@ -1568,7 +2176,6 @@ async function sendChat(userText) {
             const audio = new Audio(url);
             currentAudio = audio;
             if (switchGeneration !== playGeneration) {
-                // Character was switched — don't play stale audio
                 URL.revokeObjectURL(url);
                 currentAudio = null;
                 return;
@@ -1593,7 +2200,6 @@ async function sendChat(userText) {
 }
 
 let currentAudio = null;
-let switchGeneration = 0;
 
 function stopCurrentAudio() {
     if (currentAudio) {
@@ -1672,7 +2278,6 @@ function sendText() {
         transcriptEl.innerHTML = '';
         conversationHistory = [];
 
-        // Trigger guided demo on first text interaction
         if (!demoCompleted) {
             const char = CHARACTERS[currentCharacter];
             addMessage('companion', char.greeting);
@@ -1682,7 +2287,6 @@ function sendText() {
                     startGuidedDemo();
                 }
             });
-            // Queue the user's text to be processed after demo offer
             setTimeout(() => { if (demoRunning) { handleDemoResponse(text) || sendChat(text); } else { sendChat(text); } }, 100);
             return;
         }
@@ -1747,7 +2351,6 @@ async function startVoiceInput() {
         mediaRecorder.start();
         isListening = true;
         setState('listening');
-        storyBtn.innerHTML = '&#x1F534;';
     } catch (err) {
         statusEl.textContent = 'Microphone access denied. Please allow mic access or type instead.';
         setState('idle');
@@ -1759,7 +2362,7 @@ function stopVoiceInput() {
         mediaRecorder.stop();
     }
     isListening = false;
-    storyBtn.innerHTML = '&#x1F3A4;';
+    updateTapTalkButton();
 }
 
 // =========================================================================
@@ -1775,7 +2378,7 @@ let rtcMicStream = null;
 let aiTranscriptBuffer = '';
 let aiTranscriptEl = null;
 
-const voiceModeBtn = document.getElementById('voice-mode-btn');
+const voiceModeBtn = document.getElementById('voice-primary-btn');
 const endVoiceBtn = document.getElementById('end-voice-btn');
 
 async function toggleVoiceMode() {
@@ -1865,7 +2468,7 @@ async function startVoiceMode() {
             voiceModeActive = true;
             document.body.classList.add('voice-mode-active');
             voiceModeBtn.classList.add('active');
-            voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Live';
+            document.getElementById('voice-btn-label').textContent = 'Voice Live';
             endVoiceBtn.style.display = 'flex';
 
             if (!isActive) {
@@ -1954,9 +2557,7 @@ function handleRTCEvent(msg) {
             aiTranscriptEl = null;
             aiTranscriptBuffer = '';
 
-            // After initial greeting (response 1), inject capabilities intro
             voiceResponseCount++;
-            // After greeting, mark demo done and let user drive the conversation
             if (voiceResponseCount === 1 && !demoCompleted) {
                 demoCompleted = true;
             }
@@ -1985,7 +2586,7 @@ function endVoiceMode() {
     cleanupRTC();
     document.body.classList.remove('voice-mode-active');
     voiceModeBtn.classList.remove('active');
-    voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Mode';
+    document.getElementById('voice-btn-label').textContent = 'Talk to ' + CHARACTERS[currentCharacter].name;
     endVoiceBtn.style.display = 'none';
     setState('idle');
     logEvent('voice_mode_ended');
