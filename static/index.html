@@ -2267,58 +2267,91 @@ const SHOWCASE_CHARACTER = 'polpo';
 const SHOWCASE_NAME = 'Dekan';
 
 const SHOWCASE_SCRIPT = [
+    // --- Intro: who I am, Italian heritage ---
     {
         mode: null,
         banner: 'Meet Dekan',
-        text: "Hey there! I'm Dekan the Octopus. I'm a special Casa Companion, and I'm about to show you what we can do. Eight arms, ten modes, one demo. Let's go!",
-        pause: 1500
-    },
-    {
-        mode: 'story_time',
-        banner: 'Story Time',
-        text: "Let's start with a story. Once upon a time, deep in the ocean, a little dolphin found a glowing pearl. 'Should I keep it or share it?' he wondered. In Story Time, YOUR child picks what happens next. They're the hero.",
-        pause: 1500
-    },
-    {
-        mode: 'languages',
-        banner: 'Languages',
-        text: "Now watch this. Ciao, amico! That means hello, friend, in Italian. Hola, amigo! That's Spanish. Bonjour! French. I can teach your child ANY language through play. Grandma speaks Italian? I'll teach them before the next visit.",
-        pause: 1500
-    },
-    {
-        mode: 'calm_breathe',
-        banner: 'Calm & Breathe',
-        text: "OK, let's slow down. Breathe in with me... one... two... three... and out... one... two... three. When your child is anxious, overwhelmed, or can't sleep, I'm right there. No screen. Just a calm voice in the dark.",
-        pause: 1500
-    },
-    {
-        mode: 'stem_sparks',
-        banner: 'STEM Sparks',
-        text: "Pop quiz! How many hearts does an octopus have? Three! And they have blue blood. In STEM mode, I ask questions, drop facts, and make science feel like a game. Curiosity is the whole point.",
-        pause: 1500
-    },
-    {
-        mode: 'homework',
-        banner: 'Homework Helper',
-        text: "What's five plus three? I won't just say eight. I'll say, 'If you have five apples and someone gives you three more, how many do you have now?' I guide, I don't give answers. That's how kids actually learn.",
-        pause: 1500
-    },
-    {
-        mode: 'music_rhythm',
-        banner: 'Music & Rhythm',
-        text: "Let's make some noise! Clap clap STOMP! Clap clap STOMP! Music mode teaches rhythm, singing, and even songwriting. No instruments needed. Just me and your kid making something together.",
-        pause: 1500
-    },
-    {
-        mode: null,
-        banner: 'Voice Cloning',
-        text: "And here's the part that changes everything. Your voice. Grandma's voice. Dad on a business trip. We clone the voice and I speak in it. Bedtime stories in Nonna's voice. Homework help in Dad's voice. Not through a screen. Through me.",
-        pause: 2000
+        speaker: 'companion',
+        text: "Hey! I'm Dekan. I'm a Polpo. That's octopus in Italian. Every Casa Companion has an Italian name because this whole thing started with an Italian family.",
+        pause: 1200
     },
     {
         mode: null,
         banner: null,
-        text: "That's Casa Companion. Ten animals. Ten learning modes. Any language. Any voice. No screen, no camera, no microtransactions. Coming to Kickstarter May fifth. Pick your companion and try it yourself. Capisce.",
+        speaker: 'user',
+        text: "That's cool. So what do you do?",
+        pause: 800
+    },
+    {
+        mode: 'story_time',
+        banner: 'Story Time',
+        speaker: 'companion',
+        text: "I'm built around Story Time. Being your companion. I tell stories where your kid is the hero. They pick what happens next. But if you want another mode, check out the options below.",
+        pause: 1200
+    },
+    // --- Quick back-and-forth showing modes ---
+    {
+        mode: null,
+        banner: null,
+        speaker: 'user',
+        text: "What other modes?",
+        pause: 800
+    },
+    {
+        mode: 'languages',
+        banner: 'Languages',
+        speaker: 'companion',
+        text: "Languages. Ciao means hello. I teach Italian, Spanish, French, any language through play. Grandma speaks Italian? I'll have your kid ready before the next visit.",
+        pause: 1200
+    },
+    {
+        mode: 'stem_sparks',
+        banner: 'STEM Sparks',
+        speaker: 'companion',
+        text: "STEM. Quick, how many hearts does an octopus have? Three. Blue blood too. I make science a game.",
+        pause: 1200
+    },
+    {
+        mode: null,
+        banner: null,
+        speaker: 'user',
+        text: "What about homework?",
+        pause: 800
+    },
+    {
+        mode: 'homework',
+        banner: 'Homework Helper',
+        speaker: 'companion',
+        text: "I don't give answers. I guide. Five plus three? I'll say, if you have five apples and someone gives you three more, how many? That's how kids learn.",
+        pause: 1200
+    },
+    {
+        mode: 'calm_breathe',
+        banner: 'Calm & Breathe',
+        speaker: 'companion',
+        text: "And when they need to wind down, I do breathing exercises. No screen. Just a calm voice in the dark.",
+        pause: 1200
+    },
+    // --- The closer: voice cloning + CTA ---
+    {
+        mode: null,
+        banner: null,
+        speaker: 'user',
+        text: "What makes this different from a tablet app?",
+        pause: 800
+    },
+    {
+        mode: null,
+        banner: 'Voice Cloning',
+        speaker: 'companion',
+        text: "Your voice. We clone it. Bedtime stories in Nonna's voice. Homework help in Dad's voice. Not through a screen. Through me.",
+        pause: 1500
+    },
+    {
+        mode: null,
+        banner: null,
+        speaker: 'companion',
+        text: "Ten animals. Ten modes. Any language. Any voice. No screen, no camera. Pick your companion above and try it yourself.",
         pause: 0
     }
 ];
@@ -2339,7 +2372,7 @@ async function startShowcaseDemo() {
     heroImg.src = char.img;
     heroImg.alt = SHOWCASE_NAME;
     charNameEl.textContent = SHOWCASE_NAME;
-    charMeaningEl.textContent = 'Dekan the Dolphin — Product Demo';
+    charMeaningEl.textContent = 'Dekan the Octopus — Product Demo';
 
     // Disable buttons during demo
     document.getElementById('showcase-demo-btn').disabled = true;
@@ -2380,10 +2413,15 @@ async function runShowcaseStep() {
     // Set mode for visual
     if (step.mode) currentMode = step.mode;
 
-    // Show text + speak
-    addMessage('companion', step.text);
-    conversationHistory.push({role: 'assistant', content: step.text});
-    await speakText(step.text);
+    // Show text — user lines appear as user bubbles (no TTS), companion lines get spoken
+    if (step.speaker === 'user') {
+        addMessage('user', step.text);
+        conversationHistory.push({role: 'user', content: step.text});
+    } else {
+        addMessage('companion', step.text);
+        conversationHistory.push({role: 'assistant', content: step.text});
+        await speakText(step.text);
+    }
 
     if (!showcaseRunning) return;
 
