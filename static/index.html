@@ -1374,8 +1374,7 @@
                 </div>
             </div>
 
-            <!-- Stop / Kill Switch -->
-            <button id="stop-btn" class="stop-btn" onclick="killAllAudio()" title="Stop all audio">&#x23F9;</button>
+            <!-- Stop button moved to nav row below -->
 
             <!-- Transcript -->
             <div id="transcript" class="transcript">
@@ -1397,6 +1396,9 @@
                 <button class="nav-btn secondary" onclick="goToStep(1)">Change Companion</button>
                 <button class="nav-btn demo-btn" onclick="startShowcaseDemo()" id="showcase-demo-btn" style="background:linear-gradient(135deg,#1a6b4a,#2d9a6e); color:#fff; border:none;">&#x1F3AC; Watch Demo</button>
                 <button class="nav-btn primary" onclick="goToStep(3)">Explore Modes</button>
+            </div>
+            <div style="text-align:center; margin-top:10px;">
+                <button id="kill-btn" onclick="killAllAudio()" style="background:rgba(196,30,58,0.15); border:1.5px solid rgba(196,30,58,0.4); color:#C41E3A; padding:8px 24px; border-radius:10px; font-family:'Nunito',sans-serif; font-size:0.8rem; font-weight:700; cursor:pointer; letter-spacing:0.5px; transition:all 0.3s;">&#x23F9; Stop Everything</button>
             </div>
         </div>
     </div>
@@ -1970,41 +1972,19 @@ function initTalkStep() {
     // Hide text input by default
     document.getElementById('input-row').classList.remove('visible');
 
-    // Auto-start introduction if first time meeting this companion
-    if (!introducedCompanions.has(currentCharacter)) {
-        introducedCompanions.add(currentCharacter);
-        isActive = true;
-        demoRunning = false;
-        demoCompleted = true;
-        conversationHistory = [];
-        currentMode = 'introduction';
-        sessionLog.modesActivated.add('Introduction');
-
-        const banner = document.getElementById('mode-banner');
-        const bannerText = document.getElementById('mode-banner-text');
-        bannerText.textContent = 'Meeting ' + char.name;
-        banner.classList.add('visible');
-
-        const introGreeting = getIntroGreeting();
-        transcriptEl.innerHTML = '';
-        addMessage('companion', introGreeting);
-        conversationHistory.push({role: 'assistant', content: introGreeting});
-        speakText(introGreeting);
-        setState('idle');
-    } else {
-        // Already met — just show idle state
-        isActive = false;
-        demoRunning = false;
-        conversationHistory = [];
-        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
-        setState('idle');
-    }
+    // Don't auto-play intro — wait for user to click Talk
+    isActive = false;
+    demoRunning = false;
+    conversationHistory = [];
+    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to start talking...</p>';
+    setState('idle');
 }
 
 function buildCompanionSwitcher() {
     const switcher = document.getElementById('companion-switcher');
     switcher.innerHTML = '';
     for (const [key, char] of Object.entries(CHARACTERS)) {
+        if (char.hidden) continue;
         const tab = document.createElement('div');
         tab.className = 'cs-tab' + (key === currentCharacter ? ' active' : '');
         tab.id = 'cs-' + key;
@@ -2648,11 +2628,24 @@ function toggleStoryMode() {
         sessionLog.companionsUsed.add(char.name);
         logEvent('conversation_started', char.name);
 
-        // If not in introduction mode already, start a simple free chat
-        if (currentMode !== 'introduction') {
+        // Play intro greeting if first time
+        if (!introducedCompanions.has(currentCharacter)) {
+            introducedCompanions.add(currentCharacter);
+            currentMode = 'introduction';
+            sessionLog.modesActivated.add('Introduction');
+            const banner = document.getElementById('mode-banner');
+            const bannerText = document.getElementById('mode-banner-text');
+            bannerText.textContent = 'Meeting ' + char.name;
+            banner.classList.add('visible');
+            const introGreeting = getIntroGreeting();
             transcriptEl.innerHTML = '';
-            const welcomeBack = char.customName
-                ? "Hey " + char.customName + "! What would you like to do?"
+            addMessage('companion', introGreeting);
+            conversationHistory = [{role: 'assistant', content: introGreeting}];
+            speakText(introGreeting);
+        } else {
+            transcriptEl.innerHTML = '';
+            const welcomeBack = childName
+                ? "Hey " + childName + "! What would you like to do?"
                 : "Hey! What would you like to do?";
             addMessage('companion', welcomeBack);
             conversationHistory = [{role: 'assistant', content: welcomeBack}];
@@ -3048,6 +3041,24 @@ async function toggleVoiceMode() {
 async function startVoiceMode() {
     if (isListening) stopVoiceInput();
     stopCurrentAudio();
+
+    // Play intro greeting if first time meeting this companion
+    if (!introducedCompanions.has(currentCharacter)) {
+        introducedCompanions.add(currentCharacter);
+        isActive = true;
+        conversationHistory = [];
+        currentMode = 'introduction';
+        sessionLog.modesActivated.add('Introduction');
+        const banner = document.getElementById('mode-banner');
+        const bannerText = document.getElementById('mode-banner-text');
+        bannerText.textContent = 'Meeting ' + CHARACTERS[currentCharacter].name;
+        banner.classList.add('visible');
+        const introGreeting = getIntroGreeting();
+        transcriptEl.innerHTML = '';
+        addMessage('companion', introGreeting);
+        conversationHistory.push({role: 'assistant', content: introGreeting});
+        await speakText(introGreeting);
+    }
 
     setState('thinking');
     statusEl.textContent = 'Connecting voice...';
