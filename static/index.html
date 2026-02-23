@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta http-equiv="Permissions-Policy" content="microphone=(*), autoplay=(*)">
-<meta name="version" content="3.2">
+<meta name="version" content="3.3">
 <meta property="og:title" content="Casa Companion Demo - AI Plush Toy">
 <meta property="og:description" content="Talk to an AI companion right now. Live demo of Casa Companion, launching on Kickstarter May 5, 2026.">
 <meta property="og:type" content="website">
@@ -2921,7 +2921,7 @@ async function startVoiceMode() {
                         type: 'semantic_vad',
                         create_response: true,
                         interrupt_response: true,
-                        eagerness: 'auto'
+                        eagerness: 'low'
                     }
                 }
             };
@@ -3030,9 +3030,13 @@ function handleRTCEvent(msg) {
 
         case 'output_audio_buffer.started':
             setState('speaking');
+            // Mute mic while AI speaks to prevent speaker-to-mic feedback loop
+            if (rtcMicStream) rtcMicStream.getAudioTracks().forEach(t => t.enabled = false);
             break;
 
         case 'output_audio_buffer.stopped':
+            // Re-enable mic after AI finishes speaking
+            if (rtcMicStream) rtcMicStream.getAudioTracks().forEach(t => t.enabled = true);
             setState('idle');
             if (voiceModeActive) {
                 statusEl.textContent = 'Voice mode active. Just talk.';
