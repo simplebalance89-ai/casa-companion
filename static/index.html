@@ -696,14 +696,7 @@
 </head>
 <body>
 
-<!-- Intro Overlay — first interaction prompt -->
-<div id="intro-overlay" class="intro-overlay">
-    <div class="intro-title">Pick your companion</div>
-    <div class="intro-subtitle">Give them a name, or keep the one they came with. Then say hello.</div>
-    <input id="intro-name" class="intro-name-input" type="text" placeholder="Name your companion..." maxlength="20" onkeydown="if(event.key==='Enter')startWithName()">
-    <button class="intro-start-btn" onclick="startWithName()">Let's Go</button>
-    <button class="intro-skip" onclick="skipIntro()">Skip — use default name</button>
-</div>
+<!-- Intro Overlay removed — demo starts immediately on tap -->
 
 <div class="header">
     <h1>Casa Companion</h1>
@@ -981,8 +974,8 @@ const CHARACTERS = {
         name: 'Corvo',
         meaning: 'Corvo means Crow in Italian',
         img: '/static/images/heroes/crow.png',
-        greeting: "Well hello there! *ruffles feathers* I'm Corvo. I've been waiting to meet you. What's your name?",
-        greetTTS: "Well hello there! I'm Corvo. I've been waiting to meet you. What's your name?",
+        greeting: "Well hello there! *ruffles feathers* I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
+        greetTTS: "Well hello there! I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
         icon: '&#x1F426;'
     },
     gufo: {
@@ -1021,8 +1014,8 @@ const CHARACTERS = {
         name: 'Elefante',
         meaning: 'Elefante means Elephant in Italian',
         img: '/static/images/heroes/elephant.png',
-        greeting: "*flaps ears happily* Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Tell me your name so I can remember it forever!",
-        greetTTS: "Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Tell me your name so I can remember it forever!",
+        greeting: "*flaps ears happily* Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
+        greetTTS: "Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
         icon: '&#x1F418;'
     },
     leone: {
@@ -1072,18 +1065,12 @@ function getDisplayName(charKey) {
 }
 
 function startWithName() {
-    const nameInput = document.getElementById('intro-name');
-    const name = (nameInput.value || '').trim();
-    if (name) {
-        setCustomName(currentCharacter, name);
-        charNameEl.textContent = name;
-    }
-    document.getElementById('intro-overlay').classList.add('hidden');
+    // Intro overlay removed — no-op
     toggleStoryMode();
 }
 
 function skipIntro() {
-    document.getElementById('intro-overlay').classList.add('hidden');
+    // Intro overlay removed — no-op
     toggleStoryMode();
 }
 
@@ -1156,8 +1143,8 @@ let voiceResponseCount = 0;  // Track voice mode responses for capabilities intr
 
 async function startGuidedDemo() {
     if (demoCompleted || demoRunning) return;
-    // Don't start demo immediately — wait for the user's first reply (their name)
-    waitingForName = true;
+    // Immediately offer capabilities — no name step
+    showCapabilitiesIntro();
 }
 
 async function showCapabilitiesIntro() {
@@ -1506,62 +1493,6 @@ function checkVoiceTrigger(text) {
 
 async function sendChat(userText) {
     sessionLog.messages++;
-
-    // If waiting for name (first message after greeting), send to AI then show capabilities
-    if (waitingForName && !demoCompleted) {
-        waitingForName = false;
-        addMessage('user', userText);
-        conversationHistory.push({role: 'user', content: userText});
-        setState('thinking');
-        logEvent('message_sent', userText.substring(0, 50));
-
-        const recentHistory = conversationHistory.slice(-10);
-        try {
-            const resp = await fetch('/api/chat-and-speak', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: CHARACTERS[currentCharacter].customName || null })
-            });
-            if (resp.ok) {
-                const buffer = await resp.arrayBuffer();
-                const view = new DataView(buffer);
-                const headerLen = view.getUint32(0);
-                const headerBytes = new Uint8Array(buffer, 4, headerLen);
-                const headerText = new TextDecoder().decode(headerBytes);
-                const data = JSON.parse(headerText.trim());
-                const reply = data.response || "Nice to meet you!";
-                conversationHistory.push({role: 'assistant', content: reply});
-                addMessage('companion', reply);
-                const audioBytes = buffer.slice(4 + headerLen);
-                if (audioBytes.byteLength > 0) {
-                    const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
-                    const url = URL.createObjectURL(blob);
-                    setState('speaking');
-                    const audio = new Audio(url);
-                    currentAudio = audio;
-                    audio.onended = () => {
-                        URL.revokeObjectURL(url);
-                        currentAudio = null;
-                        setState('idle');
-                        // After AI responds to name, show capabilities intro
-                        showCapabilitiesIntro();
-                    };
-                    audio.onerror = () => { currentAudio = null; setState('idle'); showCapabilitiesIntro(); };
-                    audio.play().catch(() => { currentAudio = null; setState('idle'); showCapabilitiesIntro(); });
-                } else {
-                    setState('idle');
-                    showCapabilitiesIntro();
-                }
-            } else {
-                setState('idle');
-                showCapabilitiesIntro();
-            }
-        } catch(e) {
-            setState('idle');
-            showCapabilitiesIntro();
-        }
-        return;
-    }
 
     // If guided demo is running, handle demo response first
     if (demoRunning) {
@@ -1952,7 +1883,7 @@ async function startVoiceMode() {
             rtcDC.send(JSON.stringify({
                 type: 'response.create',
                 response: {
-                    instructions: `Greet the user warmly. Introduce yourself as ${char.name}. Explain that "${char.meaning}". Then ask: "Would you like to give me a name, or should we save that for later?" Keep it to 2-3 sentences. Be in-character.`
+                    instructions: `Greet the user warmly and immediately start the experience. Introduce yourself as ${char.name} (${char.meaning}). Then dive right in — ask if they want to hear a story, play a game, learn something, or just chat. Keep it to 2-3 sentences. Be enthusiastic and in-character. Do NOT ask for the user's name.`
                 }
             }));
         };
@@ -2023,9 +1954,9 @@ function handleRTCEvent(msg) {
             aiTranscriptEl = null;
             aiTranscriptBuffer = '';
 
-            // After greeting (response 1) + name reply (response 2), inject capabilities intro
+            // After initial greeting (response 1), inject capabilities intro
             voiceResponseCount++;
-            if (voiceResponseCount === 2 && !demoCompleted && voiceModeActive && rtcDC && rtcDC.readyState === 'open') {
+            if (voiceResponseCount === 1 && !demoCompleted && voiceModeActive && rtcDC && rtcDC.readyState === 'open') {
                 demoCompleted = true;
                 setTimeout(() => {
                     const char = CHARACTERS[currentCharacter];
