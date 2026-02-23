@@ -794,7 +794,72 @@ function addMessage(who, text) {
     transcriptEl.scrollTop = transcriptEl.scrollHeight;
 }
 
+// Voice triggers — match spoken phrases to modes
+const VOICE_TRIGGERS = {
+    'story time': 'story_time',
+    'tell me a story': 'story_time',
+    'storytime': 'story_time',
+    'calm and breathe': 'calm_breathe',
+    'calm & breathe': 'calm_breathe',
+    'breathing': 'calm_breathe',
+    'calm down': 'calm_breathe',
+    'breathe': 'calm_breathe',
+    'relax': 'calm_breathe',
+    'stem sparks': 'stem_sparks',
+    'stem': 'stem_sparks',
+    'science': 'stem_sparks',
+    'did you know': 'stem_sparks',
+    'music and rhythm': 'music_rhythm',
+    'music & rhythm': 'music_rhythm',
+    'music': 'music_rhythm',
+    'rhythm': 'music_rhythm',
+    'sing': 'music_rhythm',
+    'let\'s sing': 'music_rhythm',
+    'geography': 'geography',
+    'travel': 'geography',
+    'world': 'geography',
+    'explore the world': 'geography',
+    'italian': 'italian',
+    'speak italian': 'italian',
+    'teach me italian': 'italian',
+    'spanish': 'spanish',
+    'speak spanish': 'spanish',
+    'teach me spanish': 'spanish',
+    'coding': 'coding',
+    'code': 'coding',
+    'programming': 'coding',
+    'teach me coding': 'coding',
+    'exit mode': null,
+    'stop mode': null,
+    'go back': null,
+    'free talk': null,
+};
+
+function checkVoiceTrigger(text) {
+    const lower = text.toLowerCase().trim();
+    for (const [trigger, mode] of Object.entries(VOICE_TRIGGERS)) {
+        if (lower === trigger || lower.startsWith(trigger + ' ') || lower.endsWith(' ' + trigger)) {
+            return { matched: true, mode: mode };
+        }
+    }
+    return { matched: false };
+}
+
 async function sendChat(userText) {
+    // Check for voice-activated mode triggers
+    const trigger = checkVoiceTrigger(userText);
+    if (trigger.matched) {
+        if (trigger.mode === null) {
+            // Exit mode command
+            addMessage('user', userText);
+            exitMode();
+            return;
+        }
+        addMessage('user', userText);
+        activateMode(trigger.mode);
+        return;
+    }
+
     addMessage('user', userText);
     conversationHistory.push({role: 'user', content: userText});
     setState('thinking');
