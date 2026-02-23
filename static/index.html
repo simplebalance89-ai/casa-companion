@@ -3124,7 +3124,7 @@ async function startVoiceMode() {
                         type: 'semantic_vad',
                         create_response: true,
                         interrupt_response: true,
-                        eagerness: 'low'
+                        eagerness: 'medium'
                     }
                 }
             };
@@ -3234,13 +3234,10 @@ function handleRTCEvent(msg) {
 
         case 'output_audio_buffer.started':
             setState('speaking');
-            // Mute mic while AI speaks to prevent speaker-to-mic feedback loop
-            if (rtcMicStream) rtcMicStream.getAudioTracks().forEach(t => t.enabled = false);
+            // Mic stays live — semantic VAD handles interrupt detection
             break;
 
         case 'output_audio_buffer.stopped':
-            // Re-enable mic after AI finishes speaking
-            if (rtcMicStream) rtcMicStream.getAudioTracks().forEach(t => t.enabled = true);
             setState('idle');
             if (voiceModeActive) {
                 statusEl.textContent = 'Voice mode active. Just talk.';
