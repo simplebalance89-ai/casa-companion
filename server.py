@@ -20,6 +20,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_permissions_policy(request, call_next):
+    response = await call_next(request)
+    response.headers["Permissions-Policy"] = "microphone=(*), autoplay=(*), camera=()"
+    return response
+
 # ---------------------------------------------------------------------------
 # Azure config
 # ---------------------------------------------------------------------------
