@@ -1305,8 +1305,8 @@
                 <div class="mp-item"><span class="mp-icon">&#x1F52C;</span><span class="mp-label">STEM Sparks</span></div>
                 <div class="mp-item"><span class="mp-icon">&#x1F3B5;</span><span class="mp-label">Music & Rhythm</span></div>
                 <div class="mp-item"><span class="mp-icon">&#x1F30E;</span><span class="mp-label">Geography</span></div>
-                <div class="mp-item"><span class="mp-icon">&#x1F1EE;&#x1F1F9;</span><span class="mp-label">Italian</span></div>
-                <div class="mp-item"><span class="mp-icon">&#x1F1F2;&#x1F1FD;</span><span class="mp-label">Spanish</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F310;</span><span class="mp-label">All Languages</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F4DD;</span><span class="mp-label">Homework</span></div>
                 <div class="mp-item"><span class="mp-icon">&#x1F916;</span><span class="mp-label">Coding</span></div>
                 <div class="mp-item"><span class="mp-icon">&#x1F393;</span><span class="mp-label">Teaching</span></div>
                 <div class="mp-item"><span class="mp-icon">&#x1F3C6;</span><span class="mp-label">Milestones</span></div>
@@ -1432,15 +1432,15 @@
                 <div class="label">Geography</div>
                 <div class="mode-desc">Explore countries, landmarks, and cultures around the world</div>
             </div>
-            <div class="learning-card" onclick="activateModeFromStep3('italian')" id="mode-italian">
-                <div class="icon">&#x1F1EE;&#x1F1F9;</div>
-                <div class="label">Italian</div>
-                <div class="mode-desc">Learn colors, animals, food, and phrases in Italian</div>
+            <div class="learning-card" onclick="activateModeFromStep3('languages')" id="mode-languages">
+                <div class="icon">&#x1F310;</div>
+                <div class="label">All Languages</div>
+                <div class="mode-desc">Learn any language — Italian, Spanish, French, Japanese, and more</div>
             </div>
-            <div class="learning-card" onclick="activateModeFromStep3('spanish')" id="mode-spanish">
-                <div class="icon">&#x1F1F2;&#x1F1FD;</div>
-                <div class="label">Spanish</div>
-                <div class="mode-desc">Learn colors, animals, food, and phrases in Spanish</div>
+            <div class="learning-card" onclick="activateModeFromStep3('homework')" id="mode-homework">
+                <div class="icon">&#x1F4DD;</div>
+                <div class="label">Homework Helper</div>
+                <div class="mode-desc">AI-guided homework prep — math, reading, spelling, science</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('coding')" id="mode-coding">
                 <div class="icon">&#x1F916;</div>
@@ -2128,8 +2128,8 @@ const MODE_NAMES = {
     stem_sparks: 'STEM Sparks',
     music_rhythm: 'Music & Rhythm',
     geography: 'Geography',
-    italian: 'Italian',
-    spanish: 'Spanish',
+    languages: 'All Languages',
+    homework: 'Homework Helper',
     coding: 'Coding',
     teaching: 'Teaching Mode',
     milestones: 'Milestones'
@@ -2147,8 +2147,8 @@ const MODE_GREETINGS = {
     stem_sparks: "STEM Sparks! Ready? How many bones do you think a baby has, more than a grown-up or fewer? Take a guess!",
     music_rhythm: "Music time! Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
     geography: "Let's go on a world adventure! Where should we fly to first? Pyramids in Egypt, rainforest in Brazil, or snow in Antarctica?",
-    italian: "Ciao! Let's learn some Italian! Can you say ciao? That means hello! What would you like to learn, colors, animals, or food?",
-    spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! What should we learn, colors, animals, or food?",
+    languages: "Language time! I can teach you ANY language. Italian, Spanish, French, Japanese, Mandarin, Arabic, German, Korean... What language would you like to learn?",
+    homework: "Homework Helper! What subject are you working on? Math, reading, spelling, science? Tell me what you need help with and we'll work through it together!",
     coding: "Coding time! When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
     teaching: "Teaching Mode! What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
     milestones: "Let's see how far you've come! What have you been learning lately? Tell me something you're proud of!"
@@ -2177,8 +2177,8 @@ const DEMO_STEPS = [
     { mode: 'stem_sparks', teaser: "I know cool science facts! Did you know octopuses have three hearts? Say 'Science' for more!" },
     { mode: 'music_rhythm', teaser: "I love music! Let's make rhythm together. Clap clap STOMP! Say 'Music' to jam with me." },
     { mode: 'geography', teaser: "I can take you anywhere in the world! Egypt, Japan, Brazil... Say 'Geography' to explore!" },
-    { mode: 'italian', teaser: "I can teach you Italian! Ciao means hello! Say 'Italian' to learn more." },
-    { mode: 'spanish', teaser: "I can teach you Spanish too! Hola means hello! Say 'Spanish' to start." },
+    { mode: 'languages', teaser: "I can teach you ANY language! Italian, Spanish, French, Japanese... Say 'Languages' to pick one!" },
+    { mode: 'homework', teaser: "I can help with homework! Math, reading, spelling... Say 'Homework' to get started." },
     { mode: 'coding', teaser: "I can teach you how to think like a coder! Say 'Coding' to try." },
     { mode: 'teaching', teaser: "I can run a real lesson! Colors, numbers, letters... Say 'Teaching' to learn." }
 ];
