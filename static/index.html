@@ -1526,6 +1526,7 @@
                     <div class="survey-progress-dot"></div>
                     <div class="survey-progress-dot"></div>
                     <div class="survey-progress-dot"></div>
+                    <div class="survey-progress-dot"></div>
                 </div>
 
                 <!-- Step 1: Email -->
@@ -1588,7 +1589,18 @@
                     </div>
                     <div class="survey-nav">
                         <button class="survey-btn-back" onclick="surveyGoTo(2)">Back</button>
-                        <button class="survey-btn-submit" id="survey-submit" onclick="submitSurvey()" disabled>Unlock My Child's Modes</button>
+                        <button class="survey-btn-next" id="priority-next" onclick="surveyGoTo(4)" disabled>Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 5: Open Feedback -->
+                <div class="survey-step" id="survey-step-4">
+                    <div class="survey-question">Tell us what you'd love to see!</div>
+                    <p style="font-size:0.75rem; color:#888; margin-bottom:12px; line-height:1.4;">What animals would you want? What should your child learn? Any features or ideas? We're building this for you.</p>
+                    <textarea id="survey-feedback" rows="4" placeholder="I'd love a penguin companion that teaches math..." style="width:100%; padding:12px 16px; border-radius:16px; border:2px solid rgba(212,160,23,0.25); background:rgba(255,255,255,0.04); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:0.85rem; resize:vertical; outline:none;"></textarea>
+                    <div class="survey-nav" style="margin-top:14px;">
+                        <button class="survey-btn-back" onclick="surveyGoTo(3)">Back</button>
+                        <button class="survey-btn-submit" id="survey-submit" onclick="submitSurvey()">Unlock My Child's Modes</button>
                     </div>
                 </div>
             </div>
@@ -2049,7 +2061,7 @@ function toggleChip(chip) {
     if (group.id === 'interest-options') {
         document.getElementById('interest-next').disabled = !hasSelection;
     } else if (group.id === 'priority-options') {
-        document.getElementById('survey-submit').disabled = !hasSelection;
+        document.getElementById('priority-next').disabled = !hasSelection;
     }
 }
 
@@ -2060,6 +2072,7 @@ function getSelectedValues(groupId) {
 async function submitSurvey() {
     surveyData.interests = getSelectedValues('interest-options');
     surveyData.priorities = getSelectedValues('priority-options');
+    surveyData.feedback = (document.getElementById('survey-feedback').value || '').trim();
 
     const btn = document.getElementById('survey-submit');
     btn.disabled = true;
