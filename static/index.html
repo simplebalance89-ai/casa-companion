@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2.1">
+<meta name="version" content="2.3">
 <title>Casa Companion — Meet the Family</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -748,6 +748,10 @@
             <div class="icon">&#x1F393;</div>
             <div class="label">Teaching</div>
         </div>
+        <div class="learning-card" onclick="activateMode('milestones')" id="mode-milestones">
+            <div class="icon">&#x1F3C6;</div>
+            <div class="label">Milestones</div>
+        </div>
         <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
             <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
             <div class="label">Parent Mode</div>
@@ -960,7 +964,8 @@ const MODE_NAMES = {
     italian: 'Italian',
     spanish: 'Spanish',
     coding: 'Coding',
-    teaching: 'Teaching Mode'
+    teaching: 'Teaching Mode',
+    milestones: 'Milestones'
 };
 
 const MODE_GREETINGS = {
@@ -972,7 +977,8 @@ const MODE_GREETINGS = {
     italian: "Ciao! Let's learn some Italian together! Can you say ciao? That means hello! Bravissimo! What would you like to learn. colors, animals, or food?",
     spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! \u00a1Muy bien! What should we learn. colors, animals, or food?",
     coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
-    teaching: "Teaching Mode! I'm ready to teach you something new. What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!"
+    teaching: "Teaching Mode! I'm ready to teach you something new. What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
+    milestones: "Let's see how far you've come! What have you been learning lately? Tell me something you're proud of!"
 };
 
 let mediaRecorder = null;
@@ -1007,13 +1013,19 @@ const DEMO_STEPS = [
 let demoRunning = false;
 let demoStepIndex = 0;
 
+let waitingForName = false;
+
 async function startGuidedDemo() {
     if (demoCompleted || demoRunning) return;
+    // Don't start demo immediately — wait for the user's first reply (their name)
+    waitingForName = true;
+}
+
+async function showCapabilitiesIntro() {
     demoRunning = true;
     demoStepIndex = 0;
-
     const char = CHARACTERS[currentCharacter];
-    const introText = "Would you like me to show you what I can do? Say 'yes' or just start talking!";
+    const introText = "I can do SO many things! Would you like me to show you? Say 'yes' and I'll give you a quick tour, or just tell me what you want to do!";
     addMessage('companion', introText);
     conversationHistory.push({role: 'assistant', content: introText});
     await speakText(introText);
@@ -1072,6 +1084,12 @@ function activateMode(modeKey) {
         exitMode();
         return;
     }
+
+    // End voice mode and stop any playing audio first
+    if (voiceModeActive) endVoiceMode();
+    stopCurrentAudio();
+    if (isListening) stopVoiceInput();
+
     currentMode = modeKey;
     sessionLog.modesActivated.add(MODE_NAMES[modeKey] || modeKey);
     logEvent('mode_activated', MODE_NAMES[modeKey] || modeKey);
@@ -1091,6 +1109,7 @@ function activateMode(modeKey) {
     conversationHistory = [];
     isActive = true;
     demoRunning = false;
+    demoCompleted = true;
     transcriptEl.innerHTML = '';
 
     // Send mode greeting from the character
@@ -1171,6 +1190,11 @@ function switchAnimal(key) {
     if (key === currentCharacter && !isActive) {
         // Same tab, not active
     } else if (key !== currentCharacter) {
+        // End everything from previous character
+        stopCurrentAudio();
+        if (voiceModeActive) endVoiceMode();
+        if (isListening) stopVoiceInput();
+
         currentCharacter = key;
         const char = CHARACTERS[key];
         sessionLog.companionsUsed.add(char.name);
@@ -1200,8 +1224,6 @@ function switchAnimal(key) {
         }
         setState('idle');
         storyLabelEl.textContent = 'Tap to talk';
-
-        if (isListening) stopVoiceInput();
         storyBtn.innerHTML = '&#x1F3A4;';
     }
 }
@@ -1299,6 +1321,9 @@ const VOICE_TRIGGERS = {
     'teaching mode': 'teaching',
     'lesson': 'teaching',
     'teach me': 'teaching',
+    'milestones': 'milestones',
+    'milestone': 'milestones',
+    'my progress': 'milestones',
     'exit mode': null,
     'stop mode': null,
     'go back': null,
@@ -1317,6 +1342,62 @@ function checkVoiceTrigger(text) {
 
 async function sendChat(userText) {
     sessionLog.messages++;
+
+    // If waiting for name (first message after greeting), send to AI then show capabilities
+    if (waitingForName && !demoCompleted) {
+        waitingForName = false;
+        addMessage('user', userText);
+        conversationHistory.push({role: 'user', content: userText});
+        setState('thinking');
+        logEvent('message_sent', userText.substring(0, 50));
+
+        const recentHistory = conversationHistory.slice(-10);
+        try {
+            const resp = await fetch('/api/chat-and-speak', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode })
+            });
+            if (resp.ok) {
+                const buffer = await resp.arrayBuffer();
+                const view = new DataView(buffer);
+                const headerLen = view.getUint32(0);
+                const headerBytes = new Uint8Array(buffer, 4, headerLen);
+                const headerText = new TextDecoder().decode(headerBytes);
+                const data = JSON.parse(headerText.trim());
+                const reply = data.response || "Nice to meet you!";
+                conversationHistory.push({role: 'assistant', content: reply});
+                addMessage('companion', reply);
+                const audioBytes = buffer.slice(4 + headerLen);
+                if (audioBytes.byteLength > 0) {
+                    const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
+                    const url = URL.createObjectURL(blob);
+                    setState('speaking');
+                    const audio = new Audio(url);
+                    currentAudio = audio;
+                    audio.onended = () => {
+                        URL.revokeObjectURL(url);
+                        currentAudio = null;
+                        setState('idle');
+                        // After AI responds to name, show capabilities intro
+                        showCapabilitiesIntro();
+                    };
+                    audio.onerror = () => { currentAudio = null; setState('idle'); showCapabilitiesIntro(); };
+                    audio.play().catch(() => { currentAudio = null; setState('idle'); showCapabilitiesIntro(); });
+                } else {
+                    setState('idle');
+                    showCapabilitiesIntro();
+                }
+            } else {
+                setState('idle');
+                showCapabilitiesIntro();
+            }
+        } catch(e) {
+            setState('idle');
+            showCapabilitiesIntro();
+        }
+        return;
+    }
 
     // If guided demo is running, handle demo response first
     if (demoRunning) {
@@ -1388,15 +1469,17 @@ async function sendChat(userText) {
             const url = URL.createObjectURL(blob);
             setState('speaking');
             const audio = new Audio(url);
+            currentAudio = audio;
             audio.onended = () => {
                 URL.revokeObjectURL(url);
+                currentAudio = null;
                 setState('idle');
                 if (isActive) {
                     setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
                 }
             };
-            audio.onerror = () => { setState('idle'); };
-            audio.play().catch(() => { setState('idle'); });
+            audio.onerror = () => { currentAudio = null; setState('idle'); };
+            audio.play().catch(() => { currentAudio = null; setState('idle'); });
         } else {
             setState('idle');
         }
@@ -1406,28 +1489,41 @@ async function sendChat(userText) {
     }
 }
 
+let currentAudio = null;
+
+function stopCurrentAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+        currentAudio = null;
+    }
+}
+
 function speakText(text) {
+    stopCurrentAudio();
     setState('speaking');
     return fetch('/api/tts', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text: text})
+        body: JSON.stringify({text: text, character: currentCharacter})
     }).then(resp => {
         if (resp.ok) {
             return resp.blob().then(blob => {
                 return new Promise(resolve => {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
+                    currentAudio = audio;
                     audio.onended = () => {
                         URL.revokeObjectURL(url);
+                        currentAudio = null;
                         setState('idle');
                         if (isActive && !demoRunning) {
                             setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
                         }
                         resolve();
                     };
-                    audio.onerror = () => { setState('idle'); resolve(); };
-                    audio.play().catch(() => { setState('idle'); resolve(); });
+                    audio.onerror = () => { currentAudio = null; setState('idle'); resolve(); };
+                    audio.play().catch(() => { currentAudio = null; setState('idle'); resolve(); });
                 });
             });
         } else {

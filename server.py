@@ -372,6 +372,23 @@ MODE_PROMPTS = {
             "Age appropriate (4-8). Keep it playful. Stay in your animal character."
         ),
     },
+    "milestones": {
+        "name": "Milestones",
+        "icon": "\U0001F3C6",
+        "prompt": (
+            "\n\n--- MILESTONES MODE ---\n"
+            "You are now in Milestones mode. Help the child celebrate and track their learning achievements. "
+            "Start by asking what they've learned or done recently that they're proud of.\n"
+            "Activities:\n"
+            "- Review what modes they've tried: 'You've been learning Italian! Can you remember how to say hello?'\n"
+            "- Celebrate progress: 'You're getting so good at this! Remember when we first started?'\n"
+            "- Set fun goals: 'Want to try learning 5 new words today? I bet you can!'\n"
+            "- Recap sessions: 'Today we explored geography and coding! You're a world-traveling coder!'\n"
+            "Keep it celebratory and encouraging. Make the child feel proud of what they've accomplished. "
+            "Reference specific things from the conversation when possible. "
+            "Stay in your animal character."
+        ),
+    },
     "teaching": {
         "name": "Teaching Mode",
         "icon": "\U0001F393",
@@ -412,6 +429,7 @@ class ChatResponse(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
+    character: Optional[str] = "corvo"
 
 class VoiceTokenRequest(BaseModel):
     character: Optional[str] = "corvo"
@@ -496,6 +514,10 @@ async def tts(request: TTSRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text field must not be empty.")
 
+    char_key = (request.character or "corvo").lower()
+    char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
+    tts_voice = char_data.get("realtime_voice", "ash")
+
     url = (
         f"{AZURE_BASE}/openai/deployments/{TTS_DEPLOYMENT}"
         f"/audio/speech?api-version={TTS_API_VERSION}"
@@ -503,7 +525,7 @@ async def tts(request: TTSRequest):
 
     payload = {
         "model": "gpt-4o-mini-tts",
-        "voice": "nova",
+        "voice": tts_voice,
         "input": request.text,
     }
 
@@ -619,9 +641,10 @@ async def chat_and_speak(request: ChatRequest):
                 f"{AZURE_BASE}/openai/deployments/{TTS_DEPLOYMENT}"
                 f"/audio/speech?api-version={TTS_API_VERSION}"
             )
+            tts_voice = char_data.get("realtime_voice", "ash")
             tts_resp = await client.post(
                 tts_url,
-                json={"model": "gpt-4o-mini-tts", "voice": "nova", "input": reply},
+                json={"model": "gpt-4o-mini-tts", "voice": tts_voice, "input": reply},
                 headers=headers,
                 timeout=60.0,
             )
