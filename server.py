@@ -30,6 +30,8 @@ AZURE_BASE = "https://pwgcerp-9302-resource.openai.azure.com"
 CHAT_DEPLOYMENT = "gpt-4o"
 CHAT_API_VERSION = "2024-12-01-preview"
 
+REALTIME_DEPLOYMENT = "gpt-4o-realtime"
+
 TTS_DEPLOYMENT = "gpt-4o-mini-tts"
 TTS_API_VERSION = "2025-04-01-preview"
 
@@ -41,6 +43,7 @@ CHARACTER_PROMPTS = {
         "name": "Corvo",
         "meaning": "Corvo means Crow in Italian",
         "voice": "nova",
+        "realtime_voice": "ash",
         "prompt": """You are Corvo, a wise and playful crow companion from Casa Companion. You are a soft, premium plush toy with warm amber glowing eyes and iridescent black feathers. You were made by a family in California who believes every child deserves a companion that listens, tells stories, and grows with them.
 
 Your personality:
@@ -59,6 +62,7 @@ For this DEMO, you're talking to ADULTS who are potential Kickstarter backers. S
         "name": "Gufo",
         "meaning": "Gufo means Owl in Italian",
         "voice": "nova",
+        "realtime_voice": "sage",
         "prompt": """You are Gufo, a gentle and wise owl companion from Casa Companion. You are a soft, round plush owl with big golden eyes that glow warmly in the dark. You love bedtime, stargazing, and quiet wisdom.
 
 Your personality:
@@ -75,6 +79,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Orsetto",
         "meaning": "Orsetto means Little Bear in Italian",
         "voice": "nova",
+        "realtime_voice": "coral",
         "prompt": """You are Orsetto, a brave and cuddly little bear companion from Casa Companion. You are a soft, huggable plush bear cub with warm brown fur and a big heart. You love adventures, honey, and giving the biggest hugs.
 
 Your personality:
@@ -92,6 +97,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Volpe",
         "meaning": "Volpe means Fox in Italian",
         "voice": "nova",
+        "realtime_voice": "verse",
         "prompt": """You are Volpe, a clever and curious fox companion from Casa Companion. You are a sleek, soft plush fox with bright amber eyes and a fluffy tail. You love puzzles, riddles, and figuring things out.
 
 Your personality:
@@ -108,6 +114,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Coniglio",
         "meaning": "Coniglio means Bunny in Italian",
         "voice": "nova",
+        "realtime_voice": "shimmer",
         "prompt": """You are Coniglio, a sweet and gentle bunny companion from Casa Companion. You are a soft, floppy-eared plush bunny with big gentle eyes. You love music, dancing, hopping, and making friends.
 
 Your personality:
@@ -142,6 +149,9 @@ class ChatResponse(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
+
+class VoiceTokenRequest(BaseModel):
+    character: Optional[str] = "corvo"
 
 # ---------------------------------------------------------------------------
 # Static file serving
@@ -362,6 +372,60 @@ async def chat_and_speak(request: ChatRequest):
         raise HTTPException(status_code=e.response.status_code, detail=f"Azure error: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat+speak failed: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# POST /api/voice/token  (ephemeral token for WebRTC realtime voice)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/voice/token")
+async def voice_token(request: VoiceTokenRequest):
+    if not AZURE_API_KEY:
+        raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
+
+    char_key = (request.character or "corvo").lower()
+    char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
+    system_prompt = char_data["prompt"]
+    voice = char_data.get("realtime_voice", "ash")
+
+    url = f"{AZURE_BASE}/openai/v1/realtime/client_secrets"
+
+    headers = {
+        "api-key": AZURE_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        "session": {
+            "type": "realtime",
+            "model": REALTIME_DEPLOYMENT,
+            "instructions": system_prompt,
+            "audio": {
+                "output": {
+                    "voice": voice,
+                }
+            },
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "token": data["value"],
+                "expires_at": data.get("expires_at"),
+                "voice": voice,
+                "character": char_key,
+            }
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(
+            status_code=e.response.status_code,
+            detail=f"Azure realtime token error: {e.response.text}",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Voice token request failed: {str(e)}")
 
 
 # ---------------------------------------------------------------------------

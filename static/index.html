@@ -352,6 +352,73 @@
         .feature-pill { font-size: 0.65rem; padding: 5px 10px; }
     }
 
+    /* Voice Mode button */
+    .voice-mode-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(212,160,23,0.3);
+        background: rgba(212,160,23,0.08);
+        color: #D4A017;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 6px auto;
+    }
+    .voice-mode-btn:hover {
+        background: rgba(212,160,23,0.18);
+        border-color: rgba(212,160,23,0.6);
+    }
+    .voice-mode-btn.active {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        border-color: transparent;
+        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+    }
+    .voice-mode-btn .vm-icon {
+        font-size: 1rem;
+    }
+
+    .end-voice-btn {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(220,60,60,0.4);
+        background: rgba(220,60,60,0.1);
+        color: #DC3C3C;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 4px auto;
+    }
+    .end-voice-btn:hover {
+        background: rgba(220,60,60,0.2);
+    }
+
+    .voice-controls {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        margin: 4px auto;
+    }
+
+    /* Hide tap-to-talk controls in voice mode */
+    body.voice-mode-active .story-btn,
+    body.voice-mode-active .story-label { display: none; }
+
     @media (min-width: 900px) {
         .hero-container { width: 340px; height: 340px; }
     }
@@ -416,9 +483,19 @@
         <div class="feature-pill"><span class="emoji">&#x1F512;</span>COPPA Safe</div>
     </div>
 
-    <!-- Story Mode mic -->
+    <!-- Story Mode mic (tap-to-talk fallback) -->
     <button id="story-btn" class="story-btn" onclick="toggleStoryMode()">&#x1F3A4;</button>
     <div id="story-label" class="story-label">Click for Story Mode</div>
+
+    <!-- Voice Mode (WebRTC realtime) -->
+    <div class="voice-controls">
+        <button id="voice-mode-btn" class="voice-mode-btn" onclick="toggleVoiceMode()">
+            <span class="vm-icon">&#x1F50A;</span> Voice Mode
+        </button>
+        <button id="end-voice-btn" class="end-voice-btn" onclick="endVoiceMode()">
+            End Voice
+        </button>
+    </div>
 
     <!-- Transcript -->
     <div id="transcript" class="transcript">
@@ -793,6 +870,243 @@ function stopVoiceInput() {
     isListening = false;
     storyBtn.innerHTML = '&#x1F3A4;';
 }
+
+// =========================================================================
+// WebRTC Realtime Voice Mode
+// =========================================================================
+
+const AZURE_BASE = 'https://pwgcerp-9302-resource.openai.azure.com';
+let voiceModeActive = false;
+let rtcPC = null;
+let rtcDC = null;
+let rtcAudioEl = null;
+let rtcMicStream = null;
+let aiTranscriptBuffer = '';
+let aiTranscriptEl = null;
+
+const voiceModeBtn = document.getElementById('voice-mode-btn');
+const endVoiceBtn = document.getElementById('end-voice-btn');
+
+async function toggleVoiceMode() {
+    if (voiceModeActive) {
+        endVoiceMode();
+        return;
+    }
+    await startVoiceMode();
+}
+
+async function startVoiceMode() {
+    // Stop any tap-to-talk recording
+    if (isListening) stopVoiceInput();
+
+    setState('thinking');
+    statusEl.textContent = 'Connecting voice...';
+
+    try {
+        // 1. Get ephemeral token
+        const tokenResp = await fetch('/api/voice/token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ character: currentCharacter })
+        });
+        if (!tokenResp.ok) {
+            const err = await tokenResp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to get voice token');
+        }
+        const tokenData = await tokenResp.json();
+        const ephemeralToken = tokenData.token;
+
+        // 2. Create RTCPeerConnection
+        rtcPC = new RTCPeerConnection();
+
+        // 3. Set up remote audio playback
+        rtcAudioEl = document.createElement('audio');
+        rtcAudioEl.autoplay = true;
+        document.body.appendChild(rtcAudioEl);
+
+        rtcPC.ontrack = (event) => {
+            if (event.streams.length > 0) {
+                rtcAudioEl.srcObject = event.streams[0];
+            }
+        };
+
+        // 4. Capture mic and add track
+        rtcMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        rtcPC.addTrack(rtcMicStream.getAudioTracks()[0]);
+
+        // 5. Create data channel
+        rtcDC = rtcPC.createDataChannel('realtime-channel');
+
+        // 6. Create offer and set local description
+        const offer = await rtcPC.createOffer();
+        await rtcPC.setLocalDescription(offer);
+
+        // 7. SDP exchange with Azure
+        const sdpResp = await fetch(
+            `${AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on`,
+            {
+                method: 'POST',
+                body: offer.sdp,
+                headers: {
+                    'Authorization': `Bearer ${ephemeralToken}`,
+                    'Content-Type': 'application/sdp'
+                }
+            }
+        );
+        if (!sdpResp.ok) {
+            const errText = await sdpResp.text();
+            throw new Error('SDP exchange failed: ' + errText);
+        }
+
+        const answerSdp = await sdpResp.text();
+        await rtcPC.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+        // 8. Data channel handlers
+        rtcDC.onopen = () => {
+            // Send session.update with VAD config
+            const sessionUpdate = {
+                type: 'session.update',
+                session: {
+                    input_audio_transcription: {
+                        model: 'whisper-1'
+                    },
+                    turn_detection: {
+                        type: 'semantic_vad',
+                        create_response: true,
+                        interrupt_response: true,
+                        eagerness: 'auto'
+                    }
+                }
+            };
+            rtcDC.send(JSON.stringify(sessionUpdate));
+
+            // Voice mode is live
+            voiceModeActive = true;
+            document.body.classList.add('voice-mode-active');
+            voiceModeBtn.classList.add('active');
+            voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Live';
+            endVoiceBtn.style.display = 'flex';
+
+            if (!isActive) {
+                isActive = true;
+                transcriptEl.innerHTML = '';
+                conversationHistory = [];
+            }
+
+            setState('idle');
+            statusEl.textContent = 'Voice mode active. Just talk.';
+        };
+
+        rtcDC.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            handleRTCEvent(msg);
+        };
+
+        rtcDC.onclose = () => {
+            if (voiceModeActive) endVoiceMode();
+        };
+
+        rtcPC.oniceconnectionstatechange = () => {
+            if (rtcPC && (rtcPC.iceConnectionState === 'failed' || rtcPC.iceConnectionState === 'disconnected')) {
+                endVoiceMode();
+                statusEl.textContent = 'Voice connection lost. Try again.';
+            }
+        };
+
+    } catch (err) {
+        console.error('Voice mode error:', err);
+        cleanupRTC();
+        setState('idle');
+        statusEl.textContent = 'Voice mode failed: ' + err.message;
+    }
+}
+
+function handleRTCEvent(msg) {
+    switch (msg.type) {
+        case 'input_audio_buffer.speech_started':
+            setState('listening');
+            // If AI was speaking, it gets interrupted automatically
+            aiTranscriptBuffer = '';
+            aiTranscriptEl = null;
+            break;
+
+        case 'input_audio_buffer.speech_stopped':
+            setState('thinking');
+            break;
+
+        case 'conversation.item.input_audio_transcription.completed':
+            if (msg.transcript && msg.transcript.trim()) {
+                addMessage('user', msg.transcript.trim());
+                conversationHistory.push({ role: 'user', content: msg.transcript.trim() });
+            }
+            break;
+
+        case 'response.output_audio_transcript.delta':
+            if (!aiTranscriptEl) {
+                aiTranscriptBuffer = '';
+                aiTranscriptEl = document.createElement('p');
+                aiTranscriptEl.className = 'companion';
+                const char = CHARACTERS[currentCharacter];
+                aiTranscriptEl.innerHTML = char.icon + ' ';
+                transcriptEl.appendChild(aiTranscriptEl);
+            }
+            aiTranscriptBuffer += msg.delta;
+            const char = CHARACTERS[currentCharacter];
+            aiTranscriptEl.innerHTML = char.icon + ' ' + aiTranscriptBuffer;
+            transcriptEl.scrollTop = transcriptEl.scrollHeight;
+            break;
+
+        case 'response.output_audio_transcript.done':
+            if (msg.transcript) {
+                conversationHistory.push({ role: 'assistant', content: msg.transcript });
+            }
+            aiTranscriptEl = null;
+            aiTranscriptBuffer = '';
+            break;
+
+        case 'output_audio_buffer.started':
+            setState('speaking');
+            break;
+
+        case 'output_audio_buffer.stopped':
+            setState('idle');
+            if (voiceModeActive) {
+                statusEl.textContent = 'Voice mode active. Just talk.';
+            }
+            break;
+
+        case 'error':
+            console.error('Realtime API error:', msg.error);
+            statusEl.textContent = 'Error: ' + (msg.error?.message || 'Unknown');
+            break;
+    }
+}
+
+function endVoiceMode() {
+    voiceModeActive = false;
+    cleanupRTC();
+    document.body.classList.remove('voice-mode-active');
+    voiceModeBtn.classList.remove('active');
+    voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Mode';
+    endVoiceBtn.style.display = 'none';
+    setState('idle');
+}
+
+function cleanupRTC() {
+    if (rtcDC) { try { rtcDC.close(); } catch(e){} rtcDC = null; }
+    if (rtcPC) { try { rtcPC.close(); } catch(e){} rtcPC = null; }
+    if (rtcMicStream) { rtcMicStream.getTracks().forEach(t => t.stop()); rtcMicStream = null; }
+    if (rtcAudioEl) { rtcAudioEl.remove(); rtcAudioEl = null; }
+}
+
+// Override switchAnimal to end voice mode on character switch
+const _origSwitchAnimal = switchAnimal;
+switchAnimal = function(key) {
+    if (voiceModeActive && key !== currentCharacter) {
+        endVoiceMode();
+    }
+    _origSwitchAnimal(key);
+};
 </script>
 </body>
 </html>
