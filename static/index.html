@@ -1298,7 +1298,7 @@
         </div>
         <div id="name-your-companion" style="display:none; text-align:center; padding:12px 0;">
             <label style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#FFE082; display:block; margin-bottom:8px;">Give them a name? <span style="font-size:0.7rem; color:#8A7A5A;">(optional)</span></label>
-            <input type="text" id="custom-name-input" placeholder="e.g. Sparkle, Mr. Crow, Buddy..." maxlength="20" autocomplete="off" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
+            <input type="text" id="custom-name-input" name="companion-nickname-x7q" placeholder="e.g. Sparkle, Mr. Crow, Buddy..." maxlength="20" autocomplete="new-password" data-lpignore="true" data-form-type="other" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
         </div>
         <div class="modes-preview">
             <div class="modes-preview-header">
@@ -1395,6 +1395,7 @@
 
             <div class="step-nav" style="margin-top:12px;">
                 <button class="nav-btn secondary" onclick="goToStep(1)">Change Companion</button>
+                <button class="nav-btn demo-btn" onclick="startShowcaseDemo()" id="showcase-demo-btn" style="background:linear-gradient(135deg,#1a6b4a,#2d9a6e); color:#fff; border:none;">&#x1F3AC; Watch Demo</button>
                 <button class="nav-btn primary" onclick="goToStep(3)">Explore Modes</button>
             </div>
         </div>
@@ -2269,6 +2270,162 @@ function handleDemoResponse(userText) {
 }
 
 // =========================================================================
+// Showcase Demo — "Watch Demo" with Dekan the Dolphin
+// =========================================================================
+const SHOWCASE_CHARACTER = 'delfino';
+const SHOWCASE_NAME = 'Dekan';
+
+const SHOWCASE_SCRIPT = [
+    {
+        mode: null,
+        banner: 'Meet Dekan',
+        text: "Eee eee eee! Hey there! I'm Dekan the Dolphin. I'm one of ten Casa Companions, and I'm about to show you what I can do. Buckle up!",
+        pause: 1500
+    },
+    {
+        mode: 'story_time',
+        banner: 'Story Time',
+        text: "Let's start with a story. Once upon a time, deep in the ocean, a little dolphin found a glowing pearl. 'Should I keep it or share it?' he wondered. In Story Time, YOUR child picks what happens next. They're the hero.",
+        pause: 1500
+    },
+    {
+        mode: 'languages',
+        banner: 'Languages',
+        text: "Now watch this. Ciao, amico! That means hello, friend, in Italian. Hola, amigo! That's Spanish. Bonjour! French. I can teach your child ANY language through play. Grandma speaks Italian? I'll teach them before the next visit.",
+        pause: 1500
+    },
+    {
+        mode: 'calm_breathe',
+        banner: 'Calm & Breathe',
+        text: "OK, let's slow down. Breathe in with me... one... two... three... and out... one... two... three. When your child is anxious, overwhelmed, or can't sleep, I'm right there. No screen. Just a calm voice in the dark.",
+        pause: 1500
+    },
+    {
+        mode: 'stem_sparks',
+        banner: 'STEM Sparks',
+        text: "Pop quiz! How many hearts does an octopus have? Three! And they have blue blood. In STEM mode, I ask questions, drop facts, and make science feel like a game. Curiosity is the whole point.",
+        pause: 1500
+    },
+    {
+        mode: 'homework',
+        banner: 'Homework Helper',
+        text: "What's five plus three? I won't just say eight. I'll say, 'If you have five apples and someone gives you three more, how many do you have now?' I guide, I don't give answers. That's how kids actually learn.",
+        pause: 1500
+    },
+    {
+        mode: 'music_rhythm',
+        banner: 'Music & Rhythm',
+        text: "Let's make some noise! Clap clap STOMP! Clap clap STOMP! Music mode teaches rhythm, singing, and even songwriting. No instruments needed. Just me and your kid making something together.",
+        pause: 1500
+    },
+    {
+        mode: null,
+        banner: 'Voice Cloning',
+        text: "And here's the part that changes everything. Your voice. Grandma's voice. Dad on a business trip. We clone the voice and I speak in it. Bedtime stories in Nonna's voice. Homework help in Dad's voice. Not through a screen. Through me.",
+        pause: 2000
+    },
+    {
+        mode: null,
+        banner: null,
+        text: "That's Casa Companion. Ten animals. Ten learning modes. Any language. Any voice. No screen, no camera, no microtransactions. Coming to Kickstarter May fifth. Pick your companion and try it yourself. Capisce.",
+        pause: 0
+    }
+];
+
+let showcaseRunning = false;
+let showcaseStepIndex = 0;
+
+async function startShowcaseDemo() {
+    if (showcaseRunning) return;
+
+    // Switch to Dekan the Dolphin
+    const prevChar = currentCharacter;
+    currentCharacter = SHOWCASE_CHARACTER;
+    CHARACTERS[SHOWCASE_CHARACTER].customName = SHOWCASE_NAME;
+
+    // Set up the UI
+    const char = CHARACTERS[currentCharacter];
+    heroImg.src = char.img;
+    heroImg.alt = SHOWCASE_NAME;
+    charNameEl.textContent = SHOWCASE_NAME;
+    charMeaningEl.textContent = 'Dekan the Dolphin — Product Demo';
+
+    // Disable buttons during demo
+    document.getElementById('showcase-demo-btn').disabled = true;
+    document.getElementById('showcase-demo-btn').textContent = 'Demo Playing...';
+
+    // Clear transcript
+    transcriptEl.innerHTML = '';
+    conversationHistory = [];
+    showcaseRunning = true;
+    showcaseStepIndex = 0;
+    isActive = true;
+
+    logEvent('showcase_demo_started', SHOWCASE_NAME);
+
+    // Run the script
+    await runShowcaseStep();
+}
+
+async function runShowcaseStep() {
+    if (showcaseStepIndex >= SHOWCASE_SCRIPT.length || !showcaseRunning) {
+        endShowcaseDemo();
+        return;
+    }
+
+    const step = SHOWCASE_SCRIPT[showcaseStepIndex];
+    showcaseStepIndex++;
+
+    // Update mode banner
+    const banner = document.getElementById('mode-banner');
+    const bannerText = document.getElementById('mode-banner-text');
+    if (step.banner) {
+        bannerText.textContent = step.banner;
+        banner.classList.add('visible');
+    } else {
+        banner.classList.remove('visible');
+    }
+
+    // Set mode for visual
+    if (step.mode) currentMode = step.mode;
+
+    // Show text + speak
+    addMessage('companion', step.text);
+    conversationHistory.push({role: 'assistant', content: step.text});
+    await speakText(step.text);
+
+    if (!showcaseRunning) return;
+
+    // Pause between steps
+    if (step.pause > 0) {
+        await new Promise(r => setTimeout(r, step.pause));
+    }
+
+    // Next step
+    if (showcaseRunning) runShowcaseStep();
+}
+
+function endShowcaseDemo() {
+    showcaseRunning = false;
+    showcaseStepIndex = 0;
+    stopCurrentAudio();
+
+    const banner = document.getElementById('mode-banner');
+    banner.classList.remove('visible');
+    currentMode = null;
+
+    // Reset demo button
+    const btn = document.getElementById('showcase-demo-btn');
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F3AC; Watch Demo';
+
+    // Clear custom name so it doesn't stick
+    CHARACTERS[SHOWCASE_CHARACTER].customName = null;
+
+    logEvent('showcase_demo_completed');
+}
+
+// =========================================================================
 // Mode Activation
 // =========================================================================
 function activateMode(modeKey) {
@@ -2709,6 +2866,7 @@ function stopCurrentAudio() {
 
 function killAllAudio() {
     stopCurrentAudio();
+    if (showcaseRunning) endShowcaseDemo();
     if (voiceModeActive) endVoiceMode();
     if (isListening) stopVoiceInput();
     setState('idle');
