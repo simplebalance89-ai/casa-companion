@@ -420,6 +420,45 @@ MODE_PROMPTS = {
 # Request / response models
 # ---------------------------------------------------------------------------
 
+import csv
+import re
+from datetime import datetime, timezone
+
+# ---------------------------------------------------------------------------
+# POST /api/survey — parent survey + email capture
+# ---------------------------------------------------------------------------
+
+SURVEY_FILE = "survey_responses.csv"
+
+class SurveyRequest(BaseModel):
+    email: str
+    age: Optional[str] = ""
+    interests: Optional[List[str]] = []
+    priorities: Optional[List[str]] = []
+
+@app.post("/api/survey")
+async def survey(payload: SurveyRequest):
+    email = payload.email.strip().lower()
+    if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        raise HTTPException(status_code=422, detail="Invalid email address.")
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    interests_str = ",".join(payload.interests or [])
+    priorities_str = ",".join(payload.priorities or [])
+
+    file_exists = os.path.isfile(SURVEY_FILE)
+    with open(SURVEY_FILE, "a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["email", "child_age", "interests", "priorities", "timestamp"])
+        writer.writerow([email, payload.age or "", interests_str, priorities_str, timestamp])
+
+    return {"success": True, "message": "Survey saved. Modes will be tailored at launch."}
+
+# ---------------------------------------------------------------------------
+# Request / response models
+# ---------------------------------------------------------------------------
+
 class Message(BaseModel):
     role: str
     content: str

@@ -953,6 +953,149 @@
         font-size: 0.9rem;
     }
 
+    /* ===== SURVEY ===== */
+    .survey-container {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto 20px;
+    }
+    .survey-intro {
+        font-size: 0.8rem;
+        color: #E0C8A0;
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+    .survey-intro strong { color: #D4A017; }
+    .survey-step {
+        display: none;
+        animation: surveyFadeIn 0.3s ease;
+    }
+    .survey-step.active { display: block; }
+    @keyframes surveyFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .survey-question {
+        font-family: 'Playfair Display', serif;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #FFFEF7;
+    }
+    .survey-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+    .survey-chip {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid rgba(212,160,23,0.25);
+        background: rgba(255,255,255,0.04);
+        color: #E0C8A0;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        user-select: none;
+    }
+    .survey-chip:hover {
+        border-color: rgba(212,160,23,0.5);
+        background: rgba(212,160,23,0.08);
+    }
+    .survey-chip.selected {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.18);
+        color: #D4A017;
+    }
+    .survey-chip .chip-icon { margin-right: 4px; }
+    .survey-nav {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 12px;
+    }
+    .survey-nav button {
+        padding: 10px 24px;
+        border-radius: 24px;
+        border: none;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.85rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .survey-btn-next {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        box-shadow: 0 4px 12px rgba(212,160,23,0.3);
+    }
+    .survey-btn-next:hover { transform: scale(1.03); }
+    .survey-btn-next:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+    }
+    .survey-btn-back {
+        background: rgba(255,255,255,0.06);
+        color: #888;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .survey-btn-submit {
+        background: linear-gradient(135deg, #C41E3A, #9B1B30);
+        color: #FFFEF7;
+        box-shadow: 0 4px 16px rgba(196,30,58,0.3);
+        padding: 12px 32px;
+        font-size: 0.9rem;
+    }
+    .survey-btn-submit:hover { transform: scale(1.03); }
+    .survey-btn-submit:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .survey-progress {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        margin-bottom: 16px;
+    }
+    .survey-progress-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.1);
+        transition: all 0.3s ease;
+    }
+    .survey-progress-dot.active { background: #D4A017; }
+    .survey-progress-dot.done { background: #4CAF50; }
+    .survey-success {
+        display: none;
+        text-align: center;
+        animation: surveyFadeIn 0.4s ease;
+    }
+    .survey-success h3 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.1rem;
+        color: #D4A017;
+        margin-bottom: 8px;
+    }
+    .survey-success p {
+        font-size: 0.8rem;
+        color: #E0C8A0;
+        line-height: 1.5;
+    }
+    .survey-success .unlock-badge {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 8px 20px;
+        border-radius: 20px;
+        background: rgba(76,175,80,0.15);
+        border: 1px solid rgba(76,175,80,0.3);
+        color: #4CAF50;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+
     .cta-actions {
         display: flex;
         gap: 12px;
@@ -1368,11 +1511,89 @@
 
             <div class="cta-kickstarter-badge">Coming to Kickstarter May 5, 2026</div>
 
-            <form class="email-form" id="email-form" onsubmit="handleEmailSubmit(event)">
-                <input type="email" placeholder="your@email.com" required id="email-input">
-                <button type="submit">Notify Me When We Launch</button>
-            </form>
-            <div class="email-success" id="email-success">You're on the list. We'll see you May 5.</div>
+            <!-- SURVEY -->
+            <div class="survey-container" id="survey-container">
+                <p class="survey-intro">
+                    <strong>Complete a quick survey</strong> and we'll unlock <strong>age-appropriate modes</strong> tailored to your child when we launch.
+                </p>
+                <div class="survey-progress" id="survey-progress">
+                    <div class="survey-progress-dot active"></div>
+                    <div class="survey-progress-dot"></div>
+                    <div class="survey-progress-dot"></div>
+                    <div class="survey-progress-dot"></div>
+                </div>
+
+                <!-- Step 1: Email -->
+                <div class="survey-step active" id="survey-step-0">
+                    <div class="survey-question">What's your email?</div>
+                    <form class="email-form" id="email-form" onsubmit="surveyNext(event)" style="margin-bottom:0">
+                        <input type="email" placeholder="your@email.com" required id="survey-email">
+                        <div class="survey-nav">
+                            <button type="submit" class="survey-btn-next">Next</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Step 2: Child's Age -->
+                <div class="survey-step" id="survey-step-1">
+                    <div class="survey-question">How old is your child?</div>
+                    <div class="survey-options" id="age-options">
+                        <div class="survey-chip" data-value="0-1" onclick="selectSingle(this,'age-options')"><span class="chip-icon">👶</span> Under 1</div>
+                        <div class="survey-chip" data-value="1-2" onclick="selectSingle(this,'age-options')"><span class="chip-icon">🧒</span> 1–2</div>
+                        <div class="survey-chip" data-value="3-4" onclick="selectSingle(this,'age-options')"><span class="chip-icon">🎈</span> 3–4</div>
+                        <div class="survey-chip" data-value="5-6" onclick="selectSingle(this,'age-options')"><span class="chip-icon">🎒</span> 5–6</div>
+                        <div class="survey-chip" data-value="7-8" onclick="selectSingle(this,'age-options')"><span class="chip-icon">📚</span> 7–8</div>
+                        <div class="survey-chip" data-value="expecting" onclick="selectSingle(this,'age-options')"><span class="chip-icon">🤰</span> Expecting</div>
+                    </div>
+                    <div class="survey-nav">
+                        <button class="survey-btn-back" onclick="surveyGoTo(0)">Back</button>
+                        <button class="survey-btn-next" id="age-next" onclick="surveyGoTo(2)" disabled>Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Child's Interests (multi-select) -->
+                <div class="survey-step" id="survey-step-2">
+                    <div class="survey-question">What does your child love? <span style="font-size:0.7rem;color:#888;">(pick all that apply)</span></div>
+                    <div class="survey-options" id="interest-options">
+                        <div class="survey-chip" data-value="animals" onclick="toggleChip(this)"><span class="chip-icon">🐾</span> Animals</div>
+                        <div class="survey-chip" data-value="stories" onclick="toggleChip(this)"><span class="chip-icon">📖</span> Stories</div>
+                        <div class="survey-chip" data-value="music" onclick="toggleChip(this)"><span class="chip-icon">🎵</span> Music</div>
+                        <div class="survey-chip" data-value="science" onclick="toggleChip(this)"><span class="chip-icon">🔬</span> Science</div>
+                        <div class="survey-chip" data-value="adventure" onclick="toggleChip(this)"><span class="chip-icon">🗺️</span> Adventure</div>
+                        <div class="survey-chip" data-value="languages" onclick="toggleChip(this)"><span class="chip-icon">🌍</span> Languages</div>
+                        <div class="survey-chip" data-value="art" onclick="toggleChip(this)"><span class="chip-icon">🎨</span> Art & Craft</div>
+                        <div class="survey-chip" data-value="dinosaurs" onclick="toggleChip(this)"><span class="chip-icon">🦕</span> Dinosaurs</div>
+                    </div>
+                    <div class="survey-nav">
+                        <button class="survey-btn-back" onclick="surveyGoTo(1)">Back</button>
+                        <button class="survey-btn-next" id="interest-next" onclick="surveyGoTo(3)" disabled>Next</button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Parent Priorities (multi-select) -->
+                <div class="survey-step" id="survey-step-3">
+                    <div class="survey-question">What matters most to you? <span style="font-size:0.7rem;color:#888;">(pick all that apply)</span></div>
+                    <div class="survey-options" id="priority-options">
+                        <div class="survey-chip" data-value="heritage" onclick="toggleChip(this)"><span class="chip-icon">🏠</span> Heritage Language</div>
+                        <div class="survey-chip" data-value="screen-free" onclick="toggleChip(this)"><span class="chip-icon">📵</span> Screen-Free Play</div>
+                        <div class="survey-chip" data-value="education" onclick="toggleChip(this)"><span class="chip-icon">🎓</span> Early Education</div>
+                        <div class="survey-chip" data-value="bedtime" onclick="toggleChip(this)"><span class="chip-icon">🌙</span> Bedtime Routine</div>
+                        <div class="survey-chip" data-value="creativity" onclick="toggleChip(this)"><span class="chip-icon">✨</span> Creativity</div>
+                        <div class="survey-chip" data-value="safety" onclick="toggleChip(this)"><span class="chip-icon">🔒</span> Privacy & Safety</div>
+                    </div>
+                    <div class="survey-nav">
+                        <button class="survey-btn-back" onclick="surveyGoTo(2)">Back</button>
+                        <button class="survey-btn-submit" id="survey-submit" onclick="submitSurvey()" disabled>Unlock My Child's Modes</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Survey success -->
+            <div class="survey-success" id="survey-success">
+                <h3>You're In!</h3>
+                <p>We'll tailor your child's experience based on their age and interests. Launch day, their companion will be ready.</p>
+                <div class="unlock-badge">Age-appropriate modes unlocked at launch</div>
+            </div>
 
             <div class="cta-actions">
                 <button class="cta-action-btn" onclick="goToStep(1)">Try Another Companion</button>
@@ -1753,14 +1974,84 @@ function buildCtaSummary() {
         sessionLog.modesActivated.size > 0 ? [...sessionLog.modesActivated].join(', ') : 'None yet';
 }
 
-function handleEmailSubmit(e) {
-    e.preventDefault();
-    const email = document.getElementById('email-input').value;
-    // Placeholder: in production this would POST to an email capture endpoint
-    console.log('Email captured:', email);
-    logEvent('email_captured', email);
-    document.getElementById('email-form').style.display = 'none';
-    document.getElementById('email-success').style.display = 'block';
+// ===== SURVEY LOGIC =====
+let surveyCurrentStep = 0;
+const surveyData = { email: '', age: '', interests: [], priorities: [] };
+
+function surveyNext(e) {
+    if (e) e.preventDefault();
+    const email = document.getElementById('survey-email').value.trim();
+    if (!email) return;
+    surveyData.email = email;
+    surveyGoTo(1);
+}
+
+function surveyGoTo(step) {
+    document.querySelectorAll('.survey-step').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('survey-step-' + step);
+    if (target) {
+        target.classList.remove('active');
+        void target.offsetWidth;
+        target.classList.add('active');
+    }
+    surveyCurrentStep = step;
+    // Update progress dots
+    document.querySelectorAll('.survey-progress-dot').forEach((dot, i) => {
+        dot.className = 'survey-progress-dot';
+        if (i < step) dot.classList.add('done');
+        else if (i === step) dot.classList.add('active');
+    });
+}
+
+function selectSingle(chip, groupId) {
+    const group = document.getElementById(groupId);
+    group.querySelectorAll('.survey-chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    if (groupId === 'age-options') {
+        surveyData.age = chip.dataset.value;
+        document.getElementById('age-next').disabled = false;
+    }
+}
+
+function toggleChip(chip) {
+    chip.classList.toggle('selected');
+    // Update next/submit button state based on at least one selection
+    const group = chip.parentElement;
+    const hasSelection = group.querySelector('.selected') !== null;
+    if (group.id === 'interest-options') {
+        document.getElementById('interest-next').disabled = !hasSelection;
+    } else if (group.id === 'priority-options') {
+        document.getElementById('survey-submit').disabled = !hasSelection;
+    }
+}
+
+function getSelectedValues(groupId) {
+    return [...document.querySelectorAll('#' + groupId + ' .survey-chip.selected')].map(c => c.dataset.value);
+}
+
+async function submitSurvey() {
+    surveyData.interests = getSelectedValues('interest-options');
+    surveyData.priorities = getSelectedValues('priority-options');
+
+    const btn = document.getElementById('survey-submit');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        await fetch('/api/survey', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(surveyData)
+        });
+    } catch (e) {
+        console.log('Survey save error (non-blocking):', e);
+    }
+
+    logEvent('survey_completed', surveyData.email);
+
+    // Show success
+    document.getElementById('survey-container').style.display = 'none';
+    document.getElementById('survey-success').style.display = 'block';
 }
 
 function shareDemo() {
