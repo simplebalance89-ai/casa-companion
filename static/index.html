@@ -520,7 +520,8 @@ const CHARACTERS = {
 let currentCharacter = 'corvo';
 let conversationHistory = [];
 let isActive = false;
-let recognition = null;
+let mediaRecorder = null;
+let audioChunks = [];
 let isListening = false;
 let currentState = 'idle';
 
@@ -558,8 +559,9 @@ function switchAnimal(key) {
         setState('idle');
         storyLabelEl.textContent = 'Click for Story Mode';
 
-        // Stop any audio
-        stopVoiceInput();
+        // Stop any recording/audio
+        if (isListening) stopVoiceInput();
+        storyBtn.innerHTML = '&#x1F3A4;';
     }
 }
 
@@ -586,8 +588,10 @@ function toggleStoryMode() {
         conversationHistory = [
             {role: 'assistant', content: char.greeting}
         ];
-        storyLabelEl.textContent = 'Tap to speak';
-    } else {
+        storyLabelEl.textContent = 'Hold to speak';
+    } else if (isListening) {
+        stopVoiceInput();
+    } else if (currentState === 'idle') {
         startVoiceInput();
     }
 }
@@ -640,7 +644,14 @@ async function speakText(text) {
             const blob = await resp.blob();
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
-            audio.onended = () => { URL.revokeObjectURL(url); setState('idle'); };
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+                setState('idle');
+                // Auto-listen after companion finishes speaking
+                if (isActive) {
+                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 600);
+                }
+            };
             audio.onerror = () => { setState('idle'); };
             audio.play().catch(() => { setState('idle'); });
         } else {
@@ -664,57 +675,76 @@ function sendText() {
     sendChat(text);
 }
 
-function startVoiceInput() {
+async function startVoiceInput() {
     if (isListening) { stopVoiceInput(); return; }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        statusEl.textContent = 'Voice not supported. Type instead.';
-        return;
-    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
 
-    recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = 'en-US';
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
 
-    recognition.onstart = () => {
+        mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            if (audioChunks.length === 0) { setState('idle'); return; }
+
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            audioChunks = [];
+
+            setState('thinking');
+            statusEl.textContent = 'Processing voice...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', blob, 'recording.webm');
+                const sttResp = await fetch('/api/stt', { method: 'POST', body: formData });
+
+                if (!sttResp.ok) {
+                    addMessage('companion', 'Sorry, I couldn\'t hear that. Try again or type instead.');
+                    setState('idle');
+                    return;
+                }
+
+                const sttData = await sttResp.json();
+                const transcript = (sttData.text || '').trim();
+
+                if (!transcript) {
+                    addMessage('companion', 'I didn\'t catch that. Could you try again?');
+                    setState('idle');
+                    return;
+                }
+
+                if (!isActive) {
+                    isActive = true;
+                    transcriptEl.innerHTML = '';
+                    conversationHistory = [];
+                }
+                sendChat(transcript);
+            } catch (err) {
+                addMessage('companion', 'Voice processing failed. Try typing instead.');
+                setState('idle');
+            }
+        };
+
+        mediaRecorder.start();
         isListening = true;
         setState('listening');
         storyBtn.innerHTML = '&#x1F534;';
-    };
-
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        isListening = false;
-        storyBtn.innerHTML = '&#x1F3A4;';
-        if (!isActive) {
-            isActive = true;
-            transcriptEl.innerHTML = '';
-            conversationHistory = [];
-        }
-        sendChat(transcript);
-    };
-
-    recognition.onerror = () => {
-        isListening = false;
-        storyBtn.innerHTML = '&#x1F3A4;';
+    } catch (err) {
+        statusEl.textContent = 'Microphone access denied. Please allow mic access or type instead.';
         setState('idle');
-    };
-
-    recognition.onend = () => {
-        isListening = false;
-        storyBtn.innerHTML = '&#x1F3A4;';
-    };
-
-    recognition.start();
+    }
 }
 
 function stopVoiceInput() {
-    if (recognition) { recognition.stop(); recognition = null; }
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
     isListening = false;
     storyBtn.innerHTML = '&#x1F3A4;';
-    if (currentState !== 'idle') setState('idle');
 }
 </script>
 </body>
