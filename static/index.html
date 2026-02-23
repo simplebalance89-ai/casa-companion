@@ -22,6 +22,8 @@
     .header {
         text-align: center;
         padding: 18px 20px 6px;
+        position: relative;
+        width: 100%;
     }
     .header h1 {
         font-family: 'Playfair Display', serif;
@@ -40,11 +42,53 @@
         margin-top: 2px;
     }
 
+    /* Battery indicator */
+    .battery-indicator {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #4CAF50;
+    }
+    .battery-icon {
+        width: 24px;
+        height: 12px;
+        border: 1.5px solid currentColor;
+        border-radius: 2px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 1px;
+    }
+    .battery-icon::after {
+        content: '';
+        position: absolute;
+        right: -4px;
+        top: 2px;
+        width: 2px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 0 1px 1px 0;
+    }
+    .battery-fill {
+        height: 100%;
+        border-radius: 1px;
+        background: currentColor;
+        transition: width 1s ease;
+    }
+    .battery-indicator.green { color: #4CAF50; }
+    .battery-indicator.yellow { color: #FFC107; }
+    .battery-indicator.red { color: #F44336; }
+
     /* Animal Tabs */
     .tab-bar {
         display: flex;
-        gap: 6px;
-        padding: 8px 16px;
+        gap: 4px;
+        padding: 8px 12px;
         justify-content: center;
         flex-wrap: wrap;
     }
@@ -52,13 +96,13 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: 6px 14px;
+        padding: 4px 8px;
         border-radius: 16px;
         background: rgba(255,255,255,0.04);
         border: 2px solid transparent;
         cursor: pointer;
         transition: all 0.3s ease;
-        min-width: 72px;
+        min-width: 56px;
     }
     .tab:hover {
         background: rgba(212,160,23,0.1);
@@ -68,18 +112,18 @@
         background: rgba(212,160,23,0.12);
     }
     .tab img {
-        width: 44px;
-        height: 44px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         object-fit: contain;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
     }
     .tab .tab-name {
-        font-size: 0.65rem;
+        font-size: 0.55rem;
         font-weight: 700;
         color: #999;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
     .tab.active .tab-name {
         color: #D4A017;
@@ -341,6 +385,17 @@
     }
     .learning-card.active .label { font-weight: 700; }
 
+    /* Parent-facing cards */
+    .learning-card.parent-card {
+        border-color: rgba(100,100,255,0.15);
+        background: rgba(100,100,255,0.04);
+    }
+    .learning-card.parent-card:hover {
+        border-color: rgba(100,100,255,0.4);
+        background: rgba(100,100,255,0.1);
+        color: #AAF;
+    }
+
     .mode-banner {
         display: none;
         align-items: center;
@@ -376,9 +431,9 @@
 
     @media (max-width: 600px) {
         .hero-container { width: 220px; height: 220px; }
-        .tab img { width: 36px; height: 36px; }
-        .tab { padding: 4px 10px; min-width: 60px; }
-        .tab .tab-name { font-size: 0.6rem; }
+        .tab img { width: 30px; height: 30px; }
+        .tab { padding: 3px 6px; min-width: 48px; }
+        .tab .tab-name { font-size: 0.5rem; }
         .learning-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
         .features { gap: 4px; }
         .feature-pill { font-size: 0.65rem; padding: 5px 10px; }
@@ -454,6 +509,87 @@
     @media (min-width: 900px) {
         .hero-container { width: 340px; height: 340px; }
     }
+
+    /* Overlay styles for Parent Mode and Usage Log */
+    .overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(13,13,26,0.95);
+        z-index: 100;
+        overflow-y: auto;
+        padding: 20px;
+        flex-direction: column;
+        align-items: center;
+    }
+    .overlay.visible { display: flex; }
+    .overlay-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+    }
+    .overlay-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.4rem;
+        color: #FFE082;
+    }
+    .overlay-close {
+        background: none;
+        border: 1px solid rgba(220,60,60,0.4);
+        color: #DC3C3C;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+    .overlay-close:hover { background: rgba(220,60,60,0.15); }
+    .overlay-content {
+        width: 100%;
+        max-width: 600px;
+    }
+    .stat-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+    }
+    .stat-card h3 {
+        font-size: 0.75rem;
+        color: #8A7A5A;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #FFE082;
+    }
+    .stat-card .stat-detail {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 4px;
+    }
+    .stat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .log-entry {
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        color: #AAA;
+    }
+    .log-entry .log-time { color: #666; font-size: 0.7rem; }
+    .log-entry .log-action { color: #D4A017; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -461,9 +597,15 @@
 <div class="header">
     <h1>Casa Companion</h1>
     <p>AI Family Companion</p>
+    <div id="battery" class="battery-indicator green">
+        <div class="battery-icon">
+            <div id="battery-fill" class="battery-fill" style="width:87%"></div>
+        </div>
+        <span id="battery-pct">87%</span>
+    </div>
 </div>
 
-<!-- Animal Tabs -->
+<!-- Animal Tabs — 10 Heroes -->
 <div class="tab-bar">
     <div class="tab active" onclick="switchAnimal('corvo')" id="tab-corvo">
         <img src="/static/images/heroes/crow.png" alt="Corvo" onerror="this.style.display='none'">
@@ -477,13 +619,33 @@
         <img src="/static/images/heroes/bear.png" alt="Orsetto" onerror="this.style.display='none'">
         <span class="tab-name">Orsetto</span>
     </div>
-    <div class="tab" onclick="switchAnimal('volpe')" id="tab-volpe">
-        <img src="/static/images/heroes/fox.png" alt="Volpe" onerror="this.style.display='none'">
-        <span class="tab-name">Volpe</span>
-    </div>
     <div class="tab" onclick="switchAnimal('coniglio')" id="tab-coniglio">
         <img src="/static/images/heroes/bunny.png" alt="Coniglio" onerror="this.style.display='none'">
         <span class="tab-name">Coniglio</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('tartaruga')" id="tab-tartaruga">
+        <img src="/static/images/heroes/turtle.png" alt="Tartaruga" onerror="this.style.display='none'">
+        <span class="tab-name">Tartaruga</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('elefante')" id="tab-elefante">
+        <img src="/static/images/heroes/elephant.png" alt="Elefante" onerror="this.style.display='none'">
+        <span class="tab-name">Elefante</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('leone')" id="tab-leone">
+        <img src="/static/images/heroes/lion.png" alt="Leone" onerror="this.style.display='none'">
+        <span class="tab-name">Leone</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('delfino')" id="tab-delfino">
+        <img src="/static/images/heroes/dolphin.png" alt="Delfino" onerror="this.style.display='none'">
+        <span class="tab-name">Delfino</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('drago')" id="tab-drago">
+        <img src="/static/images/heroes/dragon.png" alt="Drago" onerror="this.style.display='none'">
+        <span class="tab-name">Drago</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('xolo')" id="tab-xolo">
+        <img src="/static/images/heroes/xolo.png" alt="Xolo" onerror="this.style.display='none'">
+        <span class="tab-name">Xolo</span>
     </div>
 </div>
 
@@ -521,7 +683,7 @@
 
     <!-- Story Mode mic (tap-to-talk fallback) -->
     <button id="story-btn" class="story-btn" onclick="toggleStoryMode()">&#x1F3A4;</button>
-    <div id="story-label" class="story-label">Click for Story Mode</div>
+    <div id="story-label" class="story-label">Tap to talk</div>
 
     <!-- Voice Mode (WebRTC realtime) -->
     <div class="voice-controls">
@@ -544,7 +706,7 @@
         <button onclick="sendText()">Send</button>
     </div>
 
-    <!-- Learning Modules -->
+    <!-- Learning Modules — 11 cards (8 kid + 3 parent/teaching) -->
     <div class="learning-grid">
         <div class="learning-card" onclick="activateMode('story_time')" id="mode-story_time">
             <div class="icon">&#x1F4DA;</div>
@@ -578,6 +740,18 @@
             <div class="icon">&#x1F916;</div>
             <div class="label">Coding</div>
         </div>
+        <div class="learning-card" onclick="activateMode('teaching')" id="mode-teaching">
+            <div class="icon">&#x1F393;</div>
+            <div class="label">Teaching</div>
+        </div>
+        <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
+            <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
+            <div class="label">Parent Mode</div>
+        </div>
+        <div class="learning-card parent-card" onclick="openUsageLog()" id="mode-usage">
+            <div class="icon">&#x1F4CA;</div>
+            <div class="label">Usage Log</div>
+        </div>
     </div>
 </div>
 
@@ -585,8 +759,105 @@
     Casa Companion &copy; 2026 &bull; Crafted in California &bull; Everyone else announced it. We built it.
 </div>
 
+<!-- Parent Mode Overlay -->
+<div id="parent-overlay" class="overlay">
+    <div class="overlay-header">
+        <h2>&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467; Parent Dashboard</h2>
+        <button class="overlay-close" onclick="closeOverlay('parent-overlay')">Close</button>
+    </div>
+    <div class="overlay-content">
+        <div class="stat-row">
+            <div class="stat-card">
+                <h3>Session Duration</h3>
+                <div class="stat-value" id="parent-duration">0m</div>
+            </div>
+            <div class="stat-card">
+                <h3>Messages Sent</h3>
+                <div class="stat-value" id="parent-messages">0</div>
+            </div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-card">
+                <h3>Companions Used</h3>
+                <div class="stat-value" id="parent-companions">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Modes Activated</h3>
+                <div class="stat-value" id="parent-modes">-</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <h3>Conversation Summary</h3>
+            <div class="stat-detail" id="parent-summary">No conversation yet. Start talking to a companion to see a summary here.</div>
+        </div>
+        <div class="stat-card">
+            <h3>Content Topics Discussed</h3>
+            <div class="stat-detail" id="parent-topics">Topics will appear here as the child interacts.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage Log Overlay -->
+<div id="usage-overlay" class="overlay">
+    <div class="overlay-header">
+        <h2>&#x1F4CA; Usage Log</h2>
+        <button class="overlay-close" onclick="closeOverlay('usage-overlay')">Close</button>
+    </div>
+    <div class="overlay-content" id="usage-log-content">
+        <div class="stat-card">
+            <h3>Session Started</h3>
+            <div class="stat-value" id="usage-start-time">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Activity Timeline</h3>
+            <div id="usage-timeline">
+                <p style="color:#666; font-style:italic; font-size:0.8rem;">Activity will be logged as the session progresses...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-// Character data
+// =========================================================================
+// Session Tracking
+// =========================================================================
+const sessionLog = {
+    startTime: Date.now(),
+    messages: 0,
+    companionsUsed: new Set(),
+    modesActivated: new Set(),
+    timeline: [],
+    topics: []
+};
+
+function logEvent(action, detail) {
+    sessionLog.timeline.push({
+        time: Date.now(),
+        action: action,
+        detail: detail || ''
+    });
+}
+
+// =========================================================================
+// Battery Simulation
+// =========================================================================
+let batteryPct = 87;
+const batteryEl = document.getElementById('battery');
+const batteryFillEl = document.getElementById('battery-fill');
+const batteryPctEl = document.getElementById('battery-pct');
+
+function updateBattery() {
+    batteryPct = Math.max(0, batteryPct - (Math.random() * 0.3 + 0.1));
+    const rounded = Math.round(batteryPct);
+    batteryPctEl.textContent = rounded + '%';
+    batteryFillEl.style.width = rounded + '%';
+    batteryEl.className = 'battery-indicator ' + (rounded > 50 ? 'green' : rounded > 20 ? 'yellow' : 'red');
+}
+setInterval(updateBattery, 30000); // drain every 30s
+
+// =========================================================================
+// Character data — 10 Heroes
+// =========================================================================
 const CHARACTERS = {
     corvo: {
         name: 'Corvo',
@@ -612,14 +883,6 @@ const CHARACTERS = {
         greetTTS: "Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
         icon: '&#x1F43B;'
     },
-    volpe: {
-        name: 'Volpe',
-        meaning: 'Volpe means Fox in Italian',
-        img: '/static/images/heroes/fox.png',
-        greeting: "*tilts head curiously* Ooh, a new friend! I'm Volpe. I was just solving a puzzle. Hey, want to try a riddle? Or we could figure out something else together!",
-        greetTTS: "Ooh, a new friend! I'm Volpe. I was just solving a puzzle. Hey, want to try a riddle? Or we could figure out something else together!",
-        icon: '&#x1F98A;'
-    },
     coniglio: {
         name: 'Coniglio',
         meaning: 'Coniglio means Bunny in Italian',
@@ -627,6 +890,54 @@ const CHARACTERS = {
         greeting: "*wiggles nose* Oh! Hi! I'm Coniglio! I was just... nibbling on a carrot. *hops closer* I'm so happy to meet you! What's your favorite thing to do?",
         greetTTS: "Oh! Hi! I'm Coniglio! I was just nibbling on a carrot. I'm so happy to meet you! What's your favorite thing to do?",
         icon: '&#x1F430;'
+    },
+    tartaruga: {
+        name: 'Tartaruga',
+        meaning: 'Tartaruga means Sea Turtle in Italian',
+        img: '/static/images/heroes/turtle.png',
+        greeting: "*emerges slowly from shell* Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
+        greetTTS: "Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
+        icon: '&#x1F422;'
+    },
+    elefante: {
+        name: 'Elefante',
+        meaning: 'Elefante means Elephant in Italian',
+        img: '/static/images/heroes/elephant.png',
+        greeting: "*flaps ears happily* Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Tell me your name so I can remember it forever!",
+        greetTTS: "Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Tell me your name so I can remember it forever!",
+        icon: '&#x1F418;'
+    },
+    leone: {
+        name: 'Leone',
+        meaning: 'Leone means Lion in Italian',
+        img: '/static/images/heroes/lion.png',
+        greeting: "*shakes mane proudly* ROAR! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
+        greetTTS: "Roar! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
+        icon: '&#x1F981;'
+    },
+    delfino: {
+        name: 'Delfino',
+        meaning: 'Delfino means Dolphin in Italian',
+        img: '/static/images/heroes/dolphin.png',
+        greeting: "*splashes excitedly* Ee-ee-ee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know SO many!",
+        greetTTS: "Eee eee eee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know so many!",
+        icon: '&#x1F42C;'
+    },
+    drago: {
+        name: 'Drago',
+        meaning: 'Drago means Dragon in Italian',
+        img: '/static/images/heroes/dragon.png',
+        greeting: "*sparkles shimmer* Greetings, brave one! I'm Drago. I don't breathe fire... I breathe STORIES! Want to hear one, or shall we create our own?",
+        greetTTS: "Greetings, brave one! I'm Drago. I don't breathe fire, I breathe stories! Want to hear one, or shall we create our own?",
+        icon: '&#x1F409;'
+    },
+    xolo: {
+        name: 'Xolo',
+        meaning: 'Xolo is a Xoloitzcuintli, the ancient Aztec dog',
+        img: '/static/images/heroes/xolo.png',
+        greeting: "*wags tail with dignity* Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
+        greetTTS: "Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
+        icon: '&#x1F415;'
     }
 };
 
@@ -634,6 +945,7 @@ let currentCharacter = 'corvo';
 let conversationHistory = [];
 let isActive = false;
 let currentMode = null;
+let demoCompleted = false;
 
 const MODE_NAMES = {
     story_time: 'Story Time',
@@ -643,7 +955,8 @@ const MODE_NAMES = {
     geography: 'Geography',
     italian: 'Italian',
     spanish: 'Spanish',
-    coding: 'Coding'
+    coding: 'Coding',
+    teaching: 'Teaching Mode'
 };
 
 const MODE_GREETINGS = {
@@ -654,8 +967,10 @@ const MODE_GREETINGS = {
     geography: "Let's go on a world adventure! Where should we fly to first? We could visit the pyramids in Egypt, the rainforest in Brazil, or the snow in Antarctica. Where to?",
     italian: "Ciao! Let's learn some Italian together! Can you say ciao? That means hello! Bravissimo! What would you like to learn. colors, animals, or food?",
     spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! \u00a1Muy bien! What should we learn. colors, animals, or food?",
-    coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!"
+    coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
+    teaching: "Teaching Mode! I'm ready to teach you something new. What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!"
 };
+
 let mediaRecorder = null;
 let audioChunks = [];
 let isListening = false;
@@ -670,12 +985,92 @@ const charNameEl = document.getElementById('char-name');
 const charMeaningEl = document.getElementById('char-meaning');
 const storyLabelEl = document.getElementById('story-label');
 
+// =========================================================================
+// Guided Demo
+// =========================================================================
+const DEMO_STEPS = [
+    { mode: 'story_time', teaser: "I can tell stories! Once upon a time, in a land far away... Want to hear more? Say 'Story Time' anytime!" },
+    { mode: 'calm_breathe', teaser: "I can help you calm down and breathe... In... and out... Say 'Breathe' when you need me." },
+    { mode: 'stem_sparks', teaser: "I know cool science facts! Did you know octopuses have three hearts? Say 'Science' for more!" },
+    { mode: 'music_rhythm', teaser: "I love music! Let's make rhythm together. Clap clap STOMP! Say 'Music' to jam with me." },
+    { mode: 'geography', teaser: "I can take you anywhere in the world! Egypt, Japan, Brazil... Say 'Geography' to explore!" },
+    { mode: 'italian', teaser: "I can teach you Italian! Ciao means hello! Say 'Italian' to learn more." },
+    { mode: 'spanish', teaser: "I can teach you Spanish too! Hola means hello! Say 'Spanish' to start." },
+    { mode: 'coding', teaser: "I can teach you how to think like a coder! Say 'Coding' to try." },
+    { mode: 'teaching', teaser: "I can run a real lesson! Colors, numbers, letters... Say 'Teaching' to learn." }
+];
+
+let demoRunning = false;
+let demoStepIndex = 0;
+
+async function startGuidedDemo() {
+    if (demoCompleted || demoRunning) return;
+    demoRunning = true;
+    demoStepIndex = 0;
+
+    const char = CHARACTERS[currentCharacter];
+    const introText = "Would you like me to show you what I can do? Say 'yes' or just start talking!";
+    addMessage('companion', introText);
+    conversationHistory.push({role: 'assistant', content: introText});
+    await speakText(introText);
+}
+
+async function runDemoStep() {
+    if (demoStepIndex >= DEMO_STEPS.length) {
+        // Demo complete
+        const endText = "Those are just some things I can do! You can also just talk to me about anything. What would you like to do?";
+        addMessage('companion', endText);
+        conversationHistory.push({role: 'assistant', content: endText});
+        speakText(endText);
+        demoRunning = false;
+        demoCompleted = true;
+        logEvent('demo_completed');
+        return;
+    }
+
+    const step = DEMO_STEPS[demoStepIndex];
+    demoStepIndex++;
+    addMessage('companion', step.teaser);
+    conversationHistory.push({role: 'assistant', content: step.teaser});
+    await speakText(step.teaser);
+}
+
+function handleDemoResponse(userText) {
+    const lower = userText.toLowerCase().trim();
+    if (lower.includes('yes') || lower.includes('sure') || lower.includes('show me') || lower.includes('okay') || lower.includes('ok')) {
+        // Start cycling through demo steps
+        runDemoStep();
+        return true;
+    } else if (lower.includes('no') || lower.includes('skip') || lower.includes('play') || lower.includes('myself') || lower.includes('talk')) {
+        // Skip demo
+        demoRunning = false;
+        demoCompleted = true;
+        const skipText = "No problem! I'm here whenever you want to chat. What's on your mind?";
+        addMessage('companion', skipText);
+        conversationHistory.push({role: 'assistant', content: skipText});
+        speakText(skipText);
+        return true;
+    } else if (lower.includes('next') || lower.includes('more') || lower.includes('what else') || lower.includes('continue')) {
+        runDemoStep();
+        return true;
+    }
+    // Not a demo response — end demo and treat as normal chat
+    demoRunning = false;
+    demoCompleted = true;
+    return false;
+}
+
+// =========================================================================
+// Mode Activation
+// =========================================================================
 function activateMode(modeKey) {
     if (currentMode === modeKey) {
         exitMode();
         return;
     }
     currentMode = modeKey;
+    sessionLog.modesActivated.add(MODE_NAMES[modeKey] || modeKey);
+    logEvent('mode_activated', MODE_NAMES[modeKey] || modeKey);
 
     // Update card styles
     document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
@@ -691,11 +1086,10 @@ function activateMode(modeKey) {
     // Reset conversation for new mode
     conversationHistory = [];
     isActive = true;
+    demoRunning = false;
     transcriptEl.innerHTML = '';
 
     // Send mode greeting from the character
-    const char = CHARACTERS[currentCharacter];
-    const greeting = char.name + ': ' + (MODE_GREETINGS[modeKey] || 'Let\'s get started!');
     addMessage('companion', MODE_GREETINGS[modeKey] || 'Let\'s get started!');
     conversationHistory.push({role: 'assistant', content: MODE_GREETINGS[modeKey]});
     speakText(MODE_GREETINGS[modeKey] || 'Let\'s get started!');
@@ -714,13 +1108,69 @@ function exitMode() {
     setState('idle');
 }
 
+// =========================================================================
+// Parent Mode & Usage Log Overlays
+// =========================================================================
+function openParentMode() {
+    // Populate stats
+    const elapsed = Math.round((Date.now() - sessionLog.startTime) / 60000);
+    document.getElementById('parent-duration').textContent = elapsed + 'm';
+    document.getElementById('parent-messages').textContent = sessionLog.messages;
+    document.getElementById('parent-companions').textContent =
+        sessionLog.companionsUsed.size > 0 ? [...sessionLog.companionsUsed].join(', ') : 'None yet';
+    document.getElementById('parent-modes').textContent =
+        sessionLog.modesActivated.size > 0 ? [...sessionLog.modesActivated].join(', ') : 'None yet';
+
+    // Conversation summary
+    if (conversationHistory.length > 0) {
+        const lastFew = conversationHistory.slice(-6).map(m => m.content).join(' | ');
+        document.getElementById('parent-summary').textContent = lastFew;
+    }
+
+    // Topics
+    if (sessionLog.topics.length > 0) {
+        document.getElementById('parent-topics').textContent = [...new Set(sessionLog.topics)].join(', ');
+    }
+
+    document.getElementById('parent-overlay').classList.add('visible');
+    logEvent('parent_mode_opened');
+}
+
+function openUsageLog() {
+    const startDate = new Date(sessionLog.startTime);
+    document.getElementById('usage-start-time').textContent =
+        startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+
+    const timelineEl = document.getElementById('usage-timeline');
+    if (sessionLog.timeline.length === 0) {
+        timelineEl.innerHTML = '<p style="color:#666; font-style:italic; font-size:0.8rem;">No activity yet...</p>';
+    } else {
+        timelineEl.innerHTML = sessionLog.timeline.map(e => {
+            const t = new Date(e.time);
+            const ts = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            return `<div class="log-entry"><span class="log-time">${ts}</span> <span class="log-action">${e.action}</span> ${e.detail}</div>`;
+        }).join('');
+    }
+
+    document.getElementById('usage-overlay').classList.add('visible');
+    logEvent('usage_log_opened');
+}
+
+function closeOverlay(id) {
+    document.getElementById(id).classList.remove('visible');
+}
+
+// =========================================================================
+// Character Switching
+// =========================================================================
 function switchAnimal(key) {
     if (key === currentCharacter && !isActive) {
-        // Same tab, not active - just activate
+        // Same tab, not active
     } else if (key !== currentCharacter) {
-        // Switch character
         currentCharacter = key;
         const char = CHARACTERS[key];
+        sessionLog.companionsUsed.add(char.name);
+        logEvent('companion_switched', char.name);
 
         // Update tabs
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -732,11 +1182,11 @@ function switchAnimal(key) {
         charNameEl.textContent = char.name;
         charMeaningEl.textContent = char.meaning;
 
-        // Reset conversation (keep mode active if one is selected)
+        // Reset conversation
         isActive = false;
+        demoRunning = false;
         conversationHistory = [];
         if (currentMode) {
-            // Re-activate mode with new character
             const savedMode = currentMode;
             currentMode = null;
             transcriptEl.innerHTML = '';
@@ -745,9 +1195,8 @@ function switchAnimal(key) {
             transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
         }
         setState('idle');
-        storyLabelEl.textContent = 'Click for Story Mode';
+        storyLabelEl.textContent = 'Tap to talk';
 
-        // Stop any recording/audio
         if (isListening) stopVoiceInput();
         storyBtn.innerHTML = '&#x1F3A4;';
     }
@@ -769,14 +1218,27 @@ function toggleStoryMode() {
     const char = CHARACTERS[currentCharacter];
     if (!isActive) {
         isActive = true;
+        sessionLog.companionsUsed.add(char.name);
+        logEvent('conversation_started', char.name);
         transcriptEl.innerHTML = '';
         addMessage('companion', char.greeting);
         setState('idle');
-        speakText(char.greetTTS);
         conversationHistory = [
             {role: 'assistant', content: char.greeting}
         ];
-        storyLabelEl.textContent = 'Hold to speak';
+
+        // Start guided demo on first interaction (greeting + demo offer)
+        if (!demoCompleted) {
+            speakText(char.greetTTS).then(() => {
+                if (!demoCompleted && !demoRunning) {
+                    startGuidedDemo();
+                }
+            });
+        } else {
+            speakText(char.greetTTS);
+        }
+
+        storyLabelEl.textContent = 'Tap to talk';
     } else if (isListening) {
         stopVoiceInput();
     } else if (currentState === 'idle') {
@@ -794,7 +1256,7 @@ function addMessage(who, text) {
     transcriptEl.scrollTop = transcriptEl.scrollHeight;
 }
 
-// Voice triggers — match spoken phrases to modes
+// Voice triggers
 const VOICE_TRIGGERS = {
     'story time': 'story_time',
     'tell me a story': 'story_time',
@@ -829,6 +1291,10 @@ const VOICE_TRIGGERS = {
     'code': 'coding',
     'programming': 'coding',
     'teach me coding': 'coding',
+    'teaching': 'teaching',
+    'teaching mode': 'teaching',
+    'lesson': 'teaching',
+    'teach me': 'teaching',
     'exit mode': null,
     'stop mode': null,
     'go back': null,
@@ -846,29 +1312,36 @@ function checkVoiceTrigger(text) {
 }
 
 async function sendChat(userText) {
+    sessionLog.messages++;
+
+    // If guided demo is running, handle demo response first
+    if (demoRunning) {
+        addMessage('user', userText);
+        if (handleDemoResponse(userText)) return;
+        // If not handled, falls through to normal chat
+    }
+
     // Check for voice-activated mode triggers
     const trigger = checkVoiceTrigger(userText);
     if (trigger.matched) {
         if (trigger.mode === null) {
-            // Exit mode command
-            addMessage('user', userText);
+            if (!demoRunning) addMessage('user', userText);
             exitMode();
             return;
         }
-        addMessage('user', userText);
+        if (!demoRunning) addMessage('user', userText);
         activateMode(trigger.mode);
         return;
     }
 
-    addMessage('user', userText);
+    if (!demoRunning) addMessage('user', userText);
     conversationHistory.push({role: 'user', content: userText});
     setState('thinking');
+    logEvent('message_sent', userText.substring(0, 50));
 
-    // Trim history to last 10 messages to keep API fast
     const recentHistory = conversationHistory.slice(-10);
 
     try {
-        // Combined endpoint: chat + TTS in one round trip
         const resp = await fetch('/api/chat-and-speak', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -881,7 +1354,6 @@ async function sendChat(userText) {
         });
 
         if (!resp.ok) {
-            // Fallback to separate endpoints
             const chatResp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -895,7 +1367,6 @@ async function sendChat(userText) {
             return;
         }
 
-        // Parse combined response: 4-byte length header + JSON + audio
         const buffer = await resp.arrayBuffer();
         const view = new DataView(buffer);
         const headerLen = view.getUint32(0);
@@ -907,7 +1378,6 @@ async function sendChat(userText) {
         conversationHistory.push({role: 'assistant', content: reply});
         addMessage('companion', reply);
 
-        // Play audio directly from the combined response
         const audioBytes = buffer.slice(4 + headerLen);
         if (audioBytes.byteLength > 0) {
             const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
@@ -932,35 +1402,38 @@ async function sendChat(userText) {
     }
 }
 
-async function speakText(text) {
+function speakText(text) {
     setState('speaking');
-    try {
-        // Fire TTS request
-        const resp = await fetch('/api/tts', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({text: text})
-        });
+    return fetch('/api/tts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: text})
+    }).then(resp => {
         if (resp.ok) {
-            const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
-            audio.onended = () => {
-                URL.revokeObjectURL(url);
-                setState('idle');
-                // Auto-listen right after companion finishes - tight loop
-                if (isActive) {
-                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
-                }
-            };
-            audio.onerror = () => { setState('idle'); };
-            audio.play().catch(() => { setState('idle'); });
+            return resp.blob().then(blob => {
+                return new Promise(resolve => {
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    audio.onended = () => {
+                        URL.revokeObjectURL(url);
+                        setState('idle');
+                        if (isActive && !demoRunning) {
+                            setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                        }
+                        resolve();
+                    };
+                    audio.onerror = () => { setState('idle'); resolve(); };
+                    audio.play().catch(() => { setState('idle'); resolve(); });
+                });
+            });
         } else {
             setState('idle');
+            return Promise.resolve();
         }
-    } catch (err) {
+    }).catch(() => {
         setState('idle');
-    }
+        return Promise.resolve();
+    });
 }
 
 function sendText() {
@@ -970,8 +1443,25 @@ function sendText() {
     input.value = '';
     if (!isActive) {
         isActive = true;
+        sessionLog.companionsUsed.add(CHARACTERS[currentCharacter].name);
+        logEvent('conversation_started', CHARACTERS[currentCharacter].name);
         transcriptEl.innerHTML = '';
         conversationHistory = [];
+
+        // Trigger guided demo on first text interaction
+        if (!demoCompleted) {
+            const char = CHARACTERS[currentCharacter];
+            addMessage('companion', char.greeting);
+            conversationHistory.push({role: 'assistant', content: char.greeting});
+            speakText(char.greetTTS).then(() => {
+                if (!demoCompleted && !demoRunning) {
+                    startGuidedDemo();
+                }
+            });
+            // Queue the user's text to be processed after demo offer
+            setTimeout(() => { if (demoRunning) { handleDemoResponse(text) || sendChat(text); } else { sendChat(text); } }, 100);
+            return;
+        }
     }
     sendChat(text);
 }
@@ -1073,14 +1563,13 @@ async function toggleVoiceMode() {
 }
 
 async function startVoiceMode() {
-    // Stop any tap-to-talk recording
     if (isListening) stopVoiceInput();
 
     setState('thinking');
     statusEl.textContent = 'Connecting voice...';
+    logEvent('voice_mode_started', CHARACTERS[currentCharacter].name);
 
     try {
-        // 1. Get ephemeral token
         const tokenResp = await fetch('/api/voice/token', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1093,10 +1582,8 @@ async function startVoiceMode() {
         const tokenData = await tokenResp.json();
         const ephemeralToken = tokenData.token;
 
-        // 2. Create RTCPeerConnection
         rtcPC = new RTCPeerConnection();
 
-        // 3. Set up remote audio playback
         rtcAudioEl = document.createElement('audio');
         rtcAudioEl.autoplay = true;
         document.body.appendChild(rtcAudioEl);
@@ -1107,18 +1594,14 @@ async function startVoiceMode() {
             }
         };
 
-        // 4. Capture mic and add track
         rtcMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         rtcPC.addTrack(rtcMicStream.getAudioTracks()[0]);
 
-        // 5. Create data channel
         rtcDC = rtcPC.createDataChannel('realtime-channel');
 
-        // 6. Create offer and set local description
         const offer = await rtcPC.createOffer();
         await rtcPC.setLocalDescription(offer);
 
-        // 7. SDP exchange with Azure
         const sdpResp = await fetch(
             `${AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on`,
             {
@@ -1138,9 +1621,7 @@ async function startVoiceMode() {
         const answerSdp = await sdpResp.text();
         await rtcPC.setRemoteDescription({ type: 'answer', sdp: answerSdp });
 
-        // 8. Data channel handlers
         rtcDC.onopen = () => {
-            // Send session.update with VAD config
             const sessionUpdate = {
                 type: 'session.update',
                 session: {
@@ -1157,7 +1638,6 @@ async function startVoiceMode() {
             };
             rtcDC.send(JSON.stringify(sessionUpdate));
 
-            // Voice mode is live
             voiceModeActive = true;
             document.body.classList.add('voice-mode-active');
             voiceModeBtn.classList.add('active');
@@ -1173,7 +1653,6 @@ async function startVoiceMode() {
             setState('idle');
             statusEl.textContent = 'Voice mode active. Just talk.';
 
-            // Trigger AI greeting so it speaks first
             const char = CHARACTERS[currentCharacter];
             rtcDC.send(JSON.stringify({
                 type: 'response.create',
@@ -1211,7 +1690,6 @@ function handleRTCEvent(msg) {
     switch (msg.type) {
         case 'input_audio_buffer.speech_started':
             setState('listening');
-            // If AI was speaking, it gets interrupted automatically
             aiTranscriptBuffer = '';
             aiTranscriptEl = null;
             break;
@@ -1224,6 +1702,7 @@ function handleRTCEvent(msg) {
             if (msg.transcript && msg.transcript.trim()) {
                 addMessage('user', msg.transcript.trim());
                 conversationHistory.push({ role: 'user', content: msg.transcript.trim() });
+                sessionLog.messages++;
             }
             break;
 
@@ -1276,6 +1755,7 @@ function endVoiceMode() {
     voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Mode';
     endVoiceBtn.style.display = 'none';
     setState('idle');
+    logEvent('voice_mode_ended');
 }
 
 function cleanupRTC() {
@@ -1293,6 +1773,9 @@ switchAnimal = function(key) {
     }
     _origSwitchAnimal(key);
 };
+
+// Log session start
+logEvent('session_started');
 </script>
 </body>
 </html>
