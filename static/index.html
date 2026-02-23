@@ -2147,7 +2147,9 @@ const MODE_NAMES = {
     homework: 'Homework Helper',
     coding: 'Coding',
     teaching: 'Teaching Mode',
-    milestones: 'Milestones'
+    milestones: 'Milestones',
+    travel_games: 'Travel Games',
+    lullaby: 'Lullaby'
 };
 
 // Dynamic introduction greeting — use child's name if given
@@ -2169,7 +2171,9 @@ const MODE_GREETINGS = {
     homework: "Welcome to Homework Helper! In this mode, I help you work through your homework step by step. Math, reading, spelling, science. I won't give you the answers, but I'll guide you so you really understand it. What subject do you need help with?",
     coding: "Welcome to Coding! In this mode, I teach you how to think like a programmer. We'll learn about sequences, loops, and problem solving through fun games. No screens needed. Want to try programming me? Give me 3 instructions and I'll follow them!",
     teaching: "Welcome to Teaching Mode! In this mode, I run mini lessons on topics you pick. Colors, numbers, letters, shapes, or animals. I'll teach you, quiz you, and celebrate when you get it right. What do you want to learn?",
-    milestones: "Welcome to Milestones! This is where we celebrate everything you've learned. I'll help you remember what you've done and set fun new goals. Tell me something you're proud of lately!"
+    milestones: "Welcome to Milestones! This is where we celebrate everything you've learned. I'll help you remember what you've done and set fun new goals. Tell me something you're proud of lately!",
+    travel_games: "Road trip time! Pick a game! 1. I Spy, 2. 20 Questions, 3. Would You Rather. What'll it be?",
+    lullaby: "Shhh... it's lullaby time. Close your eyes. I'll sing you something gentle. Ready?"
 };
 
 const introducedCompanions = new Set();
@@ -2198,7 +2202,9 @@ const DEMO_STEPS = [
     { mode: 'languages', teaser: "I can teach you ANY language! Italian, Spanish, French, Japanese... Say 'Languages' to pick one!" },
     { mode: 'homework', teaser: "I can help with homework! Math, reading, spelling... Say 'Homework' to get started." },
     { mode: 'coding', teaser: "I can teach you how to think like a coder! Say 'Coding' to try." },
-    { mode: 'teaching', teaser: "I can run a real lesson! Colors, numbers, letters... Say 'Teaching' to learn." }
+    { mode: 'teaching', teaser: "I can run a real lesson! Colors, numbers, letters... Say 'Teaching' to learn." },
+    { mode: 'travel_games', teaser: "Road trip? I've got I Spy, 20 Questions, License Plate Game... Say 'Travel' to play!" },
+    { mode: 'lullaby', teaser: "I can sing you to sleep. Real lullabies, soft and gentle. Say 'Lullaby' when it's bedtime." }
 ];
 
 let demoRunning = false;
