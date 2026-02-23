@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2.4">
+<meta name="version" content="2.5">
 <title>Casa Companion — Meet the Family</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -498,6 +498,104 @@
         background: rgba(220,60,60,0.2);
     }
 
+    /* Stop / Kill Switch Button */
+    .stop-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(220,60,60,0.6);
+        background: rgba(220,60,60,0.15);
+        color: #DC3C3C;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 50;
+        backdrop-filter: blur(10px);
+    }
+    .stop-btn:hover {
+        background: rgba(220,60,60,0.3);
+        border-color: #DC3C3C;
+        transform: scale(1.1);
+    }
+    .stop-btn.visible {
+        display: flex;
+    }
+
+    /* Intro overlay — first-time prompt */
+    .intro-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(13,13,26,0.92);
+        z-index: 90;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+        backdrop-filter: blur(8px);
+    }
+    .intro-overlay.hidden { display: none; }
+    .intro-title {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1.4rem, 4vw, 2.2rem);
+        color: #FFE082;
+        margin-bottom: 8px;
+    }
+    .intro-subtitle {
+        font-size: clamp(0.85rem, 2vw, 1.1rem);
+        color: #8A7A5A;
+        margin-bottom: 24px;
+        max-width: 400px;
+    }
+    .intro-name-input {
+        padding: 12px 20px;
+        border-radius: 28px;
+        border: 2px solid rgba(212,160,23,0.4);
+        background: rgba(255,255,255,0.06);
+        color: #FFFEF7;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        text-align: center;
+        width: 260px;
+        outline: none;
+        margin-bottom: 12px;
+    }
+    .intro-name-input::placeholder { color: #666; }
+    .intro-name-input:focus { border-color: #D4A017; }
+    .intro-start-btn {
+        padding: 12px 32px;
+        border-radius: 28px;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+    }
+    .intro-start-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 24px rgba(212,160,23,0.5);
+    }
+    .intro-skip {
+        margin-top: 12px;
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 0.75rem;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
     .voice-controls {
         display: flex;
         gap: 8px;
@@ -597,6 +695,15 @@
 </style>
 </head>
 <body>
+
+<!-- Intro Overlay — first interaction prompt -->
+<div id="intro-overlay" class="intro-overlay">
+    <div class="intro-title">Pick your companion</div>
+    <div class="intro-subtitle">Give them a name, or keep the one they came with. Then say hello.</div>
+    <input id="intro-name" class="intro-name-input" type="text" placeholder="Name your companion..." maxlength="20" onkeydown="if(event.key==='Enter')startWithName()">
+    <button class="intro-start-btn" onclick="startWithName()">Let's Go</button>
+    <button class="intro-skip" onclick="skipIntro()">Skip — use default name</button>
+</div>
 
 <div class="header">
     <h1>Casa Companion</h1>
@@ -698,6 +805,9 @@
             End Voice
         </button>
     </div>
+
+    <!-- Stop / Kill Switch -->
+    <button id="stop-btn" class="stop-btn" onclick="killAllAudio()" title="Stop all audio">&#x23F9;</button>
 
     <!-- Transcript -->
     <div id="transcript" class="transcript">
@@ -949,6 +1059,34 @@ const CHARACTERS = {
     }
 };
 
+// Custom name storage
+function setCustomName(charKey, name) {
+    if (name && name.trim()) {
+        CHARACTERS[charKey].customName = name.trim();
+    }
+}
+
+function getDisplayName(charKey) {
+    const char = CHARACTERS[charKey || currentCharacter];
+    return char.customName || char.name;
+}
+
+function startWithName() {
+    const nameInput = document.getElementById('intro-name');
+    const name = (nameInput.value || '').trim();
+    if (name) {
+        setCustomName(currentCharacter, name);
+        charNameEl.textContent = name;
+    }
+    document.getElementById('intro-overlay').classList.add('hidden');
+    toggleStoryMode();
+}
+
+function skipIntro() {
+    document.getElementById('intro-overlay').classList.add('hidden');
+    toggleStoryMode();
+}
+
 let currentCharacter = 'corvo';
 let conversationHistory = [];
 let isActive = false;
@@ -1189,12 +1327,23 @@ function closeOverlay(id) {
 // =========================================================================
 function switchAnimal(key) {
     if (key === currentCharacter && !isActive) {
-        // Same tab, not active
-    } else if (key !== currentCharacter) {
-        // End everything from previous character
+        return;
+    }
+    if (key !== currentCharacter) {
+        // Increment generation to invalidate any in-flight audio
+        switchGeneration++;
+        const thisGeneration = switchGeneration;
+
+        // Kill everything from previous character
         stopCurrentAudio();
-        if (voiceModeActive) endVoiceMode();
+        endVoiceMode();  // Always call — no conditional on voiceModeActive (race condition fix)
         if (isListening) stopVoiceInput();
+
+        // Kill WebRTC audio stream directly
+        if (rtcAudioEl && rtcAudioEl.srcObject) {
+            rtcAudioEl.srcObject.getTracks().forEach(t => t.stop());
+            rtcAudioEl.srcObject = null;
+        }
 
         currentCharacter = key;
         const char = CHARACTERS[key];
@@ -1219,7 +1368,12 @@ function switchAnimal(key) {
             const savedMode = currentMode;
             currentMode = null;
             transcriptEl.innerHTML = '';
-            setTimeout(() => activateMode(savedMode), 100);
+            setTimeout(() => {
+                // Only activate if generation is still current (no rapid switch happened)
+                if (switchGeneration === thisGeneration) {
+                    activateMode(savedMode);
+                }
+            }, 300);  // Increased from 100ms to 300ms for cleanup
         } else {
             transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
         }
@@ -1233,12 +1387,13 @@ function setState(state) {
     currentState = state;
     storyBtn.className = 'story-btn ' + (state === 'idle' ? '' : state);
     heroGlow.className = 'hero-glow ' + (state === 'idle' ? '' : state);
-    const name = CHARACTERS[currentCharacter].name;
+    const name = getDisplayName(currentCharacter);
 
     if (state === 'idle') statusEl.textContent = isActive ? 'Tap mic or type to talk' : 'Tap ' + name + ' to say hello';
     else if (state === 'listening') statusEl.textContent = 'Listening...';
     else if (state === 'thinking') statusEl.textContent = name + ' is thinking...';
     else if (state === 'speaking') statusEl.textContent = name + ' is speaking...';
+    updateStopButton();
 }
 
 function toggleStoryMode() {
@@ -1248,21 +1403,29 @@ function toggleStoryMode() {
         sessionLog.companionsUsed.add(char.name);
         logEvent('conversation_started', char.name);
         transcriptEl.innerHTML = '';
-        addMessage('companion', char.greeting);
+
+        const customGreeting = char.customName
+            ? `Hi! I'm ${char.name}... but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
+            : char.greeting;
+        const customGreetTTS = char.customName
+            ? `Hi! I'm ${char.name}, but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
+            : char.greetTTS;
+
+        addMessage('companion', customGreeting);
         setState('idle');
         conversationHistory = [
-            {role: 'assistant', content: char.greeting}
+            {role: 'assistant', content: customGreeting}
         ];
 
         // Start guided demo on first interaction (greeting + demo offer)
         if (!demoCompleted) {
-            speakText(char.greetTTS).then(() => {
+            speakText(customGreetTTS).then(() => {
                 if (!demoCompleted && !demoRunning) {
                     startGuidedDemo();
                 }
             });
         } else {
-            speakText(char.greetTTS);
+            speakText(customGreetTTS);
         }
 
         storyLabelEl.textContent = 'Tap to talk';
@@ -1357,7 +1520,7 @@ async function sendChat(userText) {
             const resp = await fetch('/api/chat-and-speak', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode })
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: CHARACTERS[currentCharacter].customName || null })
             });
             if (resp.ok) {
                 const buffer = await resp.arrayBuffer();
@@ -1435,7 +1598,8 @@ async function sendChat(userText) {
                 message: userText,
                 history: recentHistory,
                 character: currentCharacter,
-                mode: currentMode
+                mode: currentMode,
+                customName: CHARACTERS[currentCharacter].customName || null
             })
         });
 
@@ -1443,7 +1607,7 @@ async function sendChat(userText) {
             const chatResp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode })
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: CHARACTERS[currentCharacter].customName || null })
             });
             const data = await chatResp.json();
             const reply = data.response || "Hmm, something got tangled.";
@@ -1466,11 +1630,18 @@ async function sendChat(userText) {
 
         const audioBytes = buffer.slice(4 + headerLen);
         if (audioBytes.byteLength > 0) {
+            const playGeneration = switchGeneration;
             const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
             const url = URL.createObjectURL(blob);
             setState('speaking');
             const audio = new Audio(url);
             currentAudio = audio;
+            if (switchGeneration !== playGeneration) {
+                // Character was switched — don't play stale audio
+                URL.revokeObjectURL(url);
+                currentAudio = null;
+                return;
+            }
             audio.onended = () => {
                 URL.revokeObjectURL(url);
                 currentAudio = null;
@@ -1491,6 +1662,7 @@ async function sendChat(userText) {
 }
 
 let currentAudio = null;
+let switchGeneration = 0;
 
 function stopCurrentAudio() {
     if (currentAudio) {
@@ -1500,7 +1672,26 @@ function stopCurrentAudio() {
     }
 }
 
+function killAllAudio() {
+    stopCurrentAudio();
+    if (voiceModeActive) endVoiceMode();
+    if (isListening) stopVoiceInput();
+    setState('idle');
+    updateStopButton();
+}
+
+function updateStopButton() {
+    const btn = document.getElementById('stop-btn');
+    if (!btn) return;
+    if (currentState === 'speaking' || currentState === 'listening' || currentState === 'thinking' || voiceModeActive) {
+        btn.classList.add('visible');
+    } else {
+        btn.classList.remove('visible');
+    }
+}
+
 function speakText(text) {
+    const speakGeneration = switchGeneration;
     stopCurrentAudio();
     setState('speaking');
     return fetch('/api/tts', {
@@ -1510,6 +1701,7 @@ function speakText(text) {
     }).then(resp => {
         if (resp.ok) {
             return resp.blob().then(blob => {
+                if (switchGeneration !== speakGeneration) return Promise.resolve();
                 return new Promise(resolve => {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
@@ -1753,6 +1945,7 @@ async function startVoiceMode() {
 
             setState('idle');
             statusEl.textContent = 'Voice mode active. Just talk.';
+            updateStopButton();
 
             const char = CHARACTERS[currentCharacter];
             voiceResponseCount = 0;
@@ -1873,6 +2066,7 @@ function endVoiceMode() {
     endVoiceBtn.style.display = 'none';
     setState('idle');
     logEvent('voice_mode_ended');
+    updateStopButton();
 }
 
 function cleanupRTC() {
@@ -1881,15 +2075,6 @@ function cleanupRTC() {
     if (rtcMicStream) { rtcMicStream.getTracks().forEach(t => t.stop()); rtcMicStream = null; }
     if (rtcAudioEl) { rtcAudioEl.remove(); rtcAudioEl = null; }
 }
-
-// Override switchAnimal to end voice mode on character switch
-const _origSwitchAnimal = switchAnimal;
-switchAnimal = function(key) {
-    if (voiceModeActive && key !== currentCharacter) {
-        endVoiceMode();
-    }
-    _origSwitchAnimal(key);
-};
 
 // Log session start
 logEvent('session_started');

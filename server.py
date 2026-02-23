@@ -423,6 +423,7 @@ class ChatRequest(BaseModel):
     history: Optional[List[Message]] = []
     character: Optional[str] = "corvo"
     mode: Optional[str] = None
+    customName: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -468,6 +469,9 @@ async def chat(request: ChatRequest):
     # Append mode-specific instructions if a learning mode is active
     if request.mode and request.mode in MODE_PROMPTS:
         system_prompt += MODE_PROMPTS[request.mode]["prompt"]
+
+    if request.customName:
+        system_prompt += f"\n\nIMPORTANT: The child has named you '{request.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {request.customName}."
 
     messages = [{"role": "system", "content": system_prompt}]
 
@@ -617,6 +621,9 @@ async def chat_and_speak(request: ChatRequest):
     # Append mode-specific instructions if a learning mode is active
     if request.mode and request.mode in MODE_PROMPTS:
         system_prompt += MODE_PROMPTS[request.mode]["prompt"]
+
+    if request.customName:
+        system_prompt += f"\n\nIMPORTANT: The child has named you '{request.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {request.customName}."
 
     messages = [{"role": "system", "content": system_prompt}]
     for msg in (request.history or []):
