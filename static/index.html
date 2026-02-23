@@ -331,8 +331,40 @@
         border-color: rgba(212,160,23,0.3);
         background: rgba(212,160,23,0.08);
         color: #CCC;
+        cursor: pointer;
     }
-    .learning-card.coming-soon { opacity: 0.4; }
+    .learning-card.active {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.15);
+        color: #FFE082;
+        box-shadow: 0 0 12px rgba(212,160,23,0.2);
+    }
+    .learning-card.active .label { font-weight: 700; }
+
+    .mode-banner {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 20px;
+        background: rgba(212,160,23,0.12);
+        border: 1px solid rgba(212,160,23,0.3);
+        font-size: 0.75rem;
+        color: #D4A017;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+    }
+    .mode-banner.visible { display: inline-flex; }
+    .mode-banner .mode-exit {
+        background: none;
+        border: none;
+        color: #DC3C3C;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding: 0 4px;
+        font-weight: 700;
+    }
 
     .footer {
         padding: 10px;
@@ -469,6 +501,10 @@
         <div id="char-meaning" class="char-meaning">Corvo means Crow in Italian</div>
     </div>
 
+    <div id="mode-banner" class="mode-banner">
+        <span id="mode-banner-text"></span>
+        <button class="mode-exit" onclick="exitMode()">&times;</button>
+    </div>
     <div id="status" class="status">Tap Corvo to say hello</div>
 
     <!-- Feature pills -->
@@ -510,35 +546,35 @@
 
     <!-- Learning Modules -->
     <div class="learning-grid">
-        <div class="learning-card">
+        <div class="learning-card" onclick="activateMode('story_time')" id="mode-story_time">
             <div class="icon">&#x1F4DA;</div>
             <div class="label">Story Time</div>
         </div>
-        <div class="learning-card">
+        <div class="learning-card" onclick="activateMode('calm_breathe')" id="mode-calm_breathe">
             <div class="icon">&#x1F9D8;</div>
             <div class="label">Calm & Breathe</div>
         </div>
-        <div class="learning-card">
+        <div class="learning-card" onclick="activateMode('stem_sparks')" id="mode-stem_sparks">
             <div class="icon">&#x1F52C;</div>
             <div class="label">STEM Sparks</div>
         </div>
-        <div class="learning-card">
+        <div class="learning-card" onclick="activateMode('music_rhythm')" id="mode-music_rhythm">
             <div class="icon">&#x1F3B5;</div>
             <div class="label">Music & Rhythm</div>
         </div>
-        <div class="learning-card coming-soon">
+        <div class="learning-card" onclick="activateMode('geography')" id="mode-geography">
             <div class="icon">&#x1F30E;</div>
             <div class="label">Geography</div>
         </div>
-        <div class="learning-card coming-soon">
+        <div class="learning-card" onclick="activateMode('italian')" id="mode-italian">
             <div class="icon">&#x1F1EE;&#x1F1F9;</div>
             <div class="label">Italian</div>
         </div>
-        <div class="learning-card coming-soon">
+        <div class="learning-card" onclick="activateMode('spanish')" id="mode-spanish">
             <div class="icon">&#x1F1F2;&#x1F1FD;</div>
             <div class="label">Spanish</div>
         </div>
-        <div class="learning-card coming-soon">
+        <div class="learning-card" onclick="activateMode('coding')" id="mode-coding">
             <div class="icon">&#x1F916;</div>
             <div class="label">Coding</div>
         </div>
@@ -597,6 +633,29 @@ const CHARACTERS = {
 let currentCharacter = 'corvo';
 let conversationHistory = [];
 let isActive = false;
+let currentMode = null;
+
+const MODE_NAMES = {
+    story_time: 'Story Time',
+    calm_breathe: 'Calm & Breathe',
+    stem_sparks: 'STEM Sparks',
+    music_rhythm: 'Music & Rhythm',
+    geography: 'Geography',
+    italian: 'Italian',
+    spanish: 'Spanish',
+    coding: 'Coding'
+};
+
+const MODE_GREETINGS = {
+    story_time: "Story Time! I love stories. What kind of adventure should we go on? Pirates? Space? A magical forest? You pick!",
+    calm_breathe: "Let's take a nice deep breath together... In through the nose... and out through the mouth... How are you feeling right now?",
+    stem_sparks: "STEM Sparks! I have a fun question for you. Ready? How many bones do you think a baby has. more than a grown-up or fewer? Take a guess!",
+    music_rhythm: "Music time! Let's make some rhythm together. Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
+    geography: "Let's go on a world adventure! Where should we fly to first? We could visit the pyramids in Egypt, the rainforest in Brazil, or the snow in Antarctica. Where to?",
+    italian: "Ciao! Let's learn some Italian together! Can you say ciao? That means hello! Bravissimo! What would you like to learn. colors, animals, or food?",
+    spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! \u00a1Muy bien! What should we learn. colors, animals, or food?",
+    coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!"
+};
 let mediaRecorder = null;
 let audioChunks = [];
 let isListening = false;
@@ -610,6 +669,50 @@ const heroImg = document.getElementById('hero-img');
 const charNameEl = document.getElementById('char-name');
 const charMeaningEl = document.getElementById('char-meaning');
 const storyLabelEl = document.getElementById('story-label');
+
+function activateMode(modeKey) {
+    if (currentMode === modeKey) {
+        exitMode();
+        return;
+    }
+    currentMode = modeKey;
+
+    // Update card styles
+    document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
+    const card = document.getElementById('mode-' + modeKey);
+    if (card) card.classList.add('active');
+
+    // Show mode banner
+    const banner = document.getElementById('mode-banner');
+    const bannerText = document.getElementById('mode-banner-text');
+    bannerText.textContent = MODE_NAMES[modeKey] || modeKey;
+    banner.classList.add('visible');
+
+    // Reset conversation for new mode
+    conversationHistory = [];
+    isActive = true;
+    transcriptEl.innerHTML = '';
+
+    // Send mode greeting from the character
+    const char = CHARACTERS[currentCharacter];
+    const greeting = char.name + ': ' + (MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    addMessage('companion', MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    conversationHistory.push({role: 'assistant', content: MODE_GREETINGS[modeKey]});
+    speakText(MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    setState('idle');
+}
+
+function exitMode() {
+    currentMode = null;
+    document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('mode-banner').classList.remove('visible');
+
+    // Reset
+    conversationHistory = [];
+    isActive = false;
+    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>';
+    setState('idle');
+}
 
 function switchAnimal(key) {
     if (key === currentCharacter && !isActive) {
@@ -629,10 +732,18 @@ function switchAnimal(key) {
         charNameEl.textContent = char.name;
         charMeaningEl.textContent = char.meaning;
 
-        // Reset conversation
+        // Reset conversation (keep mode active if one is selected)
         isActive = false;
         conversationHistory = [];
-        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
+        if (currentMode) {
+            // Re-activate mode with new character
+            const savedMode = currentMode;
+            currentMode = null;
+            transcriptEl.innerHTML = '';
+            setTimeout(() => activateMode(savedMode), 100);
+        } else {
+            transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
+        }
         setState('idle');
         storyLabelEl.textContent = 'Click for Story Mode';
 
@@ -699,7 +810,8 @@ async function sendChat(userText) {
             body: JSON.stringify({
                 message: userText,
                 history: recentHistory,
-                character: currentCharacter
+                character: currentCharacter,
+                mode: currentMode
             })
         });
 
@@ -708,7 +820,7 @@ async function sendChat(userText) {
             const chatResp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter })
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode })
             });
             const data = await chatResp.json();
             const reply = data.response || "Hmm, something got tangled.";
