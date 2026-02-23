@@ -583,7 +583,11 @@ async def serve_index():
     index_path = os.path.join("static", "index.html")
     if not os.path.exists(index_path):
         raise HTTPException(status_code=404, detail="index.html not found in static/")
-    return FileResponse(index_path)
+    response = FileResponse(index_path)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # ---------------------------------------------------------------------------
 # POST /api/chat
