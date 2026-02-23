@@ -2135,23 +2135,23 @@ const MODE_NAMES = {
     milestones: 'Milestones'
 };
 
-// Dynamic introduction greeting uses character data
+// Dynamic introduction greeting — just name + ask their name
 function getIntroGreeting() {
     const char = CHARACTERS[currentCharacter];
-    return char.greetTTS + " What's your name?";
+    return "Hi! I'm " + char.name + ", " + char.meaning.toLowerCase() + ". What's your name?";
 }
 
 const MODE_GREETINGS = {
-    story_time: "Story Time! What kind of adventure should we go on? Pirates? Space? A magical forest? You pick!",
-    calm_breathe: "Let's take a nice deep breath together... In through the nose... and out through the mouth... How are you feeling?",
-    stem_sparks: "STEM Sparks! Ready? How many bones do you think a baby has, more than a grown-up or fewer? Take a guess!",
-    music_rhythm: "Music time! Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
-    geography: "Let's go on a world adventure! Where should we fly to first? Pyramids in Egypt, rainforest in Brazil, or snow in Antarctica?",
-    languages: "Language time! I can teach you ANY language. Italian, Spanish, French, Japanese, Mandarin, Arabic, German, Korean... What language would you like to learn?",
-    homework: "Homework Helper! What subject are you working on? Math, reading, spelling, science? Tell me what you need help with and we'll work through it together!",
-    coding: "Coding time! When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
-    teaching: "Teaching Mode! What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
-    milestones: "Let's see how far you've come! What have you been learning lately? Tell me something you're proud of!"
+    story_time: "Welcome to Story Time! In this mode, I tell you interactive stories where YOU are the hero. You pick the adventure and make the choices. Ready? What kind of story do you want? Pirates, space, jungle, or a magical forest?",
+    calm_breathe: "Welcome to Calm and Breathe. This is our quiet mode. I'll guide you through breathing exercises, mindfulness, and calming activities. Perfect for winding down or when you need a peaceful moment. Let's start... take a nice deep breath with me...",
+    stem_sparks: "Welcome to STEM Sparks! In this mode, I ask you fun science and nature questions and we learn cool facts together. Did you know stuff? Mind-blowing stuff. Ready for your first question? How many bones do you think a baby has, more than a grown-up or fewer?",
+    music_rhythm: "Welcome to Music and Rhythm! In this mode, we clap, stomp, sing, and make music together. I'll teach you rhythm patterns and we can even make up silly songs. Ready? Clap clap STOMP, clap clap STOMP! Your turn!",
+    geography: "Welcome to Geography! In this mode, I take you on adventures around the world. We'll visit countries, learn about landmarks, taste new foods, and discover how kids live everywhere. Where should we fly first? Egypt, Brazil, or Antarctica?",
+    languages: "Welcome to Languages! In this mode, I can teach you ANY language in the world. Italian, Spanish, French, Japanese, Mandarin, Arabic, German, Korean, and more. I'll teach you words, phrases, and fun facts about the culture. What language would you like to learn?",
+    homework: "Welcome to Homework Helper! In this mode, I help you work through your homework step by step. Math, reading, spelling, science. I won't give you the answers, but I'll guide you so you really understand it. What subject do you need help with?",
+    coding: "Welcome to Coding! In this mode, I teach you how to think like a programmer. We'll learn about sequences, loops, and problem solving through fun games. No screens needed. Want to try programming me? Give me 3 instructions and I'll follow them!",
+    teaching: "Welcome to Teaching Mode! In this mode, I run mini lessons on topics you pick. Colors, numbers, letters, shapes, or animals. I'll teach you, quiz you, and celebrate when you get it right. What do you want to learn?",
+    milestones: "Welcome to Milestones! This is where we celebrate everything you've learned. I'll help you remember what you've done and set fun new goals. Tell me something you're proud of lately!"
 };
 
 const introducedCompanions = new Set();
