@@ -995,6 +995,15 @@ async function startVoiceMode() {
 
             setState('idle');
             statusEl.textContent = 'Voice mode active. Just talk.';
+
+            // Trigger AI greeting so it speaks first
+            const char = CHARACTERS[currentCharacter];
+            rtcDC.send(JSON.stringify({
+                type: 'response.create',
+                response: {
+                    instructions: `Greet the user warmly. Introduce yourself as ${char.name}. Explain that "${char.meaning}". Then ask: "Would you like to give me a name, or should we save that for later?" Keep it to 2-3 sentences. Be in-character.`
+                }
+            }));
         };
 
         rtcDC.onmessage = (event) => {
