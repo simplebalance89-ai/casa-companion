@@ -1402,6 +1402,11 @@
         </div>
 
         <div class="learning-grid">
+            <div class="learning-card" onclick="activateModeFromStep3('introduction')" id="mode-introduction" style="border-color:rgba(212,160,23,0.4); background:rgba(212,160,23,0.06);">
+                <div class="icon">&#x1F44B;</div>
+                <div class="label">Introduction</div>
+                <div class="mode-desc">Meet your companion and tell them your name</div>
+            </div>
             <div class="learning-card" onclick="activateModeFromStep3('story_time')" id="mode-story_time">
                 <div class="icon">&#x1F4DA;</div>
                 <div class="label">Story Time</div>
@@ -1913,18 +1918,41 @@ function initTalkStep() {
     sessionLog.companionsUsed.add(char.name);
     logEvent('companion_selected', char.name);
 
-    // Reset conversation state
-    isActive = false;
-    demoRunning = false;
-    conversationHistory = [];
-    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
-    setState('idle');
-
     // Build companion switcher
     buildCompanionSwitcher();
 
     // Hide text input by default
     document.getElementById('input-row').classList.remove('visible');
+
+    // Auto-start introduction if first time meeting this companion
+    if (!introducedCompanions.has(currentCharacter)) {
+        introducedCompanions.add(currentCharacter);
+        isActive = true;
+        demoRunning = false;
+        demoCompleted = true;
+        conversationHistory = [];
+        currentMode = 'introduction';
+        sessionLog.modesActivated.add('Introduction');
+
+        const banner = document.getElementById('mode-banner');
+        const bannerText = document.getElementById('mode-banner-text');
+        bannerText.textContent = 'Meeting ' + char.name;
+        banner.classList.add('visible');
+
+        const introGreeting = getIntroGreeting();
+        transcriptEl.innerHTML = '';
+        addMessage('companion', introGreeting);
+        conversationHistory.push({role: 'assistant', content: introGreeting});
+        speakText(introGreeting);
+        setState('idle');
+    } else {
+        // Already met — just show idle state
+        isActive = false;
+        demoRunning = false;
+        conversationHistory = [];
+        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
+        setState('idle');
+    }
 }
 
 function buildCompanionSwitcher() {
@@ -2081,6 +2109,7 @@ let currentMode = null;
 let demoCompleted = false;
 
 const MODE_NAMES = {
+    introduction: 'Introduction',
     story_time: 'Story Time',
     calm_breathe: 'Calm & Breathe',
     stem_sparks: 'STEM Sparks',
@@ -2093,18 +2122,26 @@ const MODE_NAMES = {
     milestones: 'Milestones'
 };
 
+// Dynamic introduction greeting uses character data
+function getIntroGreeting() {
+    const char = CHARACTERS[currentCharacter];
+    return char.greetTTS + " What's your name?";
+}
+
 const MODE_GREETINGS = {
-    story_time: "Story Time! I love stories. What kind of adventure should we go on? Pirates? Space? A magical forest? You pick!",
-    calm_breathe: "Let's take a nice deep breath together... In through the nose... and out through the mouth... How are you feeling right now?",
-    stem_sparks: "STEM Sparks! I have a fun question for you. Ready? How many bones do you think a baby has. more than a grown-up or fewer? Take a guess!",
-    music_rhythm: "Music time! Let's make some rhythm together. Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
-    geography: "Let's go on a world adventure! Where should we fly to first? We could visit the pyramids in Egypt, the rainforest in Brazil, or the snow in Antarctica. Where to?",
-    italian: "Ciao! Let's learn some Italian together! Can you say ciao? That means hello! Bravissimo! What would you like to learn. colors, animals, or food?",
-    spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! \u00a1Muy bien! What should we learn. colors, animals, or food?",
-    coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
-    teaching: "Teaching Mode! I'm ready to teach you something new. What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
+    story_time: "Story Time! What kind of adventure should we go on? Pirates? Space? A magical forest? You pick!",
+    calm_breathe: "Let's take a nice deep breath together... In through the nose... and out through the mouth... How are you feeling?",
+    stem_sparks: "STEM Sparks! Ready? How many bones do you think a baby has, more than a grown-up or fewer? Take a guess!",
+    music_rhythm: "Music time! Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
+    geography: "Let's go on a world adventure! Where should we fly to first? Pyramids in Egypt, rainforest in Brazil, or snow in Antarctica?",
+    italian: "Ciao! Let's learn some Italian! Can you say ciao? That means hello! What would you like to learn, colors, animals, or food?",
+    spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! What should we learn, colors, animals, or food?",
+    coding: "Coding time! When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
+    teaching: "Teaching Mode! What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
     milestones: "Let's see how far you've come! What have you been learning lately? Tell me something you're proud of!"
 };
+
+const introducedCompanions = new Set();
 
 let mediaRecorder = null;
 let audioChunks = [];
@@ -2196,7 +2233,7 @@ function handleDemoResponse(userText) {
 // Mode Activation
 // =========================================================================
 function activateMode(modeKey) {
-    if (currentMode === modeKey) {
+    if (currentMode === modeKey && modeKey !== 'introduction') {
         exitMode();
         return;
     }
@@ -2215,7 +2252,11 @@ function activateMode(modeKey) {
 
     const banner = document.getElementById('mode-banner');
     const bannerText = document.getElementById('mode-banner-text');
-    bannerText.textContent = MODE_NAMES[modeKey] || modeKey;
+    if (modeKey === 'introduction') {
+        bannerText.textContent = 'Meeting ' + CHARACTERS[currentCharacter].name;
+    } else {
+        bannerText.textContent = MODE_NAMES[modeKey] || modeKey;
+    }
     banner.classList.add('visible');
 
     conversationHistory = [];
@@ -2224,9 +2265,17 @@ function activateMode(modeKey) {
     demoCompleted = true;
     transcriptEl.innerHTML = '';
 
-    addMessage('companion', MODE_GREETINGS[modeKey] || 'Let\'s get started!');
-    conversationHistory.push({role: 'assistant', content: MODE_GREETINGS[modeKey]});
-    speakText(MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    // Introduction mode uses dynamic greeting with name ask
+    let greeting;
+    if (modeKey === 'introduction') {
+        greeting = getIntroGreeting();
+    } else {
+        greeting = MODE_GREETINGS[modeKey] || 'Let\'s get started!';
+    }
+
+    addMessage('companion', greeting);
+    conversationHistory.push({role: 'assistant', content: greeting});
+    speakText(greeting);
     setState('idle');
 }
 
@@ -2323,15 +2372,27 @@ function switchAnimal(key) {
         // Update hero
         heroImg.src = char.img;
         heroImg.alt = char.name;
-        charNameEl.textContent = char.name;
+        charNameEl.textContent = char.customName ? char.customName + ' (' + char.name + ')' : char.name;
         charMeaningEl.textContent = char.meaning;
-        document.getElementById('voice-btn-label').textContent = 'Talk to ' + char.name;
+        document.getElementById('voice-btn-label').textContent = 'Talk to ' + (char.customName || char.name);
 
         // Reset conversation
         isActive = false;
         demoRunning = false;
         conversationHistory = [];
-        if (currentMode) {
+
+        if (!introducedCompanions.has(key)) {
+            // First time meeting this companion — auto-intro
+            introducedCompanions.add(key);
+            currentMode = null;
+            transcriptEl.innerHTML = '';
+            setTimeout(() => {
+                if (switchGeneration === thisGeneration) {
+                    activateMode('introduction');
+                }
+            }, 300);
+        } else if (currentMode && currentMode !== 'introduction') {
+            // Already met — stay in current mode with new companion
             const savedMode = currentMode;
             currentMode = null;
             transcriptEl.innerHTML = '';
@@ -2341,6 +2402,7 @@ function switchAnimal(key) {
                 }
             }, 300);
         } else {
+            currentMode = null;
             transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
         }
         setState('idle');
@@ -2378,23 +2440,18 @@ function toggleStoryMode() {
         isActive = true;
         sessionLog.companionsUsed.add(char.name);
         logEvent('conversation_started', char.name);
-        transcriptEl.innerHTML = '';
 
-        addMessage('companion', char.greeting);
-        setState('idle');
-        conversationHistory = [
-            {role: 'assistant', content: char.greeting}
-        ];
-
-        if (!demoCompleted) {
-            speakText(char.greetTTS).then(() => {
-                if (!demoCompleted && !demoRunning) {
-                    startGuidedDemo();
-                }
-            });
-        } else {
-            speakText(char.greetTTS);
+        // If not in introduction mode already, start a simple free chat
+        if (currentMode !== 'introduction') {
+            transcriptEl.innerHTML = '';
+            const welcomeBack = char.customName
+                ? "Hey " + char.customName + "! What would you like to do?"
+                : "Hey! What would you like to do?";
+            addMessage('companion', welcomeBack);
+            conversationHistory = [{role: 'assistant', content: welcomeBack}];
+            speakText(welcomeBack);
         }
+        setState('idle');
     } else if (isListening) {
         stopVoiceInput();
     } else if (currentState === 'idle') {
@@ -2470,6 +2527,30 @@ function checkVoiceTrigger(text) {
     return { matched: false };
 }
 
+function tryCaptureName(text) {
+    // Try to extract a name from user's introduction response
+    const cleaned = text.trim().replace(/[.!?,]/g, '');
+    const patterns = [
+        /(?:my name is|i'm|i am|it's|call me|they call me)\s+(\w+)/i,
+        /^(\w+)$/i,  // single word = likely just a name
+    ];
+    for (const pat of patterns) {
+        const m = cleaned.match(pat);
+        if (m && m[1]) {
+            const name = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+            // Filter out common non-name words
+            const skipWords = new Set(['yes','no','hi','hey','hello','sure','ok','okay','yeah','yep','nah','nope','the','a','an','um','uh']);
+            if (!skipWords.has(name.toLowerCase()) && name.length > 1) {
+                CHARACTERS[currentCharacter].customName = name;
+                logEvent('name_captured', name);
+                // Update the hero display with custom name
+                charNameEl.textContent = name + ' (' + CHARACTERS[currentCharacter].name + ')';
+                return;
+            }
+        }
+    }
+}
+
 async function sendChat(userText) {
     sessionLog.messages++;
 
@@ -2520,6 +2601,9 @@ async function sendChat(userText) {
             const reply = data.response || "Hmm, something got tangled.";
             conversationHistory.push({role: 'assistant', content: reply});
             addMessage('companion', reply);
+            if (currentMode === 'introduction' && !CHARACTERS[currentCharacter].customName) {
+                tryCaptureName(userText);
+            }
             speakText(reply);
             return;
         }
@@ -2534,6 +2618,11 @@ async function sendChat(userText) {
 
         conversationHistory.push({role: 'assistant', content: reply});
         addMessage('companion', reply);
+
+        // Name capture in introduction mode
+        if (currentMode === 'introduction' && !CHARACTERS[currentCharacter].customName) {
+            tryCaptureName(userText);
+        }
 
         const audioBytes = buffer.slice(4 + headerLen);
         if (audioBytes.byteLength > 0) {
@@ -2645,20 +2734,9 @@ function sendText() {
         isActive = true;
         sessionLog.companionsUsed.add(CHARACTERS[currentCharacter].name);
         logEvent('conversation_started', CHARACTERS[currentCharacter].name);
-        transcriptEl.innerHTML = '';
-        conversationHistory = [];
-
-        if (!demoCompleted) {
-            const char = CHARACTERS[currentCharacter];
-            addMessage('companion', char.greeting);
-            conversationHistory.push({role: 'assistant', content: char.greeting});
-            speakText(char.greetTTS).then(() => {
-                if (!demoCompleted && !demoRunning) {
-                    startGuidedDemo();
-                }
-            });
-            setTimeout(() => { if (demoRunning) { handleDemoResponse(text) || sendChat(text); } else { sendChat(text); } }, 100);
-            return;
+        if (!conversationHistory.length) {
+            transcriptEl.innerHTML = '';
+            conversationHistory = [];
         }
     }
     sendChat(text);

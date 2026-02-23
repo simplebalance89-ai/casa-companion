@@ -238,6 +238,18 @@ CORVO_SYSTEM_PROMPT = CHARACTER_PROMPTS["corvo"]["prompt"]
 # ---------------------------------------------------------------------------
 
 MODE_PROMPTS = {
+    "introduction": {
+        "name": "Introduction",
+        "icon": "\U0001F44B",
+        "prompt": (
+            "\n\n--- INTRODUCTION MODE ---\n"
+            "You are meeting someone for the first time! Give a warm, short introduction of yourself. "
+            "Tell them your name, what kind of animal you are, and one fun thing about your personality. "
+            "Then ask them: 'What's your name?' Keep it to 2-3 sentences max. "
+            "After they tell you their name, repeat it back excitedly and ask what they'd like to do together. "
+            "If they already told you their name, use it. Be warm and make them feel special."
+        ),
+    },
     "story_time": {
         "name": "Story Time",
         "icon": "\U0001F4DA",
