@@ -1293,12 +1293,12 @@
             <h2>Pick Your Companion</h2>
             <p>Tap to meet your new friend</p>
         </div>
+        <div style="text-align:center; padding:8px 0 12px;">
+            <label style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#FFE082; display:block; margin-bottom:8px;">What's your name? <span style="font-size:0.7rem; color:#8A7A5A;">(optional)</span></label>
+            <input type="text" id="custom-name-input" name="companion-nickname-x7q" placeholder="Your child's name..." maxlength="20" autocomplete="new-password" data-lpignore="true" data-form-type="other" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
+        </div>
         <div class="companion-grid" id="companion-grid">
             <!-- Populated by JS -->
-        </div>
-        <div id="name-your-companion" style="display:none; text-align:center; padding:12px 0;">
-            <label style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#FFE082; display:block; margin-bottom:8px;">Give them a name? <span style="font-size:0.7rem; color:#8A7A5A;">(optional)</span></label>
-            <input type="text" id="custom-name-input" name="companion-nickname-x7q" placeholder="e.g. Sparkle, Mr. Crow, Buddy..." maxlength="20" autocomplete="new-password" data-lpignore="true" data-form-type="other" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
         </div>
         <div class="modes-preview">
             <div class="modes-preview-header">
@@ -1928,12 +1928,6 @@ function selectCompanion(key) {
     const card = document.getElementById('cc-' + key);
     if (card) card.classList.add('selected');
     updatePickButton();
-    // Show the name input
-    const nameBox = document.getElementById('name-your-companion');
-    if (nameBox) {
-        nameBox.style.display = 'block';
-        document.getElementById('custom-name-input').placeholder = 'e.g. Sparkle, Mr. ' + CHARACTERS[key].name + ', Buddy...';
-    }
     // On mobile, scroll the Meet button into view so user sees it
     setTimeout(() => {
         const btn = document.getElementById('pick-next-btn');
@@ -1955,10 +1949,10 @@ function initTalkStep() {
     // Kill showcase demo if running
     if (showcaseRunning) endShowcaseDemo();
 
+    // Capture child's name from Step 1 input
     const nameInput = document.getElementById('custom-name-input');
     if (nameInput && nameInput.value.trim()) {
-        CHARACTERS[currentCharacter].customName = nameInput.value.trim();
-        nameInput.value = '';
+        childName = nameInput.value.trim();
     }
     const char = CHARACTERS[currentCharacter];
     heroImg.src = char.img;
@@ -2156,6 +2150,7 @@ function shareDemo() {
 // Core State
 // =========================================================================
 let currentCharacter = 'corvo';
+let childName = '';
 let conversationHistory = [];
 let isActive = false;
 let currentMode = null;
@@ -2175,11 +2170,11 @@ const MODE_NAMES = {
     milestones: 'Milestones'
 };
 
-// Dynamic introduction greeting — use custom name if given
+// Dynamic introduction greeting — use child's name if given
 function getIntroGreeting() {
     const char = CHARACTERS[currentCharacter];
-    if (char.customName) {
-        return "Oh wow, you named me " + char.customName + "! I love it! " + char.greetTTS;
+    if (childName) {
+        return "Hey " + childName + "! " + char.greetTTS;
     }
     return char.greetTTS;
 }
@@ -2799,7 +2794,7 @@ async function sendChat(userText) {
                 history: recentHistory,
                 character: currentCharacter,
                 mode: currentMode,
-                customName: CHARACTERS[currentCharacter].customName || null
+                customName: childName || CHARACTERS[currentCharacter].customName || null
             })
         });
 
@@ -2807,7 +2802,7 @@ async function sendChat(userText) {
             const chatResp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: CHARACTERS[currentCharacter].customName || null })
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: childName || CHARACTERS[currentCharacter].customName || null })
             });
             const data = await chatResp.json();
             const reply = data.response || "Hmm, something got tangled.";
