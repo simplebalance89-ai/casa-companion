@@ -197,6 +197,42 @@
         text-transform: uppercase;
     }
 
+    /* ===== MODES PREVIEW (Step 1) ===== */
+    .modes-preview {
+        width: 100%;
+        max-width: 700px;
+        margin: 8px 0 16px;
+        padding: 16px 20px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px;
+    }
+    .modes-preview-header { text-align: center; margin-bottom: 12px; }
+    .modes-preview-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }
+    .mp-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 8px 4px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    .mp-item:hover { background: rgba(212,160,23,0.08); }
+    .mp-icon { font-size: 1.1rem; }
+    .mp-label { font-size: 0.55rem; color: #8A7A5A; text-align: center; line-height: 1.2; }
+    .mp-item:hover .mp-label { color: #E0C8A0; }
+
+    @media (max-width: 480px) {
+        .modes-preview-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+        .mp-icon { font-size: 0.9rem; }
+        .mp-label { font-size: 0.5rem; }
+    }
+
     /* ===== STEP 1: PICK COMPANION ===== */
     .pick-header {
         text-align: center;
@@ -757,6 +793,15 @@
     }
     .learning-card .icon { font-size: 1.5rem; margin-bottom: 4px; }
     .learning-card .label { line-height: 1.2; }
+    .learning-card .mode-desc {
+        font-size: 0.55rem;
+        color: #8A7A5A;
+        line-height: 1.3;
+        margin-top: 4px;
+        opacity: 0.8;
+    }
+    .learning-card:hover .mode-desc { opacity: 1; color: #E0C8A0; }
+    .learning-card.active .mode-desc { color: #FFE082; opacity: 1; }
     .learning-card:hover {
         border-color: rgba(212,160,23,0.3);
         background: rgba(212,160,23,0.08);
@@ -1106,6 +1151,25 @@
         <div class="companion-grid" id="companion-grid">
             <!-- Populated by JS -->
         </div>
+        <div class="modes-preview">
+            <div class="modes-preview-header">
+                <div style="font-family:'Playfair Display',serif; font-size:1rem; color:#FFE082; margin-bottom:4px;">What Can They Do?</div>
+                <div style="font-size:0.7rem; color:#8A7A5A;">Every companion has 10 learning modes built in</div>
+            </div>
+            <div class="modes-preview-grid">
+                <div class="mp-item"><span class="mp-icon">&#x1F4DA;</span><span class="mp-label">Story Time</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F9D8;</span><span class="mp-label">Calm & Breathe</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F52C;</span><span class="mp-label">STEM Sparks</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F3B5;</span><span class="mp-label">Music & Rhythm</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F30E;</span><span class="mp-label">Geography</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F1EE;&#x1F1F9;</span><span class="mp-label">Italian</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F1F2;&#x1F1FD;</span><span class="mp-label">Spanish</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F916;</span><span class="mp-label">Coding</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F393;</span><span class="mp-label">Teaching</span></div>
+                <div class="mp-item"><span class="mp-icon">&#x1F3C6;</span><span class="mp-label">Milestones</span></div>
+            </div>
+        </div>
+
         <div class="step-nav">
             <button class="nav-btn secondary" onclick="goToStep(0)">Back</button>
             <button class="nav-btn primary" id="pick-next-btn" onclick="goToStep(2)" disabled>Meet Them</button>
@@ -1198,50 +1262,62 @@
             <div class="learning-card" onclick="activateModeFromStep3('story_time')" id="mode-story_time">
                 <div class="icon">&#x1F4DA;</div>
                 <div class="label">Story Time</div>
+                <div class="mode-desc">Interactive stories where your child picks the adventure</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('calm_breathe')" id="mode-calm_breathe">
                 <div class="icon">&#x1F9D8;</div>
                 <div class="label">Calm & Breathe</div>
+                <div class="mode-desc">Guided breathing and mindfulness for winding down</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('stem_sparks')" id="mode-stem_sparks">
                 <div class="icon">&#x1F52C;</div>
                 <div class="label">STEM Sparks</div>
+                <div class="mode-desc">Fun science questions and experiments explained simply</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('music_rhythm')" id="mode-music_rhythm">
                 <div class="icon">&#x1F3B5;</div>
                 <div class="label">Music & Rhythm</div>
+                <div class="mode-desc">Clapping games, rhythm patterns, and sing-alongs</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('geography')" id="mode-geography">
                 <div class="icon">&#x1F30E;</div>
                 <div class="label">Geography</div>
+                <div class="mode-desc">Explore countries, landmarks, and cultures around the world</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('italian')" id="mode-italian">
                 <div class="icon">&#x1F1EE;&#x1F1F9;</div>
                 <div class="label">Italian</div>
+                <div class="mode-desc">Learn colors, animals, food, and phrases in Italian</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('spanish')" id="mode-spanish">
                 <div class="icon">&#x1F1F2;&#x1F1FD;</div>
                 <div class="label">Spanish</div>
+                <div class="mode-desc">Learn colors, animals, food, and phrases in Spanish</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('coding')" id="mode-coding">
                 <div class="icon">&#x1F916;</div>
                 <div class="label">Coding</div>
+                <div class="mode-desc">Logical thinking and step-by-step problem solving</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('teaching')" id="mode-teaching">
                 <div class="icon">&#x1F393;</div>
                 <div class="label">Teaching</div>
+                <div class="mode-desc">Colors, numbers, letters, shapes, and animals</div>
             </div>
             <div class="learning-card" onclick="activateModeFromStep3('milestones')" id="mode-milestones">
                 <div class="icon">&#x1F3C6;</div>
                 <div class="label">Milestones</div>
+                <div class="mode-desc">Celebrate what your child has learned and track progress</div>
             </div>
             <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
                 <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
                 <div class="label">Parent Mode</div>
+                <div class="mode-desc">Customize voice, set limits, manage companion settings</div>
             </div>
             <div class="learning-card parent-card" onclick="openUsageLog()" id="mode-usage">
                 <div class="icon">&#x1F4CA;</div>
                 <div class="label">Usage Log</div>
+                <div class="mode-desc">See session history, topics covered, and time spent</div>
             </div>
         </div>
 
