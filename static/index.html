@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="2.3">
+<meta name="version" content="2.4">
 <title>Casa Companion — Meet the Family</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -1014,6 +1014,7 @@ let demoRunning = false;
 let demoStepIndex = 0;
 
 let waitingForName = false;
+let voiceResponseCount = 0;  // Track voice mode responses for capabilities intro
 
 async function startGuidedDemo() {
     if (demoCompleted || demoRunning) return;
@@ -1754,6 +1755,7 @@ async function startVoiceMode() {
             statusEl.textContent = 'Voice mode active. Just talk.';
 
             const char = CHARACTERS[currentCharacter];
+            voiceResponseCount = 0;
             rtcDC.send(JSON.stringify({
                 type: 'response.create',
                 response: {
@@ -1827,6 +1829,21 @@ function handleRTCEvent(msg) {
             }
             aiTranscriptEl = null;
             aiTranscriptBuffer = '';
+
+            // After greeting (response 1) + name reply (response 2), inject capabilities intro
+            voiceResponseCount++;
+            if (voiceResponseCount === 2 && !demoCompleted && voiceModeActive && rtcDC && rtcDC.readyState === 'open') {
+                demoCompleted = true;
+                setTimeout(() => {
+                    const char = CHARACTERS[currentCharacter];
+                    rtcDC.send(JSON.stringify({
+                        type: 'response.create',
+                        response: {
+                            instructions: `Now enthusiastically tell the child what you can do! Say something like: "I can do SO many things! I can tell stories, help you calm down and breathe, teach you science facts, make music, explore geography, speak Italian and Spanish, teach coding, and track your milestones! Would you like me to show you, or do you want to just play?" Keep it fun and in-character as ${char.name}. Be excited but not overwhelming.`
+                        }
+                    }));
+                }, 500);
+            }
             break;
 
         case 'output_audio_buffer.started':
