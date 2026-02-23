@@ -2135,10 +2135,10 @@ const MODE_NAMES = {
     milestones: 'Milestones'
 };
 
-// Dynamic introduction greeting — just name + ask their name
+// Dynamic introduction greeting — name + what they can do, no name ask
 function getIntroGreeting() {
     const char = CHARACTERS[currentCharacter];
-    return "Hi! I'm " + char.name + ", " + char.meaning.toLowerCase() + ". What's your name?";
+    return char.greetTTS;
 }
 
 const MODE_GREETINGS = {
@@ -2945,15 +2945,7 @@ async function startVoiceMode() {
 
             const char = CHARACTERS[currentCharacter];
             voiceResponseCount = 0;
-            // Only send intro greeting if we haven't already played one via TTS
-            if (currentMode !== 'introduction') {
-                rtcDC.send(JSON.stringify({
-                    type: 'response.create',
-                    response: {
-                        instructions: `Greet the user warmly. Introduce yourself as ${char.name} (${char.meaning}). Then tell them what you can do: stories, calm breathing, science, music, languages, and games. Ask what they want to try first. Keep it to 3-4 sentences max. Be enthusiastic and in-character. Do NOT ask for the user's name. After speaking, WAIT for the user to respond. Do NOT keep talking.`
-                    }
-                }));
-            }
+            // Don't auto-fire a greeting — TTS intro already played, let user speak first
         };
 
         rtcDC.onmessage = (event) => {
