@@ -1883,7 +1883,7 @@ async function startVoiceMode() {
             rtcDC.send(JSON.stringify({
                 type: 'response.create',
                 response: {
-                    instructions: `Greet the user warmly and immediately start the experience. Introduce yourself as ${char.name} (${char.meaning}). Then dive right in — ask if they want to hear a story, play a game, learn something, or just chat. Keep it to 2-3 sentences. Be enthusiastic and in-character. Do NOT ask for the user's name.`
+                    instructions: `Greet the user warmly. Introduce yourself as ${char.name} (${char.meaning}). Then tell them what you can do: stories, calm breathing, science, music, languages, and games. Ask what they want to try first. Keep it to 3-4 sentences max. Be enthusiastic and in-character. Do NOT ask for the user's name. After speaking, WAIT for the user to respond. Do NOT keep talking.`
                 }
             }));
         };
@@ -1956,17 +1956,9 @@ function handleRTCEvent(msg) {
 
             // After initial greeting (response 1), inject capabilities intro
             voiceResponseCount++;
-            if (voiceResponseCount === 1 && !demoCompleted && voiceModeActive && rtcDC && rtcDC.readyState === 'open') {
+            // After greeting, mark demo done and let user drive the conversation
+            if (voiceResponseCount === 1 && !demoCompleted) {
                 demoCompleted = true;
-                setTimeout(() => {
-                    const char = CHARACTERS[currentCharacter];
-                    rtcDC.send(JSON.stringify({
-                        type: 'response.create',
-                        response: {
-                            instructions: `Now enthusiastically tell the child what you can do! Say something like: "I can do SO many things! I can tell stories, help you calm down and breathe, teach you science facts, make music, explore geography, speak Italian and Spanish, teach coding, and track your milestones! Would you like me to show you, or do you want to just play?" Keep it fun and in-character as ${char.name}. Be excited but not overwhelming.`
-                        }
-                    }));
-                }, 500);
             }
             break;
 
