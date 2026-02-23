@@ -1833,6 +1833,18 @@ const CHARACTERS = {
         greeting: "*wags tail with dignity* Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
         greetTTS: "Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
         icon: '&#x1F415;'
+    },
+    // Hidden demo character — not shown in companion grid
+    polpo: {
+        name: 'Polpo',
+        animal: 'Octopus',
+        meaning: 'Polpo means Octopus in Italian',
+        img: '/static/images/heroes/octopus.png',
+        personality: 'Curious, playful, eight arms of fun',
+        greeting: "Eee eee eee! Hey there! I'm Polpo the Octopus! I've got eight arms and each one has a different talent. Want to see what I can do?",
+        greetTTS: "Hey there! I'm Polpo the Octopus! I've got eight arms and each one has a different talent. Want to see what I can do?",
+        icon: '&#x1F419;',
+        hidden: true
     }
 };
 
@@ -1894,6 +1906,7 @@ function buildCompanionGrid() {
     const grid = document.getElementById('companion-grid');
     grid.innerHTML = '';
     for (const [key, char] of Object.entries(CHARACTERS)) {
+        if (char.hidden) continue; // Skip hidden demo characters
         const card = document.createElement('div');
         card.className = 'companion-card' + (key === currentCharacter ? ' selected' : '');
         card.id = 'cc-' + key;
@@ -1939,6 +1952,9 @@ function updatePickButton() {
 // =========================================================================
 function initTalkStep() {
     // Capture custom name from Step 1 input
+    // Kill showcase demo if running
+    if (showcaseRunning) endShowcaseDemo();
+
     const nameInput = document.getElementById('custom-name-input');
     if (nameInput && nameInput.value.trim()) {
         CHARACTERS[currentCharacter].customName = nameInput.value.trim();
@@ -2270,16 +2286,16 @@ function handleDemoResponse(userText) {
 }
 
 // =========================================================================
-// Showcase Demo — "Watch Demo" with Dekan the Dolphin
+// Showcase Demo — "Watch Demo" with Dekan the Octopus
 // =========================================================================
-const SHOWCASE_CHARACTER = 'delfino';
+const SHOWCASE_CHARACTER = 'polpo';
 const SHOWCASE_NAME = 'Dekan';
 
 const SHOWCASE_SCRIPT = [
     {
         mode: null,
         banner: 'Meet Dekan',
-        text: "Eee eee eee! Hey there! I'm Dekan the Dolphin. I'm one of ten Casa Companions, and I'm about to show you what I can do. Buckle up!",
+        text: "Hey there! I'm Dekan the Octopus. I'm a special Casa Companion, and I'm about to show you what we can do. Eight arms, ten modes, one demo. Let's go!",
         pause: 1500
     },
     {
