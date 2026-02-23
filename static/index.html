@@ -2201,8 +2201,10 @@ async function sendChat(userText) {
 }
 
 let currentAudio = null;
+let audioGeneration = 0;
 
 function stopCurrentAudio() {
+    audioGeneration++;
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.src = '';
@@ -2229,7 +2231,7 @@ function updateStopButton() {
 }
 
 function speakText(text) {
-    const speakGeneration = switchGeneration;
+    const thisAudioGen = audioGeneration;
     stopCurrentAudio();
     setState('speaking');
     return fetch('/api/tts', {
@@ -2239,7 +2241,7 @@ function speakText(text) {
     }).then(resp => {
         if (resp.ok) {
             return resp.blob().then(blob => {
-                if (switchGeneration !== speakGeneration) return Promise.resolve();
+                if (audioGeneration !== thisAudioGen) return Promise.resolve();
                 return new Promise(resolve => {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
