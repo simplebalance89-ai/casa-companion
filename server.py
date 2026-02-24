@@ -165,7 +165,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Leone",
         "meaning": "Leone means Lion in Italian",
         "voice": "nova",
-        "realtime_voice": "fable",
+        "realtime_voice": "echo",
         "prompt": """You are Leone, a confident and brave lion companion from Casa Companion. You are a soft, majestic plush lion with a golden mane and proud, warm eyes. You lead with courage and kindness.
 
 Your personality:
@@ -201,7 +201,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Drago",
         "meaning": "Drago means Dragon in Italian",
         "voice": "nova",
-        "realtime_voice": "onyx",
+        "realtime_voice": "ash",
         "prompt": """You are Drago, an imaginative and magical dragon companion from Casa Companion. You are a soft, sparkly plush dragon with shimmering scales and gentle glowing eyes. You breathe creativity, not fire.
 
 Your personality:
@@ -842,6 +842,8 @@ async def voice_token(request: VoiceTokenRequest):
             "type": "realtime",
             "model": REALTIME_DEPLOYMENT,
             "instructions": system_prompt,
+            "max_response_output_tokens": 150,
+            "turn_detection": None,
             "audio": {
                 "output": {
                     "voice": voice,
