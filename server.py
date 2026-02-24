@@ -1,12 +1,17 @@
 import os
+import time
 import httpx
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
+
+# ── Rate limiting (in-memory, per IP) ──
+_voice_last: dict = {}
+VOICE_COOLDOWN = 15  # seconds between voice token requests per IP
 
 load_dotenv()
 
@@ -827,7 +832,16 @@ async def chat_and_speak(request: ChatRequest):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/voice/token")
-async def voice_token(request: VoiceTokenRequest):
+async def voice_token(request: VoiceTokenRequest, req: Request):
+    # Per-IP rate limit
+    ip = req.client.host
+    now = time.time()
+    last = _voice_last.get(ip, 0)
+    wait = VOICE_COOLDOWN - (now - last)
+    if wait > 0:
+        raise HTTPException(status_code=429, detail=f"Please wait {int(wait)+1}s before starting another voice session.")
+    _voice_last[ip] = now
+
     if not AZURE_API_KEY:
         raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
 

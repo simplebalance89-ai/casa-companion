@@ -3108,6 +3108,11 @@ async function toggleVoiceMode() {
         endVoiceMode();
         return;
     }
+    // Cooldown — disable button for 3s to prevent spam
+    const btn = document.getElementById('voice-primary-btn');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    setTimeout(() => { btn.disabled = false; }, 3000);
     await startVoiceMode();
 }
 
