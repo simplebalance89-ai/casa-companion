@@ -850,7 +850,6 @@ async def voice_token(request: VoiceTokenRequest):
             "type": "realtime",
             "model": REALTIME_DEPLOYMENT,
             "instructions": system_prompt,
-            "max_response_output_tokens": 150,
             "turn_detection": None,
             "audio": {
                 "output": {
