@@ -2910,7 +2910,7 @@ async function sendChat(userText) {
                 currentAudio = null;
                 setState('idle');
                 if (isActive && currentMode !== 'introduction') {
-                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 800);
                 }
             };
             audio.onerror = () => { currentAudio = null; setState('idle'); };
@@ -2976,7 +2976,7 @@ function speakText(text) {
                         currentAudio = null;
                         setState('idle');
                         if (isActive && !demoRunning && currentMode !== 'introduction') {
-                            setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                            setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 800);
                         }
                         resolve();
                     };
