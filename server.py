@@ -838,7 +838,7 @@ async def voice_token(request: VoiceTokenRequest):
     system_prompt = char_data["prompt"] + COPYRIGHT_GUARD
     voice = char_data.get("realtime_voice", "ash")
 
-    url = f"{AZURE_BASE}/openai/v1/realtime/client_secrets"
+    url = f"{AZURE_BASE}/openai/realtime/client_secrets?api-version=2024-12-01-preview"
 
     headers = {
         "api-key": AZURE_API_KEY,
@@ -846,18 +846,12 @@ async def voice_token(request: VoiceTokenRequest):
     }
 
     payload = {
-        "session": {
-            "type": "realtime",
-            "model": REALTIME_DEPLOYMENT,
-            "instructions": system_prompt,
-            "max_response_output_tokens": 150,
-            "turn_detection": None,
-            "audio": {
-                "output": {
-                    "voice": voice,
-                }
-            },
-        }
+        "model": REALTIME_DEPLOYMENT,
+        "voice": voice,
+        "instructions": system_prompt,
+        "modalities": ["audio", "text"],
+        "max_response_output_tokens": 150,
+        "turn_detection": None,
     }
 
     try:
