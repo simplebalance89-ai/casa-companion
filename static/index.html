@@ -2658,6 +2658,7 @@ function switchAnimal(key) {
             }, 300);
         } else {
             currentMode = null;
+            document.getElementById('mode-banner').classList.remove('visible');
             transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + char.name + '" to begin...</p>';
         }
         setState('idle');
