@@ -1394,7 +1394,6 @@
 
             <div class="step-nav" style="margin-top:12px;">
                 <button class="nav-btn secondary" onclick="goToStep(1)">Change Companion</button>
-                <button class="nav-btn demo-btn" onclick="startShowcaseDemo()" id="showcase-demo-btn" style="background:linear-gradient(135deg,#1a6b4a,#2d9a6e); color:#fff; border:none;">&#x1F3AC; Watch Demo</button>
                 <button class="nav-btn primary" onclick="goToStep(3)">Explore Modes</button>
             </div>
             <div style="text-align:center; margin-top:10px;">
@@ -2611,6 +2610,7 @@ function switchAnimal(key) {
         isActive = false;
         demoRunning = false;
         conversationHistory = [];
+        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + (char.customName || char.name) + '" to start talking...</p>';
 
         if (!introducedCompanions.has(key)) {
             // First time meeting this companion — auto-intro
@@ -2991,7 +2991,12 @@ async function startVoiceInput() {
     if (isListening) { stopVoiceInput(); return; }
 
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+            noiseSuppression: true,
+            echoCancellation: true,
+            autoGainControl: true,
+            channelCount: 1
+        } });
         audioChunks = [];
         mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
 
