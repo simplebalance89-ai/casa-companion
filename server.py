@@ -37,7 +37,7 @@ AZURE_BASE = "https://pwgcerp-9302-resource.openai.azure.com"
 CHAT_DEPLOYMENT = "gpt-4o"
 CHAT_API_VERSION = "2024-12-01-preview"
 
-REALTIME_DEPLOYMENT = "gpt-4o-realtime-preview"
+REALTIME_DEPLOYMENT = "gpt-4o-realtime"
 
 TTS_DEPLOYMENT = "gpt-4o-mini-tts"
 TTS_API_VERSION = "2025-04-01-preview"
