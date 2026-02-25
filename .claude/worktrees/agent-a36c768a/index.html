@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="version" content="4.0-azure">
+    <title>Casa Companion — Your Voice. Their Companion.</title>
+    <meta name="description" content="An AI plush toy that tells bedtime stories in your voice. Voice cloning, heritage languages, no screen. Kickstarter May 5, 2026.">
+    <meta property="og:title" content="Casa Companion — Your Voice. Their Companion.">
+    <meta property="og:description" content="An AI plush toy that tells bedtime stories in your voice. Even when you can't be there. Kickstarter May 5, 2026.">
+    <meta property="og:image" content="images/scene3-heroes.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Casa Companion — Your Voice. Their Companion.">
+    <meta name="twitter:description" content="An AI plush toy that tells bedtime stories in your voice. Kickstarter May 5, 2026.">
+    <meta name="twitter:image" content="images/scene3-heroes.png">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --crimson: #C41E3A;
+            --gold: #D4A017;
+            --green: #006847;
+            --cream: #FFFEF7;
+            --linen: #FAF7F2;
+            --dark: #0D0D1A;
+            --charcoal: #2C2C2C;
+            --text-light: #6B6B6B;
+            --border: #E8DDD0;
+            --sage: #8B9F82;
+            --terra: #C67B5C;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Nunito', sans-serif; background: var(--cream); color: var(--charcoal); }
+        a { color: var(--crimson); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* === NAV === */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(13,13,26,0.95); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .nav-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between; height: 60px;
+        }
+        .nav-logo {
+            font-family: 'Playfair Display', serif; font-size: 20px;
+            color: #fff; font-weight: 700; cursor: pointer;
+        }
+        .nav-logo span { color: var(--gold); }
+        .nav-links { display: none; gap: 28px; align-items: center; }
+        .nav-links a {
+            color: rgba(255,255,255,0.6); font-size: 13px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: #fff; text-decoration: none; }
+        .nav-cta-btn {
+            padding: 8px 20px; background: var(--crimson); color: #fff !important;
+            border-radius: 50px; font-size: 12px; font-weight: 800;
+            letter-spacing: 1px; text-transform: uppercase;
+            transition: transform 0.2s;
+        }
+        .nav-cta-btn:hover { transform: scale(1.05); text-decoration: none !important; }
+
+        /* Hamburger */
+        .nav-hamburger {
+            display: flex; flex-direction: column; gap: 5px; cursor: pointer; padding: 8px;
+        }
+        .nav-hamburger span {
+            width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.3s;
+        }
+        .nav-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+        .nav-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+        .nav-mobile {
+            display: none; position: fixed; top: 60px; left: 0; right: 0;
+            background: rgba(13,13,26,0.98); backdrop-filter: blur(12px);
+            padding: 8px 0; z-index: 99; border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .nav-mobile.open { display: block; }
+        .nav-mobile a {
+            display: block; padding: 14px 24px; color: rgba(255,255,255,0.6);
+            font-size: 15px; font-weight: 600; transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .nav-mobile a:hover {
+            color: #fff; background: rgba(196,30,58,0.1); border-left-color: var(--crimson);
+            text-decoration: none;
+        }
+
+        @media (min-width: 901px) {
+            .nav-links { display: flex; }
+            .nav-hamburger { display: none; }
+        }
+
+        /* === HERO === */
+        .hero {
+            min-height: 100vh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            padding: 100px 24px 60px;
+            background: linear-gradient(135deg, #1A0A0E 0%, #2D1117 30%, #1A1A2E 70%, #0D0D1A 100%);
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: url('images/scene1-father.png') center/cover no-repeat;
+            opacity: 0.15; z-index: 0;
+        }
+        .hero > * { position: relative; z-index: 1; }
+        .hero-badge {
+            font-size: 12px; color: var(--gold); text-transform: uppercase;
+            letter-spacing: 3px; font-weight: 700; margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-family: 'Playfair Display', serif; font-size: clamp(36px, 7vw, 72px);
+            color: #fff; line-height: 1.15; margin-bottom: 20px; font-weight: 900;
+        }
+        .hero h1 em { font-style: italic; color: var(--gold); }
+        .hero p.hero-sub {
+            color: rgba(255,255,255,0.6); font-size: 18px; max-width: 600px;
+            line-height: 1.6; margin-bottom: 40px;
+        }
+
+        /* Promo Player */
+        .promo-container {
+            width: 100%; max-width: 800px; margin: 0 auto;
+            position: relative; border-radius: 16px; overflow: hidden;
+            background: #000; border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 12px 48px rgba(0,0,0,0.4);
+        }
+        .promo-stage {
+            position: relative; width: 100%; padding-bottom: 75%; overflow: hidden;
+        }
+        .promo-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.6); cursor: pointer;
+            background-image: url('images/scene3-heroes.png');
+            background-size: cover; background-position: center;
+            transition: opacity 0.4s ease; z-index: 10;
+        }
+        .promo-overlay::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(13,13,26,0.65);
+        }
+        .promo-overlay.hidden { opacity: 0; pointer-events: none; }
+        .promo-play-btn {
+            width: 80px; height: 80px; border-radius: 50%; position: relative; z-index: 2;
+            background: var(--crimson); display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 32px rgba(196,30,58,0.5); transition: transform 0.2s;
+        }
+        .promo-play-btn:hover { transform: scale(1.1); }
+        .promo-play-btn svg { width: 32px; height: 32px; fill: #fff; margin-left: 4px; }
+        .promo-label {
+            margin-top: 16px; font-size: 14px; color: rgba(255,255,255,0.8);
+            position: relative; z-index: 2; text-transform: uppercase;
+            letter-spacing: 2px; font-weight: 700;
+        }
+
+        .promo-slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+            text-align: center; z-index: 1;
+            background-size: cover; background-position: center;
+            opacity: 0; transition: opacity 0.8s ease; pointer-events: none;
+        }
+        .promo-slide.active { opacity: 1; z-index: 2; pointer-events: auto; }
+        .promo-slide::before {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 1;
+        }
+
+        .ps-1  { background-image: url('images/scene1-father.png'); }
+        .ps-2  { background-image: url('images/life-boy-crow.png'); }
+        .ps-3  { background-image: url('images/scene3-heroes.png'); }
+        .ps-4  { background-image: url('images/life-nonna-kitchen.png'); }
+        .ps-5  { background-image: url('images/life-grandparent-distance.png'); }
+        .ps-6  { background-image: url('images/banner-father-recording.png'); }
+        .ps-7  { background-image: url('images/scene5-crow.png'); }
+        .ps-8  { background-image: url('images/eng-exploded.png'); }
+        .ps-9  { background-image: url('images/packaging-box.png'); }
+        .ps-10 { background-image: url('images/banner-crow-cinematic.png'); }
+
+        .p-text-box {
+            position: relative; z-index: 2; padding: clamp(12px, 2vw, 28px) clamp(12px, 3vw, 32px);
+            width: 100%; margin-top: auto;
+        }
+        .p-phrase {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(11px, 1.8vw, 22px);
+            color: rgba(255,255,255,0.9); line-height: 1.4;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+        }
+        .p-phrase em { color: var(--gold); font-style: italic; }
+        .p-phrase.p-highlight { font-weight: 700; font-size: clamp(13px, 2.2vw, 28px); }
+
+        .promo-progress {
+            position: absolute; bottom: 0; left: 0; height: 3px;
+            background: var(--crimson); z-index: 20; width: 0%;
+            transition: width 0.3s linear;
+        }
+
+        .hero-stats {
+            display: flex; gap: 48px; margin-top: 48px; flex-wrap: wrap; justify-content: center;
+        }
+        .hero-stat { text-align: center; }
+        .hero-stat .num { font-family: 'Playfair Display', serif; font-size: 36px; color: var(--gold); font-weight: 700; }
+        .hero-stat .label { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+        /* === SECTION SHARED === */
+        .section-cream { background: var(--cream); }
+        .section-linen { background: var(--linen); }
+        .section-dark { background: var(--dark); color: #fff; }
+
+        .content { max-width: 1000px; margin: 0 auto; padding: 80px 24px; }
+        .content h2 {
+            font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 42px);
+            color: var(--charcoal); margin-bottom: 12px; font-weight: 700;
+        }
+        .section-dark .content h2 { color: #fff; }
+        .content h3 {
+            font-family: 'Playfair Display', serif; font-size: 24px;
+            color: var(--charcoal); margin: 32px 0 12px; font-weight: 700;
+        }
+        .content p { color: var(--text-light); line-height: 1.8; margin-bottom: 16px; font-size: 16px; }
+        .section-dark .content p { color: rgba(255,255,255,0.6); }
+        .content .subtitle {
+            color: var(--crimson); font-weight: 700; font-size: 14px;
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+        }
+        .section-dark .content .subtitle { color: var(--gold); }
+        .text-center { text-align: center; }
+
+        /* === QUOTE === */
+        .quote {
+            border-left: 4px solid var(--crimson); padding: 20px 28px; margin: 32px 0;
+            background: rgba(196,30,58,0.03); border-radius: 0 8px 8px 0;
+        }
+        .quote p { font-style: italic; color: var(--charcoal); font-size: 20px; margin: 0; line-height: 1.6; }
+        .quote .attr { font-style: normal; font-size: 14px; color: var(--text-light); margin-top: 8px; display: block; }
+        .section-dark .quote { background: rgba(255,255,255,0.05); border-left-color: var(--gold); }
+        .section-dark .quote p { color: #fff; }
+
+        /* === ORIGIN IMAGE + TEXT === */
+        .origin-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-top: 40px;
+        }
+        .origin-layout img {
+            width: 100%; border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+            .origin-layout { grid-template-columns: 1fr; }
+        }
+
+        /* === COMPANION GRID === */
+        .companion-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin: 40px 0;
+        }
+        .companion-card {
+            background: #fff; border: 1px solid var(--border); border-radius: 16px;
+            padding: 24px 16px; text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .companion-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .companion-card img {
+            width: 80px; height: 80px; object-fit: contain; border-radius: 50%;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15)); margin-bottom: 12px;
+        }
+        .companion-card .c-name {
+            font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700;
+        }
+        .companion-card .c-animal {
+            color: var(--gold); font-style: italic; font-size: 13px; margin-top: 2px;
+        }
+        .companion-card .c-desc {
+            color: var(--text-light); font-size: 12px; margin-top: 6px; line-height: 1.4;
+        }
+        @media (max-width: 900px) { .companion-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 600px) { .companion-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* === STEPS === */
+        .steps-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; margin: 40px 0;
+        }
+        .step-card { text-align: center; }
+        .step-num {
+            width: 48px; height: 48px; background: var(--crimson); color: #fff;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 20px; margin: 0 auto 16px;
+        }
+        .step-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .step-card p { font-size: 14px; color: var(--text-light); line-height: 1.5; }
+        @media (max-width: 768px) { .steps-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        /* === FULL-WIDTH EMOTIONAL === */
+        .emotional-banner {
+            position: relative; padding: 100px 24px; text-align: center;
+            background-size: cover; background-position: center;
+            overflow: hidden;
+        }
+        .emotional-banner::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13,13,26,0.75); z-index: 0;
+        }
+        .emotional-banner > * { position: relative; z-index: 1; }
+        .emotional-banner h2 {
+            font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 48px);
+            color: #fff; margin-bottom: 20px; font-weight: 700; max-width: 800px; margin-left: auto; margin-right: auto;
+        }
+        .emotional-banner p {
+            color: rgba(255,255,255,0.7); font-size: 18px; max-width: 700px;
+            margin: 0 auto 16px; line-height: 1.7;
+        }
+        .emotional-banner .legacy-line {
+            font-family: 'Playfair Display', serif; color: var(--gold);
+            font-size: clamp(18px, 3vw, 28px); font-style: italic; margin-top: 24px;
+        }
+
+        /* === STAT HIGHLIGHT === */
+        .stat-highlight {
+            font-family: 'Playfair Display', serif; font-size: clamp(48px, 8vw, 96px);
+            color: var(--crimson); font-weight: 900; margin-bottom: 16px;
+        }
+        .section-dark .stat-highlight { color: var(--gold); }
+
+        /* === COMPARISON TABLE === */
+        .comp-table { width: 100%; border-collapse: collapse; margin: 32px 0; font-size: 14px; }
+        .comp-table th {
+            background: var(--dark); color: #fff; padding: 12px 16px; text-align: left; font-weight: 600;
+        }
+        .comp-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+        .comp-table tr:hover { background: rgba(196,30,58,0.03); }
+        .comp-table .check { color: var(--green); font-weight: 700; }
+        .comp-table .dash { color: #ccc; }
+        .comp-table .winner { background: rgba(196,30,58,0.06); }
+        @media (max-width: 600px) {
+            .comp-table { font-size: 11px; }
+            .comp-table th, .comp-table td { padding: 6px 8px; }
+        }
+
+        /* === HARDWARE FEATURES === */
+        .hw-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin: 40px 0;
+        }
+        .hw-layout img { width: 100%; border-radius: 16px; }
+        .hw-features { list-style: none; }
+        .hw-features li {
+            padding: 12px 0; font-size: 15px; color: var(--text-light);
+            border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px;
+        }
+        .hw-features .hw-icon {
+            width: 36px; height: 36px; background: rgba(196,30,58,0.08); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+            font-size: 16px;
+        }
+        @media (max-width: 768px) { .hw-layout { grid-template-columns: 1fr; } }
+
+        /* === DEMO SECTION === */
+        .demo-section {
+            background: var(--linen); padding: 80px 24px; text-align: center;
+        }
+        .demo-btn {
+            display: inline-block; padding: 18px 48px; background: var(--crimson);
+            color: #fff; font-weight: 800; font-size: 16px; border-radius: 50px;
+            letter-spacing: 1px; text-transform: uppercase;
+            box-shadow: 0 8px 32px rgba(196,30,58,0.3); transition: transform 0.2s;
+            margin-top: 24px;
+        }
+        .demo-btn:hover { transform: scale(1.05); text-decoration: none; }
+
+        /* === KICKSTARTER === */
+        .ks-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin: 40px 0;
+        }
+        .ks-card {
+            background: #fff; border: 2px solid var(--border); border-radius: 16px;
+            padding: 32px 24px; text-align: center; position: relative;
+        }
+        .ks-card.featured { border-color: var(--crimson); }
+        .ks-card.featured::before {
+            content: 'MOST POPULAR'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--crimson); color: #fff; padding: 4px 16px; border-radius: 20px;
+            font-size: 11px; font-weight: 800; letter-spacing: 1px;
+        }
+        .ks-card .tier-name {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--text-light); margin-bottom: 8px;
+        }
+        .ks-card .price {
+            font-family: 'Playfair Display', serif; font-size: 48px;
+            font-weight: 900; color: var(--charcoal);
+        }
+        .ks-card .price-note { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+        .ks-card ul { list-style: none; margin: 20px 0 0; text-align: left; }
+        .ks-card li {
+            padding: 6px 0; font-size: 14px; color: var(--text-light);
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .ks-card li::before { content: '\2713 '; color: var(--green); font-weight: 700; }
+        @media (max-width: 768px) { .ks-grid { grid-template-columns: 1fr; } }
+
+        /* Countdown */
+        .countdown {
+            display: flex; gap: 24px; justify-content: center; margin: 32px 0; flex-wrap: wrap;
+        }
+        .countdown-item { text-align: center; }
+        .countdown-num {
+            font-family: 'Playfair Display', serif; font-size: 48px;
+            font-weight: 900; color: var(--crimson); line-height: 1;
+        }
+        .countdown-label {
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-light); margin-top: 4px;
+        }
+
+        /* Email capture */
+        .email-form {
+            display: flex; gap: 12px; max-width: 500px; margin: 32px auto 0;
+            justify-content: center;
+        }
+        .email-form input[type="email"] {
+            flex: 1; padding: 14px 20px; border: 2px solid var(--border);
+            border-radius: 50px; font-size: 15px; font-family: 'Nunito', sans-serif;
+            outline: none; background: #fff;
+        }
+        .email-form input[type="email"]:focus { border-color: var(--crimson); }
+        .email-form button {
+            padding: 14px 28px; background: var(--crimson); color: #fff;
+            border: none; border-radius: 50px; font-size: 14px; font-weight: 800;
+            cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+            transition: transform 0.2s; font-family: 'Nunito', sans-serif;
+        }
+        .email-form button:hover { transform: scale(1.05); }
+        @media (max-width: 500px) {
+            .email-form { flex-direction: column; }
+            .email-form input, .email-form button { width: 100%; }
+        }
+
+        /* === FAQ === */
+        .faq-item { border-bottom: 1px solid var(--border); }
+        .faq-question {
+            padding: 20px 0; font-size: 16px; font-weight: 700; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .faq-question::after { content: '+'; font-size: 24px; color: var(--crimson); transition: transform 0.3s; }
+        .faq-question.open::after { transform: rotate(45deg); }
+        .faq-answer {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+        }
+        .faq-answer p { padding-bottom: 20px; font-size: 15px; color: var(--text-light); }
+
+        /* === FOOTER === */
+        .footer {
+            background: var(--dark); padding: 60px 24px 40px; text-align: center;
+        }
+        .footer-logo {
+            font-family: 'Playfair Display', serif; font-size: 28px;
+            color: #fff; font-weight: 700; margin-bottom: 8px;
+        }
+        .footer-logo span { color: var(--gold); }
+        .footer p { color: rgba(255,255,255,0.4); font-size: 13px; margin-top: 8px; }
+        .footer-tagline {
+            color: rgba(255,255,255,0.6) !important; font-style: italic;
+            font-size: 15px !important; margin-bottom: 16px !important;
+        }
+        .footer-capo {
+            display: inline-block; margin-top: 24px; padding: 8px 20px;
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 50px;
+            color: var(--gold) !important; font-size: 12px !important;
+            letter-spacing: 2px; text-transform: uppercase; font-weight: 700;
+        }
+
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0; transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+    <div class="nav-inner">
+        <div class="nav-logo" onclick="window.scrollTo({top:0,behavior:'smooth'})">Casa <span>Companion</span></div>
+        <div class="nav-links">
+            <a href="#origin">Our Story</a>
+            <a href="#companions">Companions</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#hardware">Hardware</a>
+            <a href="#faq">FAQ</a>
+            <a href="#kickstarter" class="nav-cta-btn">Kickstarter</a>
+        </div>
+        <div class="nav-hamburger" onclick="this.classList.toggle('open'); document.getElementById('mobileMenu').classList.toggle('open')">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+    <div class="nav-mobile" id="mobileMenu">
+        <a href="#origin" onclick="closeMobile()">Our Story</a>
+        <a href="#companions" onclick="closeMobile()">Companions</a>
+        <a href="#how-it-works" onclick="closeMobile()">How It Works</a>
+        <a href="#grandparent" onclick="closeMobile()">Grandparents</a>
+        <a href="#heritage" onclick="closeMobile()">Heritage</a>
+        <a href="#hardware" onclick="closeMobile()">Hardware</a>
+        <a href="#demo" onclick="closeMobile()">Try Demo</a>
+        <a href="#faq" onclick="closeMobile()">FAQ</a>
+        <a href="#kickstarter" onclick="closeMobile()">Kickstarter</a>
+    </div>
+</nav>
+
+<!-- SECTION 1: HERO -->
+<section class="hero" id="hero">
+    <div class="hero-badge">Kickstarter May 5, 2026</div>
+    <h1>Your Voice.<br>Their <em>Companion.</em></h1>
+    <p class="hero-sub">An AI plush toy that tells bedtime stories in your voice. Even when you can't be there.</p>
+
+    <div class="promo-container">
+        <div class="promo-stage">
+            <div class="promo-overlay" id="promoOverlay" onclick="startPromo()">
+                <div class="promo-play-btn">
+                    <svg viewBox="0 0 24 24"><polygon points="8,5 19,12 8,19"/></svg>
+                </div>
+                <div class="promo-label">Watch the Founder Story</div>
+            </div>
+            <div class="promo-slide ps-1" data-clip="1"><div class="p-text-box"><div class="p-phrase">I build AI for business. When my son was born, I wanted something <em>real</em>. Nothing existed. So I built one.</div></div></div>
+            <div class="promo-slide ps-2" data-clip="2"><div class="p-text-box"><div class="p-phrase">Let my nephews try it. Two and four years old. They wouldn't put it down. <em>That's when I knew.</em></div></div></div>
+            <div class="promo-slide ps-3" data-clip="3"><div class="p-text-box"><div class="p-phrase">Ten companions. Each with their own personality. <em>Corvo, Gufo, Orsetto, Coniglio, Tartaruga, Elefante, Leone, Delfino, Drago, and Xolo.</em></div></div></div>
+            <div class="promo-slide ps-4" data-clip="4"><div class="p-text-box"><div class="p-phrase p-highlight"><em>75%</em> of heritage languages are lost by the third generation. Unless you build something to keep them.</div></div></div>
+            <div class="promo-slide ps-5" data-clip="5"><div class="p-text-box"><div class="p-phrase">Record twelve phrases. Five minutes. Grandma reads bedtime stories from a thousand miles away. <em>Not through a screen.</em></div></div></div>
+            <div class="promo-slide ps-6" data-clip="6"><div class="p-text-box"><div class="p-phrase">We cloned my mother's voice so my son could hear her. That voice doesn't expire. <em>That's not a feature. That's a legacy.</em></div></div></div>
+            <div class="promo-slide ps-7" data-clip="7"><div class="p-text-box"><div class="p-phrase">Teddy Ruxpin gave us a bond. Cabbage Patch made it personal. This is what this generation deserves. <em>Built with real AI.</em></div></div></div>
+            <div class="promo-slide ps-8" data-clip="8"><div class="p-text-box"><div class="p-phrase">One electronics pod. Ten plush shells. Magnetic dock. Machine washable. <em>No camera. No screen. No microtransactions.</em></div></div></div>
+            <div class="promo-slide ps-9" data-clip="9"><div class="p-text-box"><div class="p-phrase">Bluetooth sync. Parent mode. Teaching mode. <em>Built for real kids. Built for real parents.</em></div></div></div>
+            <div class="promo-slide ps-10" data-clip="10"><div class="p-text-box"><div class="p-phrase p-highlight">Casa Companion. Kickstarter <em>May fifth</em>. Everyone else announced it. We built it. <em>Capisce.</em></div></div></div>
+            <div class="promo-progress" id="promoProgress"></div>
+        </div>
+    </div>
+
+    <div class="hero-stats">
+        <div class="hero-stat"><div class="num">10</div><div class="label">Companions</div></div>
+        <div class="hero-stat"><div class="num">3</div><div class="label">Languages</div></div>
+        <div class="hero-stat"><div class="num">0</div><div class="label">Screens</div></div>
+    </div>
+</section>
+
+<!-- SECTION 2: ORIGIN STORY -->
+<section class="section-cream" id="origin">
+    <div class="content">
+        <div class="fade-in">
+            <div class="subtitle">The Origin Story</div>
+            <h2>Why I Built This</h2>
+        </div>
+        <div class="origin-layout fade-in">
+            <div>
+                <div class="quote">
+                    <p>"My mother died when I was 17. I have 10 memories of her voice."</p>
+                </div>
+                <p>I'm Peter. I build AI systems for Fortune 500 companies. ERP integrations, data pipelines, enterprise automation. That's the day job.</p>
+                <p>When my son Gian Lucca was born, I looked for something that could talk to him. Something soft he could hold. Something that could teach him Italian the way my mother taught me. Something with a real voice, not a robot.</p>
+                <p>Nothing existed. Not from any company at any price point. So I built it.</p>
+                <p>I built it so my son could hear me when I'm traveling. I built it so my mother-in-law could read him bedtime stories from Buenos Aires. And I built it so that voice, her voice, would never disappear.</p>
+                <p style="font-weight:700; color: var(--charcoal);">Then I built it so every family could keep theirs.</p>
+            </div>
+            <img src="images/life-nonna-kitchen.png" alt="Grandmother and child in kitchen" loading="lazy">
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 3: MEET THE COMPANIONS -->
+<section class="section-linen" id="companions">
+    <div class="content text-center">
+        <div class="fade-in">
+            <div class="subtitle">Meet the Family</div>
+            <h2>10 Companions. 10 Personalities.</h2>
+            <p>One electronics pod, ten plush shells. Pick the friend that speaks to your family.</p>
+        </div>
+        <div class="companion-grid fade-in">
+            <div class="companion-card">
+                <img src="images/hero-crow.png" alt="Corvo" loading="lazy">
+                <div class="c-name">Corvo</div>
+                <div class="c-animal">The Crow</div>
+                <div class="c-desc">Wise storyteller. Loves riddles and Italian folklore.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-owl.png" alt="Gufo" loading="lazy">
+                <div class="c-name">Gufo</div>
+                <div class="c-animal">The Owl</div>
+                <div class="c-desc">Night-time guardian. Calm bedtime stories.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-bear.png" alt="Orsetto" loading="lazy">
+                <div class="c-name">Orsetto</div>
+                <div class="c-animal">The Bear</div>
+                <div class="c-desc">Gentle giant. Patient teacher. Big hugs.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-bunny.png" alt="Coniglio" loading="lazy">
+                <div class="c-name">Coniglio</div>
+                <div class="c-animal">The Bunny</div>
+                <div class="c-desc">Curious explorer. Always asking "why?"</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-turtle.png" alt="Tartaruga" loading="lazy">
+                <div class="c-name">Tartaruga</div>
+                <div class="c-animal">The Turtle</div>
+                <div class="c-desc">Slow and steady. Mindfulness and calm.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-elephant.png" alt="Elefante" loading="lazy">
+                <div class="c-name">Elefante</div>
+                <div class="c-animal">The Elephant</div>
+                <div class="c-desc">Never forgets. Memory games and history.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-lion.png" alt="Leone" loading="lazy">
+                <div class="c-name">Leone</div>
+                <div class="c-animal">The Lion</div>
+                <div class="c-desc">Brave leader. Confidence and courage.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-dolphin.png" alt="Delfino" loading="lazy">
+                <div class="c-name">Delfino</div>
+                <div class="c-animal">The Dolphin</div>
+                <div class="c-desc">Playful and smart. Music and language.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-dragon.png" alt="Drago" loading="lazy">
+                <div class="c-name">Drago</div>
+                <div class="c-animal">The Dragon</div>
+                <div class="c-desc">Imagination engine. Fantasy and adventure.</div>
+            </div>
+            <div class="companion-card">
+                <img src="images/hero-xolo.png" alt="Xolo" loading="lazy">
+                <div class="c-name">Xolo</div>
+                <div class="c-animal">The Xoloitzcuintli</div>
+                <div class="c-desc">Spirit guide. Mexican heritage and legends.</div>
+            </div>
+        </div>
+        <p style="color: var(--gold); font-weight: 700; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; margin-top: 16px;">Powered by Capo AI</p>
+    </div>
+</section>
+
+<!-- SECTION 4: HOW VOICE CLONING WORKS -->
+<section class="section-cream" id="how-it-works">
+    <div class="content text-center">
+        <div class="fade-in">
+            <div class="subtitle">Voice Cloning</div>
+            <h2>Your Voice. Five Minutes. Forever.</h2>
+            <p>Record 12 simple phrases on your phone. Our AI learns your voice. Your child's companion speaks in it.</p>
+        </div>
+        <div class="steps-grid fade-in">
+            <div class="step-card">
+                <div class="step-num">1</div>
+                <h4>Open the App</h4>
+                <p>Download Casa Companion. Create your family profile.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">2</div>
+                <h4>Read 12 Phrases</h4>
+                <p>Simple sentences. Five minutes total. Guided recording studio.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">3</div>
+                <h4>Voice Cloned</h4>
+                <p>AI processes your voice print. Ready in minutes. Encrypted and private.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">4</div>
+                <h4>They Hear You</h4>
+                <p>Your child hears bedtime stories, lessons, and songs in your voice.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 5: GRANDPARENT BRIDGE -->
+<section class="emotional-banner" id="grandparent" style="background-image: url('images/life-grandparent-distance.png');">
+    <h2>70 Million Grandparents. 42% in a Different State.</h2>
+    <p>Grandma records 12 phrases on her phone. Your child hears her voice every night. Not through a screen. Through the companion they're already holding.</p>
+    <div class="legacy-line">"That voice doesn't expire. That's not a feature. That's a legacy."</div>
+</section>
+
+<!-- SECTION 6: HERITAGE LANGUAGE -->
+<section class="section-dark" id="heritage">
+    <div class="content text-center">
+        <div class="fade-in">
+            <div class="subtitle" style="color: var(--gold);">Heritage Language</div>
+            <div class="stat-highlight">75%</div>
+            <h2 style="color: #fff;">of heritage languages are lost by the third generation.</h2>
+            <p style="color: rgba(255,255,255,0.6); font-size: 18px; max-width: 700px; margin: 24px auto 0;">
+                Nonna teaches Italian. Abuela teaches Spanish. The language lives on because the voice lives on. Casa Companion supports English, Italian, and Spanish, with more languages on the roadmap.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 7: WHAT MAKES IT DIFFERENT -->
+<section class="section-cream" id="different">
+    <div class="content">
+        <div class="fade-in">
+            <div class="subtitle">Why Casa Companion</div>
+            <h2>What's Out There vs. What We Built</h2>
+        </div>
+        <div class="fade-in">
+            <table class="comp-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Casa Companion</th>
+                        <th>Toniebox</th>
+                        <th>Codi</th>
+                        <th>Moxie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="winner">
+                        <td><strong>AI Conversation</strong></td>
+                        <td class="check">Real-time GPT-4o</td>
+                        <td class="dash">None</td>
+                        <td class="dash">Pre-scripted</td>
+                        <td>Dead (Dec 2024)</td>
+                    </tr>
+                    <tr class="winner">
+                        <td><strong>Voice Cloning</strong></td>
+                        <td class="check">12-phrase clone</td>
+                        <td class="dash">None</td>
+                        <td class="dash">None</td>
+                        <td class="dash">None</td>
+                    </tr>
+                    <tr class="winner">
+                        <td><strong>Heritage Languages</strong></td>
+                        <td class="check">EN / IT / ES</td>
+                        <td>Some content</td>
+                        <td class="dash">English only</td>
+                        <td class="dash">English only</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Form Factor</strong></td>
+                        <td class="check">Soft plush (10 options)</td>
+                        <td>Cube + figurines</td>
+                        <td>Plastic robot</td>
+                        <td>Plastic robot</td>
+                    </tr>
+                    <tr class="winner">
+                        <td><strong>Screen</strong></td>
+                        <td class="check">None</td>
+                        <td class="check">None</td>
+                        <td class="check">None</td>
+                        <td>Yes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Washable</strong></td>
+                        <td class="check">Yes (removable pod)</td>
+                        <td>Wipe only</td>
+                        <td class="dash">No</td>
+                        <td class="dash">No</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Price</strong></td>
+                        <td><strong>$99</strong></td>
+                        <td>$99 + figurines</td>
+                        <td>$125</td>
+                        <td>$799 (dead)</td>
+                    </tr>
+                    <tr class="winner">
+                        <td><strong>Family Ecosystem</strong></td>
+                        <td class="check">App + profiles + grandparents</td>
+                        <td>Basic</td>
+                        <td class="dash">None</td>
+                        <td class="dash">None</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="quote" style="margin-top: 32px;">
+                <p>"Moxie raised $60M and died December 2024. All units bricked. Cloud-only toys fail families. Casa Companion has offline fallback."</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 8: HARDWARE -->
+<section class="section-linen" id="hardware">
+    <div class="content">
+        <div class="fade-in">
+            <div class="subtitle">Built for Real Life</div>
+            <h2>Hardware That Parents Actually Want</h2>
+        </div>
+        <div class="hw-layout fade-in">
+            <img src="images/eng-exploded.png" alt="Exploded view of Casa Companion hardware" loading="lazy">
+            <ul class="hw-features">
+                <li><div class="hw-icon">&#x1F50A;</div> <div><strong>Volume Capped at 85dB</strong><br>Pediatrician-recommended safe levels</div></li>
+                <li><div class="hw-icon">&#x1F9F2;</div> <div><strong>Magnetic Dock</strong><br>Drop to charge. No cables for tiny hands.</div></li>
+                <li><div class="hw-icon">&#x1F9FA;</div> <div><strong>Machine Washable</strong><br>Remove the pod, throw it in the wash.</div></li>
+                <li><div class="hw-icon">&#x1F4F7;</div> <div><strong>No Camera. No Screen.</strong><br>Zero surveillance. COPPA compliant.</div></li>
+                <li><div class="hw-icon">&#x1F50B;</div> <div><strong>6-8 Hour Battery</strong><br>USB-C charging. All-day play.</div></li>
+                <li><div class="hw-icon">&#x1F4E1;</div> <div><strong>Bluetooth Sync</strong><br>Parent app for settings, voice cloning, and usage logs.</div></li>
+                <li><div class="hw-icon">&#x1F512;</div> <div><strong>Encrypted & Private</strong><br>Voice data encrypted. No third-party sharing. Ever.</div></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 9: TRY IT NOW -->
+<section class="demo-section" id="demo">
+    <div class="fade-in">
+        <div class="subtitle" style="color: var(--crimson);">Live Demo</div>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: clamp(28px, 5vw, 42px); margin-bottom: 16px;">Talk to Corvo Right Now. In Your Browser.</h2>
+        <p style="color: var(--text-light); font-size: 18px; max-width: 600px; margin: 0 auto;">No download. No signup. Just talk to our AI companion and hear what the future of toys sounds like.</p>
+        <a href="https://casa-companion-demo.onrender.com" class="demo-btn" target="_blank" rel="noopener">Open the Demo</a>
+    </div>
+</section>
+
+<!-- SECTION 10: FAQ -->
+<section class="section-cream" id="faq">
+    <div class="content">
+        <div class="fade-in">
+            <div class="subtitle">Questions</div>
+            <h2>Frequently Asked</h2>
+        </div>
+        <div class="fade-in">
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">Is it safe for my child?</div>
+                <div class="faq-answer"><p>Yes. Volume is capped at 85dB (pediatrician recommended). There is no camera, no screen, and no microphone recording when not actively in use. All data is encrypted. COPPA compliant from the ground up.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">What happens if the company shuts down?</div>
+                <div class="faq-answer"><p>Unlike Moxie (which bricked all units in December 2024), Casa Companion has an offline fallback mode. Pre-loaded stories, songs, and voice content work without an internet connection. Your cloned voice data is stored locally on the device.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">How does voice cloning work? Is it recording me?</div>
+                <div class="faq-answer"><p>You read 12 short phrases into the app (about 5 minutes). Our AI creates a voice model from those recordings. The model is encrypted and stored securely. We never sell or share your voice data.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">What age range is this for?</div>
+                <div class="faq-answer"><p>Designed for ages 0-5+. The plush form factor is safe for infants (no small parts, no hard edges). The AI conversation grows with your child. A 1-year-old hears lullabies; a 4-year-old has real conversations.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">Can grandparents really clone their voice?</div>
+                <div class="faq-answer"><p>Yes. Any family member with a smartphone can record 12 phrases through the app. The companion can switch between multiple family voices. Grandma in Italy, Abuela in Argentina, Dad on a business trip.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">Do I need a subscription?</div>
+                <div class="faq-answer"><p>Basic features (pre-loaded stories, voice playback, offline mode) work without a subscription. The Family plan ($4.99/mo) adds AI conversation and learning modules. The Heritage plan ($14.99/mo) adds voice cloning and multilingual support.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">How do I wash it?</div>
+                <div class="faq-answer"><p>Remove the electronics pod from the plush shell (magnetic attachment). The plush shell is machine washable. The pod wipes clean. Reassemble and you're done.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">What languages does it support?</div>
+                <div class="faq-answer"><p>English, Italian, and Spanish at launch. French, Portuguese, Mandarin, and Arabic are on the roadmap. The AI can mix languages naturally in conversation.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">When will I receive my Kickstarter order?</div>
+                <div class="faq-answer"><p>Campaign launches May 5, 2026. Estimated delivery: November 2026. We'll provide regular backer updates with manufacturing progress, prototypes, and timeline updates.</p></div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">Can I buy additional plush shells?</div>
+                <div class="faq-answer"><p>Yes. One electronics pod works with all 10 plush shells. Additional shells will be available as add-ons during the campaign and through our store after launch.</p></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SECTION 11: KICKSTARTER -->
+<section class="section-linen" id="kickstarter">
+    <div class="content text-center">
+        <div class="fade-in">
+            <div class="subtitle">Coming Soon</div>
+            <h2>Kickstarter. May 5, 2026.</h2>
+            <div class="countdown" id="countdown">
+                <div class="countdown-item"><div class="countdown-num" id="cd-days">--</div><div class="countdown-label">Days</div></div>
+                <div class="countdown-item"><div class="countdown-num" id="cd-hours">--</div><div class="countdown-label">Hours</div></div>
+                <div class="countdown-item"><div class="countdown-num" id="cd-mins">--</div><div class="countdown-label">Minutes</div></div>
+                <div class="countdown-item"><div class="countdown-num" id="cd-secs">--</div><div class="countdown-label">Seconds</div></div>
+            </div>
+        </div>
+        <div class="ks-grid fade-in">
+            <div class="ks-card">
+                <div class="tier-name">Early Bird</div>
+                <div class="price">$99</div>
+                <div class="price-note">Limited to 500 backers</div>
+                <ul>
+                    <li>1 Electronics Pod</li>
+                    <li>1 Plush Companion (your choice)</li>
+                    <li>Magnetic Charging Dock</li>
+                    <li>3 Months Family Plan Free</li>
+                    <li>Early Access to App</li>
+                </ul>
+            </div>
+            <div class="ks-card featured">
+                <div class="tier-name">Backer Exclusive</div>
+                <div class="price">$149</div>
+                <div class="price-note">Exclusive colorway</div>
+                <ul>
+                    <li>1 Electronics Pod</li>
+                    <li>1 Exclusive Plush (Kickstarter only color)</li>
+                    <li>Magnetic Charging Dock</li>
+                    <li>6 Months Heritage Plan Free</li>
+                    <li>Voice Cloning for 2 Family Members</li>
+                    <li>Name Embroidered on Plush</li>
+                </ul>
+            </div>
+            <div class="ks-card">
+                <div class="tier-name">Grandparent Bundle</div>
+                <div class="price">$299</div>
+                <div class="price-note">The legacy tier</div>
+                <ul>
+                    <li>1 Electronics Pod</li>
+                    <li>2 Plush Companions (matched pair)</li>
+                    <li>Magnetic Charging Dock</li>
+                    <li>12 Months Heritage Plan Free</li>
+                    <li>Voice Cloning for 4 Family Members</li>
+                    <li>Premium Gift Box</li>
+                    <li>Personalized Welcome Message</li>
+                </ul>
+            </div>
+        </div>
+        <div class="fade-in" style="margin-top: 48px;">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 8px;">Be First to Know</h3>
+            <p style="color: var(--text-light);">Get notified the moment we launch. Early backers get the best pricing.</p>
+            <form class="email-form" onsubmit="handleEmail(event)">
+                <input type="email" placeholder="your@email.com" required>
+                <button type="submit">Notify Me</button>
+            </form>
+            <p id="emailConfirm" style="color: var(--green); font-weight: 700; margin-top: 12px; display: none;">You're on the list. We'll email you on launch day.</p>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer" id="footer">
+    <div class="footer-logo">Casa <span>Companion</span></div>
+    <p class="footer-tagline">Built by Peter. For Gian Lucca. For every family.</p>
+    <p>&copy; 2026 Casa Companion. All rights reserved.</p>
+    <div class="footer-capo">Powered by Capo AI</div>
+</footer>
+
+<script>
+/* === PROMO SLIDESHOW === */
+const clips = [
+    { file: 'audio/narration-1.mp3', slide: 1 },
+    { file: 'audio/narration-2.mp3', slide: 2 },
+    { file: 'audio/narration-3.mp3', slide: 3 },
+    { file: 'audio/narration-4.mp3', slide: 4 },
+    { file: 'audio/narration-5.mp3', slide: 5 },
+    { file: 'audio/narration-6.mp3', slide: 6 },
+    { file: 'audio/narration-7.mp3', slide: 7 },
+    { file: 'audio/narration-8.mp3', slide: 8 },
+    { file: 'audio/narration-9.mp3', slide: 9 },
+    { file: 'audio/narration-10.mp3', slide: 10 }
+];
+let promoIdx = 0;
+let promoAudio = null;
+let promoRunning = false;
+
+function startPromo() {
+    if (promoRunning) return;
+    promoRunning = true;
+    promoIdx = 0;
+    document.getElementById('promoOverlay').classList.add('hidden');
+    playClip(0);
+}
+
+function playClip(idx) {
+    if (idx >= clips.length) { endPromo(); return; }
+    promoIdx = idx;
+
+    // Activate slide
+    document.querySelectorAll('.promo-slide').forEach(s => s.classList.remove('active'));
+    const slide = document.querySelector(`.promo-slide[data-clip="${clips[idx].slide}"]`);
+    if (slide) slide.classList.add('active');
+
+    // Update progress
+    const pct = ((idx) / clips.length) * 100;
+    document.getElementById('promoProgress').style.width = pct + '%';
+
+    // Play audio
+    promoAudio = new Audio(clips[idx].file);
+    promoAudio.onended = () => {
+        playClip(idx + 1);
+    };
+    promoAudio.onerror = () => {
+        setTimeout(() => playClip(idx + 1), 2000);
+    };
+    promoAudio.play().catch(() => {
+        setTimeout(() => playClip(idx + 1), 3000);
+    });
+}
+
+function endPromo() {
+    promoRunning = false;
+    document.getElementById('promoProgress').style.width = '100%';
+    // Show overlay again after a beat
+    setTimeout(() => {
+        document.querySelectorAll('.promo-slide').forEach(s => s.classList.remove('active'));
+        document.getElementById('promoOverlay').classList.remove('hidden');
+        document.getElementById('promoProgress').style.width = '0%';
+    }, 3000);
+}
+
+/* === COUNTDOWN === */
+function updateCountdown() {
+    const launch = new Date('2026-05-05T09:00:00-04:00');
+    const now = new Date();
+    const diff = launch - now;
+    if (diff <= 0) {
+        document.getElementById('cd-days').textContent = '0';
+        document.getElementById('cd-hours').textContent = '0';
+        document.getElementById('cd-mins').textContent = '0';
+        document.getElementById('cd-secs').textContent = '0';
+        return;
+    }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('cd-days').textContent = d;
+    document.getElementById('cd-hours').textContent = h;
+    document.getElementById('cd-mins').textContent = m;
+    document.getElementById('cd-secs').textContent = s;
+}
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+/* === MOBILE MENU === */
+function closeMobile() {
+    document.getElementById('mobileMenu').classList.remove('open');
+    document.querySelector('.nav-hamburger').classList.remove('open');
+}
+
+/* === FAQ === */
+function toggleFaq(el) {
+    const answer = el.nextElementSibling;
+    const isOpen = el.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.faq-question').forEach(q => {
+        q.classList.remove('open');
+        q.nextElementSibling.style.maxHeight = null;
+    });
+    if (!isOpen) {
+        el.classList.add('open');
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+    }
+}
+
+/* === EMAIL CAPTURE === */
+function handleEmail(e) {
+    e.preventDefault();
+    const input = e.target.querySelector('input[type="email"]');
+    if (input.value) {
+        document.getElementById('emailConfirm').style.display = 'block';
+        input.value = '';
+        // In production: POST to email service
+    }
+}
+
+/* === SCROLL ANIMATIONS === */
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+/* === NAV SCROLL EFFECT === */
+window.addEventListener('scroll', () => {
+    const nav = document.querySelector('.nav');
+    if (window.scrollY > 100) {
+        nav.style.background = 'rgba(13,13,26,0.98)';
+    } else {
+        nav.style.background = 'rgba(13,13,26,0.95)';
+    }
+});
+</script>
+
+</body>
+</html>

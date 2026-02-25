@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="version" content="2.5">
+<title>Casa Companion — Meet the Family</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Nunito', sans-serif;
+        background: #0D0D1A;
+        color: #FFFEF7;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-x: hidden;
+    }
+
+    .header {
+        text-align: center;
+        padding: 18px 20px 6px;
+        position: relative;
+        width: 100%;
+    }
+    .header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, #D4A017, #FFE082, #D4A017);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 2px;
+    }
+    .header p {
+        color: #8A7A5A;
+        font-size: 0.7rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+
+    /* Battery indicator */
+    .battery-indicator {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #4CAF50;
+    }
+    .battery-icon {
+        width: 24px;
+        height: 12px;
+        border: 1.5px solid currentColor;
+        border-radius: 2px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding: 1px;
+    }
+    .battery-icon::after {
+        content: '';
+        position: absolute;
+        right: -4px;
+        top: 2px;
+        width: 2px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 0 1px 1px 0;
+    }
+    .battery-fill {
+        height: 100%;
+        border-radius: 1px;
+        background: currentColor;
+        transition: width 1s ease;
+    }
+    .battery-indicator.green { color: #4CAF50; }
+    .battery-indicator.yellow { color: #FFC107; }
+    .battery-indicator.red { color: #F44336; }
+
+    /* Animal Tabs */
+    .tab-bar {
+        display: flex;
+        gap: 4px;
+        padding: 8px 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.04);
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 56px;
+    }
+    .tab:hover {
+        background: rgba(212,160,23,0.1);
+    }
+    .tab.active {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.12);
+    }
+    .tab img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: contain;
+        margin-bottom: 1px;
+    }
+    .tab .tab-name {
+        font-size: 0.55rem;
+        font-weight: 700;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .tab.active .tab-name {
+        color: #D4A017;
+    }
+
+    /* Main container */
+    .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 800px;
+        padding: 6px 20px 16px;
+    }
+
+    /* Hero animal - BIG */
+    .hero-container {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        margin: 0 auto 8px;
+        cursor: pointer;
+    }
+    .hero-glow {
+        position: absolute;
+        inset: -20px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(212,160,23,0.15) 0%, transparent 70%);
+        animation: breathe 3s ease-in-out infinite;
+        pointer-events: none;
+    }
+    .hero-glow.listening {
+        background: radial-gradient(circle, rgba(66,135,245,0.25) 0%, transparent 70%);
+        animation: pulse-fast 1s ease-in-out infinite;
+    }
+    .hero-glow.thinking {
+        background: radial-gradient(circle, rgba(212,160,23,0.3) 0%, transparent 70%);
+        animation: pulse-fast 0.6s ease-in-out infinite;
+    }
+    .hero-glow.speaking {
+        background: radial-gradient(circle, rgba(76,175,80,0.25) 0%, transparent 70%);
+        animation: pulse-fast 1.2s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.05); opacity: 1; }
+    }
+    @keyframes pulse-fast {
+        0%, 100% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .hero-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 50%;
+        position: relative;
+        z-index: 1;
+        filter: drop-shadow(0 8px 30px rgba(212,160,23,0.2));
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .hero-container:hover .hero-img { transform: scale(1.03); }
+
+    /* Character name + meaning */
+    .char-info {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    .char-name {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #FFE082;
+    }
+    .char-meaning {
+        font-size: 0.85rem;
+        color: #8A7A5A;
+        font-style: italic;
+    }
+
+    /* Status */
+    .status {
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #D4A017;
+        min-height: 24px;
+        margin-bottom: 10px;
+    }
+
+    /* Feature pills */
+    .features {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 14px;
+        max-width: 600px;
+    }
+    .feature-pill {
+        padding: 6px 12px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(212,160,23,0.2);
+        font-size: 0.72rem;
+        color: #CCC;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .feature-pill:hover {
+        background: rgba(212,160,23,0.15);
+        border-color: rgba(212,160,23,0.5);
+        color: #FFE082;
+    }
+    .feature-pill .emoji { margin-right: 4px; }
+
+    /* Story Mode Button */
+    .story-btn {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: white;
+        font-size: 28px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 4px auto;
+    }
+    .story-btn:hover {
+        transform: scale(1.08);
+        box-shadow: 0 10px 36px rgba(212,160,23,0.5);
+    }
+    .story-btn.listening {
+        background: linear-gradient(135deg, #4287f5, #2962c4);
+        animation: pulse-btn 1.5s ease-in-out infinite;
+        box-shadow: 0 6px 24px rgba(66,135,245,0.4);
+    }
+    .story-btn.speaking {
+        background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        animation: glow-btn 1s ease-in-out infinite;
+        box-shadow: 0 6px 24px rgba(76,175,80,0.4);
+    }
+    .story-btn.thinking {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        animation: pulse-btn 0.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse-btn {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    @keyframes glow-btn {
+        0%, 100% { box-shadow: 0 6px 24px rgba(76,175,80,0.4); }
+        50% { box-shadow: 0 10px 40px rgba(76,175,80,0.7); }
+    }
+
+    .story-label {
+        text-align: center;
+        font-size: 0.7rem;
+        color: #8A7A5A;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-top: 4px;
+    }
+
+    /* Transcript */
+    .transcript {
+        width: 100%;
+        max-width: 500px;
+        max-height: 120px;
+        overflow-y: auto;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.06);
+        margin-top: 8px;
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    .transcript p { margin-bottom: 4px; }
+    .transcript .user { color: #4287f5; font-weight: 700; }
+    .transcript .companion { color: #D4A017; font-weight: 700; }
+    .transcript::-webkit-scrollbar { width: 4px; }
+    .transcript::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.3); border-radius: 2px; }
+
+    /* Text input */
+    .input-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        max-width: 500px;
+        margin-top: 8px;
+    }
+    .input-row input {
+        flex: 1;
+        padding: 9px 14px;
+        border-radius: 24px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.06);
+        color: #FFFEF7;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.85rem;
+        outline: none;
+    }
+    .input-row input::placeholder { color: #666; }
+    .input-row input:focus { border-color: rgba(212,160,23,0.5); }
+    .input-row button {
+        padding: 9px 16px;
+        border-radius: 24px;
+        border: none;
+        background: #D4A017;
+        color: #0D0D1A;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .input-row button:hover { background: #FFE082; }
+
+    /* Learning grid */
+    .learning-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        width: 100%;
+        max-width: 600px;
+        margin-top: 14px;
+    }
+    .learning-card {
+        padding: 10px 6px;
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.06);
+        text-align: center;
+        font-size: 0.65rem;
+        color: #888;
+        transition: all 0.2s;
+    }
+    .learning-card .icon { font-size: 1.3rem; margin-bottom: 3px; }
+    .learning-card .label { line-height: 1.2; }
+    .learning-card:hover {
+        border-color: rgba(212,160,23,0.3);
+        background: rgba(212,160,23,0.08);
+        color: #CCC;
+        cursor: pointer;
+    }
+    .learning-card.active {
+        border-color: #D4A017;
+        background: rgba(212,160,23,0.15);
+        color: #FFE082;
+        box-shadow: 0 0 12px rgba(212,160,23,0.2);
+    }
+    .learning-card.active .label { font-weight: 700; }
+
+    /* Parent-facing cards */
+    .learning-card.parent-card {
+        border-color: rgba(100,100,255,0.15);
+        background: rgba(100,100,255,0.04);
+    }
+    .learning-card.parent-card:hover {
+        border-color: rgba(100,100,255,0.4);
+        background: rgba(100,100,255,0.1);
+        color: #AAF;
+    }
+
+    .mode-banner {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 20px;
+        background: rgba(212,160,23,0.12);
+        border: 1px solid rgba(212,160,23,0.3);
+        font-size: 0.75rem;
+        color: #D4A017;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+    }
+    .mode-banner.visible { display: inline-flex; }
+    .mode-banner .mode-exit {
+        background: none;
+        border: none;
+        color: #DC3C3C;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding: 0 4px;
+        font-weight: 700;
+    }
+
+    .footer {
+        padding: 10px;
+        text-align: center;
+        color: #444;
+        font-size: 0.6rem;
+        letter-spacing: 1px;
+    }
+
+    @media (max-width: 600px) {
+        .hero-container { width: 220px; height: 220px; }
+        .tab img { width: 30px; height: 30px; }
+        .tab { padding: 3px 6px; min-width: 48px; }
+        .tab .tab-name { font-size: 0.5rem; }
+        .learning-grid { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+        .features { gap: 4px; }
+        .feature-pill { font-size: 0.65rem; padding: 5px 10px; }
+    }
+
+    /* Voice Mode button */
+    .voice-mode-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(212,160,23,0.3);
+        background: rgba(212,160,23,0.08);
+        color: #D4A017;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 6px auto;
+    }
+    .voice-mode-btn:hover {
+        background: rgba(212,160,23,0.18);
+        border-color: rgba(212,160,23,0.6);
+    }
+    .voice-mode-btn.active {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        border-color: transparent;
+        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+    }
+    .voice-mode-btn .vm-icon {
+        font-size: 1rem;
+    }
+
+    .end-voice-btn {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 24px;
+        border: 1px solid rgba(220,60,60,0.4);
+        background: rgba(220,60,60,0.1);
+        color: #DC3C3C;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 4px auto;
+    }
+    .end-voice-btn:hover {
+        background: rgba(220,60,60,0.2);
+    }
+
+    /* Stop / Kill Switch Button */
+    .stop-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 2px solid rgba(220,60,60,0.6);
+        background: rgba(220,60,60,0.15);
+        color: #DC3C3C;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 50;
+        backdrop-filter: blur(10px);
+    }
+    .stop-btn:hover {
+        background: rgba(220,60,60,0.3);
+        border-color: #DC3C3C;
+        transform: scale(1.1);
+    }
+    .stop-btn.visible {
+        display: flex;
+    }
+
+    /* Intro overlay — first-time prompt */
+    .intro-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(13,13,26,0.92);
+        z-index: 90;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+        backdrop-filter: blur(8px);
+    }
+    .intro-overlay.hidden { display: none; }
+    .intro-title {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(1.4rem, 4vw, 2.2rem);
+        color: #FFE082;
+        margin-bottom: 8px;
+    }
+    .intro-subtitle {
+        font-size: clamp(0.85rem, 2vw, 1.1rem);
+        color: #8A7A5A;
+        margin-bottom: 24px;
+        max-width: 400px;
+    }
+    .intro-name-input {
+        padding: 12px 20px;
+        border-radius: 28px;
+        border: 2px solid rgba(212,160,23,0.4);
+        background: rgba(255,255,255,0.06);
+        color: #FFFEF7;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        text-align: center;
+        width: 260px;
+        outline: none;
+        margin-bottom: 12px;
+    }
+    .intro-name-input::placeholder { color: #666; }
+    .intro-name-input:focus { border-color: #D4A017; }
+    .intro-start-btn {
+        padding: 12px 32px;
+        border-radius: 28px;
+        border: none;
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        font-family: 'Nunito', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(212,160,23,0.3);
+    }
+    .intro-start-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 24px rgba(212,160,23,0.5);
+    }
+    .intro-skip {
+        margin-top: 12px;
+        background: none;
+        border: none;
+        color: #666;
+        font-size: 0.75rem;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .voice-controls {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        margin: 4px auto;
+    }
+
+    /* Hide tap-to-talk controls in voice mode */
+    body.voice-mode-active .story-btn,
+    body.voice-mode-active .story-label { display: none; }
+
+    @media (min-width: 900px) {
+        .hero-container { width: 340px; height: 340px; }
+    }
+
+    /* Overlay styles for Parent Mode and Usage Log */
+    .overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(13,13,26,0.95);
+        z-index: 100;
+        overflow-y: auto;
+        padding: 20px;
+        flex-direction: column;
+        align-items: center;
+    }
+    .overlay.visible { display: flex; }
+    .overlay-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 20px;
+    }
+    .overlay-header h2 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.4rem;
+        color: #FFE082;
+    }
+    .overlay-close {
+        background: none;
+        border: 1px solid rgba(220,60,60,0.4);
+        color: #DC3C3C;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+    .overlay-close:hover { background: rgba(220,60,60,0.15); }
+    .overlay-content {
+        width: 100%;
+        max-width: 600px;
+    }
+    .stat-card {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+    }
+    .stat-card h3 {
+        font-size: 0.75rem;
+        color: #8A7A5A;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+    }
+    .stat-card .stat-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #FFE082;
+    }
+    .stat-card .stat-detail {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 4px;
+    }
+    .stat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .log-entry {
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        color: #AAA;
+    }
+    .log-entry .log-time { color: #666; font-size: 0.7rem; }
+    .log-entry .log-action { color: #D4A017; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Intro Overlay removed — demo starts immediately on tap -->
+
+<div class="header">
+    <h1>Casa Companion</h1>
+    <p>AI Family Companion</p>
+    <div id="battery" class="battery-indicator green">
+        <div class="battery-icon">
+            <div id="battery-fill" class="battery-fill" style="width:87%"></div>
+        </div>
+        <span id="battery-pct">87%</span>
+    </div>
+</div>
+
+<!-- Animal Tabs — 10 Heroes -->
+<div class="tab-bar">
+    <div class="tab active" onclick="switchAnimal('corvo')" id="tab-corvo">
+        <img src="/static/images/heroes/crow.png" alt="Corvo" onerror="this.style.display='none'">
+        <span class="tab-name">Corvo</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('gufo')" id="tab-gufo">
+        <img src="/static/images/heroes/owl.png" alt="Gufo" onerror="this.style.display='none'">
+        <span class="tab-name">Gufo</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('orsetto')" id="tab-orsetto">
+        <img src="/static/images/heroes/bear.png" alt="Orsetto" onerror="this.style.display='none'">
+        <span class="tab-name">Orsetto</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('coniglio')" id="tab-coniglio">
+        <img src="/static/images/heroes/bunny.png" alt="Coniglio" onerror="this.style.display='none'">
+        <span class="tab-name">Coniglio</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('tartaruga')" id="tab-tartaruga">
+        <img src="/static/images/heroes/turtle.png" alt="Tartaruga" onerror="this.style.display='none'">
+        <span class="tab-name">Tartaruga</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('elefante')" id="tab-elefante">
+        <img src="/static/images/heroes/elephant.png" alt="Elefante" onerror="this.style.display='none'">
+        <span class="tab-name">Elefante</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('leone')" id="tab-leone">
+        <img src="/static/images/heroes/lion.png" alt="Leone" onerror="this.style.display='none'">
+        <span class="tab-name">Leone</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('delfino')" id="tab-delfino">
+        <img src="/static/images/heroes/dolphin.png" alt="Delfino" onerror="this.style.display='none'">
+        <span class="tab-name">Delfino</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('drago')" id="tab-drago">
+        <img src="/static/images/heroes/dragon.png" alt="Drago" onerror="this.style.display='none'">
+        <span class="tab-name">Drago</span>
+    </div>
+    <div class="tab" onclick="switchAnimal('xolo')" id="tab-xolo">
+        <img src="/static/images/heroes/xolo.png" alt="Xolo" onerror="this.style.display='none'">
+        <span class="tab-name">Xolo</span>
+    </div>
+</div>
+
+<div class="main">
+    <!-- Hero animal -->
+    <div class="hero-container" onclick="toggleStoryMode()">
+        <div id="hero-glow" class="hero-glow"></div>
+        <img id="hero-img" src="/static/images/heroes/crow.png" alt="Corvo" class="hero-img"
+             onerror="this.style.display='none'">
+    </div>
+
+    <!-- Character info -->
+    <div class="char-info">
+        <div id="char-name" class="char-name">Corvo</div>
+        <div id="char-meaning" class="char-meaning">Corvo means Crow in Italian</div>
+    </div>
+
+    <div id="mode-banner" class="mode-banner">
+        <span id="mode-banner-text"></span>
+        <button class="mode-exit" onclick="exitMode()">&times;</button>
+    </div>
+    <div id="status" class="status">Tap Corvo to say hello</div>
+
+    <!-- Feature pills -->
+    <div class="features">
+        <div class="feature-pill"><span class="emoji">&#x1F3A4;</span>Voice Cloning</div>
+        <div class="feature-pill"><span class="emoji">&#x1F4D6;</span>Interactive Stories</div>
+        <div class="feature-pill"><span class="emoji">&#x1F9E0;</span>Emotional Support</div>
+        <div class="feature-pill"><span class="emoji">&#x1F310;</span>Bilingual</div>
+        <div class="feature-pill"><span class="emoji">&#x1F31C;</span>Bedtime Mode</div>
+        <div class="feature-pill"><span class="emoji">&#x1F50B;</span>10hr Battery</div>
+        <div class="feature-pill"><span class="emoji">&#x1F9F9;</span>Washable</div>
+        <div class="feature-pill"><span class="emoji">&#x1F512;</span>COPPA Safe</div>
+    </div>
+
+    <!-- Story Mode mic (tap-to-talk fallback) -->
+    <button id="story-btn" class="story-btn" onclick="toggleStoryMode()">&#x1F3A4;</button>
+    <div id="story-label" class="story-label">Tap to talk</div>
+
+    <!-- Voice Mode (WebRTC realtime) -->
+    <div class="voice-controls">
+        <button id="voice-mode-btn" class="voice-mode-btn" onclick="toggleVoiceMode()">
+            <span class="vm-icon">&#x1F50A;</span> Voice Mode
+        </button>
+        <button id="end-voice-btn" class="end-voice-btn" onclick="endVoiceMode()">
+            End Voice
+        </button>
+    </div>
+
+    <!-- Stop / Kill Switch -->
+    <button id="stop-btn" class="stop-btn" onclick="killAllAudio()" title="Stop all audio">&#x23F9;</button>
+
+    <!-- Transcript -->
+    <div id="transcript" class="transcript">
+        <p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>
+    </div>
+
+    <!-- Text input -->
+    <div class="input-row">
+        <input id="text-input" type="text" placeholder="Or type to talk..." onkeydown="if(event.key==='Enter')sendText()">
+        <button onclick="sendText()">Send</button>
+    </div>
+
+    <!-- Learning Modules — 11 cards (8 kid + 3 parent/teaching) -->
+    <div class="learning-grid">
+        <div class="learning-card" onclick="activateMode('story_time')" id="mode-story_time">
+            <div class="icon">&#x1F4DA;</div>
+            <div class="label">Story Time</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('calm_breathe')" id="mode-calm_breathe">
+            <div class="icon">&#x1F9D8;</div>
+            <div class="label">Calm & Breathe</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('stem_sparks')" id="mode-stem_sparks">
+            <div class="icon">&#x1F52C;</div>
+            <div class="label">STEM Sparks</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('music_rhythm')" id="mode-music_rhythm">
+            <div class="icon">&#x1F3B5;</div>
+            <div class="label">Music & Rhythm</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('geography')" id="mode-geography">
+            <div class="icon">&#x1F30E;</div>
+            <div class="label">Geography</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('italian')" id="mode-italian">
+            <div class="icon">&#x1F1EE;&#x1F1F9;</div>
+            <div class="label">Italian</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('spanish')" id="mode-spanish">
+            <div class="icon">&#x1F1F2;&#x1F1FD;</div>
+            <div class="label">Spanish</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('coding')" id="mode-coding">
+            <div class="icon">&#x1F916;</div>
+            <div class="label">Coding</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('teaching')" id="mode-teaching">
+            <div class="icon">&#x1F393;</div>
+            <div class="label">Teaching</div>
+        </div>
+        <div class="learning-card" onclick="activateMode('milestones')" id="mode-milestones">
+            <div class="icon">&#x1F3C6;</div>
+            <div class="label">Milestones</div>
+        </div>
+        <div class="learning-card parent-card" onclick="openParentMode()" id="mode-parent">
+            <div class="icon">&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467;</div>
+            <div class="label">Parent Mode</div>
+        </div>
+        <div class="learning-card parent-card" onclick="openUsageLog()" id="mode-usage">
+            <div class="icon">&#x1F4CA;</div>
+            <div class="label">Usage Log</div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    Casa Companion &copy; 2026 &bull; Crafted in California &bull; Everyone else announced it. We built it.
+</div>
+
+<!-- Parent Mode Overlay -->
+<div id="parent-overlay" class="overlay">
+    <div class="overlay-header">
+        <h2>&#x1F468;&#x200D;&#x1F469;&#x200D;&#x1F467; Parent Dashboard</h2>
+        <button class="overlay-close" onclick="closeOverlay('parent-overlay')">Close</button>
+    </div>
+    <div class="overlay-content">
+        <div class="stat-row">
+            <div class="stat-card">
+                <h3>Session Duration</h3>
+                <div class="stat-value" id="parent-duration">0m</div>
+            </div>
+            <div class="stat-card">
+                <h3>Messages Sent</h3>
+                <div class="stat-value" id="parent-messages">0</div>
+            </div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-card">
+                <h3>Companions Used</h3>
+                <div class="stat-value" id="parent-companions">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Modes Activated</h3>
+                <div class="stat-value" id="parent-modes">-</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <h3>Conversation Summary</h3>
+            <div class="stat-detail" id="parent-summary">No conversation yet. Start talking to a companion to see a summary here.</div>
+        </div>
+        <div class="stat-card">
+            <h3>Content Topics Discussed</h3>
+            <div class="stat-detail" id="parent-topics">Topics will appear here as the child interacts.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Usage Log Overlay -->
+<div id="usage-overlay" class="overlay">
+    <div class="overlay-header">
+        <h2>&#x1F4CA; Usage Log</h2>
+        <button class="overlay-close" onclick="closeOverlay('usage-overlay')">Close</button>
+    </div>
+    <div class="overlay-content" id="usage-log-content">
+        <div class="stat-card">
+            <h3>Session Started</h3>
+            <div class="stat-value" id="usage-start-time">-</div>
+        </div>
+        <div class="stat-card">
+            <h3>Activity Timeline</h3>
+            <div id="usage-timeline">
+                <p style="color:#666; font-style:italic; font-size:0.8rem;">Activity will be logged as the session progresses...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =========================================================================
+// Session Tracking
+// =========================================================================
+const sessionLog = {
+    startTime: Date.now(),
+    messages: 0,
+    companionsUsed: new Set(),
+    modesActivated: new Set(),
+    timeline: [],
+    topics: []
+};
+
+function logEvent(action, detail) {
+    sessionLog.timeline.push({
+        time: Date.now(),
+        action: action,
+        detail: detail || ''
+    });
+}
+
+// =========================================================================
+// Battery Simulation
+// =========================================================================
+let batteryPct = 87;
+const batteryEl = document.getElementById('battery');
+const batteryFillEl = document.getElementById('battery-fill');
+const batteryPctEl = document.getElementById('battery-pct');
+
+function updateBattery() {
+    batteryPct = Math.max(0, batteryPct - (Math.random() * 0.3 + 0.1));
+    const rounded = Math.round(batteryPct);
+    batteryPctEl.textContent = rounded + '%';
+    batteryFillEl.style.width = rounded + '%';
+    batteryEl.className = 'battery-indicator ' + (rounded > 50 ? 'green' : rounded > 20 ? 'yellow' : 'red');
+}
+setInterval(updateBattery, 30000); // drain every 30s
+
+// =========================================================================
+// Character data — 10 Heroes
+// =========================================================================
+const CHARACTERS = {
+    corvo: {
+        name: 'Corvo',
+        meaning: 'Corvo means Crow in Italian',
+        img: '/static/images/heroes/crow.png',
+        greeting: "Well hello there! *ruffles feathers* I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
+        greetTTS: "Well hello there! I'm Corvo, your wise crow friend! Want to hear a story, play a game, or just chat?",
+        icon: '&#x1F426;'
+    },
+    gufo: {
+        name: 'Gufo',
+        meaning: 'Gufo means Owl in Italian',
+        img: '/static/images/heroes/owl.png',
+        greeting: "*blinks slowly* Whooo goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
+        greetTTS: "Who goes there? Oh, hello! I'm Gufo. I've been watching the stars and waiting for a friend. Tell me, what's on your mind tonight?",
+        icon: '&#x1F989;'
+    },
+    orsetto: {
+        name: 'Orsetto',
+        meaning: 'Orsetto means Little Bear in Italian',
+        img: '/static/images/heroes/bear.png',
+        greeting: "*stretches and yawns* Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
+        greetTTS: "Hey there, new friend! I'm Orsetto. I was just getting ready for an adventure. Want to come along? What should we explore?",
+        icon: '&#x1F43B;'
+    },
+    coniglio: {
+        name: 'Coniglio',
+        meaning: 'Coniglio means Bunny in Italian',
+        img: '/static/images/heroes/bunny.png',
+        greeting: "*wiggles nose* Oh! Hi! I'm Coniglio! I was just... nibbling on a carrot. *hops closer* I'm so happy to meet you! What's your favorite thing to do?",
+        greetTTS: "Oh! Hi! I'm Coniglio! I was just nibbling on a carrot. I'm so happy to meet you! What's your favorite thing to do?",
+        icon: '&#x1F430;'
+    },
+    tartaruga: {
+        name: 'Tartaruga',
+        meaning: 'Tartaruga means Sea Turtle in Italian',
+        img: '/static/images/heroes/turtle.png',
+        greeting: "*emerges slowly from shell* Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
+        greetTTS: "Well hello there, friend. I'm Tartaruga. I've swum across every ocean to be here. What stories shall we share?",
+        icon: '&#x1F422;'
+    },
+    elefante: {
+        name: 'Elefante',
+        meaning: 'Elefante means Elephant in Italian',
+        img: '/static/images/heroes/elephant.png',
+        greeting: "*flaps ears happily* Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
+        greetTTS: "Oh wonderful! A new friend! I'm Elefante, and I never forget a friend. Want to hear a story, explore the world, or just talk?",
+        icon: '&#x1F418;'
+    },
+    leone: {
+        name: 'Leone',
+        meaning: 'Leone means Lion in Italian',
+        img: '/static/images/heroes/lion.png',
+        greeting: "*shakes mane proudly* ROAR! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
+        greetTTS: "Roar! Oh, sorry! That's just how I say hello. I'm Leone! Are you ready for something brave today?",
+        icon: '&#x1F981;'
+    },
+    delfino: {
+        name: 'Delfino',
+        meaning: 'Delfino means Dolphin in Italian',
+        img: '/static/images/heroes/dolphin.png',
+        greeting: "*splashes excitedly* Ee-ee-ee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know SO many!",
+        greetTTS: "Eee eee eee! Hi hi hi! I'm Delfino! I was just doing flips in the ocean. Want to play a game? I know so many!",
+        icon: '&#x1F42C;'
+    },
+    drago: {
+        name: 'Drago',
+        meaning: 'Drago means Dragon in Italian',
+        img: '/static/images/heroes/dragon.png',
+        greeting: "*sparkles shimmer* Greetings, brave one! I'm Drago. I don't breathe fire... I breathe STORIES! Want to hear one, or shall we create our own?",
+        greetTTS: "Greetings, brave one! I'm Drago. I don't breathe fire, I breathe stories! Want to hear one, or shall we create our own?",
+        icon: '&#x1F409;'
+    },
+    xolo: {
+        name: 'Xolo',
+        meaning: 'Xolo is a Xoloitzcuintli, the ancient Aztec dog',
+        img: '/static/images/heroes/xolo.png',
+        greeting: "*wags tail with dignity* Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
+        greetTTS: "Hola, amigo. I am Xolo. My ancestors walked with emperors. But today? I walk with you. What adventure calls us?",
+        icon: '&#x1F415;'
+    }
+};
+
+// Custom name storage
+function setCustomName(charKey, name) {
+    if (name && name.trim()) {
+        CHARACTERS[charKey].customName = name.trim();
+    }
+}
+
+function getDisplayName(charKey) {
+    const char = CHARACTERS[charKey || currentCharacter];
+    return char.customName || char.name;
+}
+
+function startWithName() {
+    // Intro overlay removed — no-op
+    toggleStoryMode();
+}
+
+function skipIntro() {
+    // Intro overlay removed — no-op
+    toggleStoryMode();
+}
+
+let currentCharacter = 'corvo';
+let conversationHistory = [];
+let isActive = false;
+let currentMode = null;
+let demoCompleted = false;
+
+const MODE_NAMES = {
+    story_time: 'Story Time',
+    calm_breathe: 'Calm & Breathe',
+    stem_sparks: 'STEM Sparks',
+    music_rhythm: 'Music & Rhythm',
+    geography: 'Geography',
+    italian: 'Italian',
+    spanish: 'Spanish',
+    coding: 'Coding',
+    teaching: 'Teaching Mode',
+    milestones: 'Milestones'
+};
+
+const MODE_GREETINGS = {
+    story_time: "Story Time! I love stories. What kind of adventure should we go on? Pirates? Space? A magical forest? You pick!",
+    calm_breathe: "Let's take a nice deep breath together... In through the nose... and out through the mouth... How are you feeling right now?",
+    stem_sparks: "STEM Sparks! I have a fun question for you. Ready? How many bones do you think a baby has. more than a grown-up or fewer? Take a guess!",
+    music_rhythm: "Music time! Let's make some rhythm together. Can you clap with me? Clap clap STOMP, clap clap STOMP! Your turn!",
+    geography: "Let's go on a world adventure! Where should we fly to first? We could visit the pyramids in Egypt, the rainforest in Brazil, or the snow in Antarctica. Where to?",
+    italian: "Ciao! Let's learn some Italian together! Can you say ciao? That means hello! Bravissimo! What would you like to learn. colors, animals, or food?",
+    spanish: "\u00a1Hola! Let's learn some Spanish! Can you say hola? That means hello! \u00a1Muy bien! What should we learn. colors, animals, or food?",
+    coding: "Coding time! Did you know you already know how to code? When you tell someone 'first do this, then do that', that's a program! Want to try programming me? Give me 3 instructions!",
+    teaching: "Teaching Mode! I'm ready to teach you something new. What would you like to learn? Pick one: Colors, Numbers, Letters, Shapes, or Animals!",
+    milestones: "Let's see how far you've come! What have you been learning lately? Tell me something you're proud of!"
+};
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isListening = false;
+let currentState = 'idle';
+
+const statusEl = document.getElementById('status');
+const transcriptEl = document.getElementById('transcript');
+const storyBtn = document.getElementById('story-btn');
+const heroGlow = document.getElementById('hero-glow');
+const heroImg = document.getElementById('hero-img');
+const charNameEl = document.getElementById('char-name');
+const charMeaningEl = document.getElementById('char-meaning');
+const storyLabelEl = document.getElementById('story-label');
+
+// =========================================================================
+// Guided Demo
+// =========================================================================
+const DEMO_STEPS = [
+    { mode: 'story_time', teaser: "I can tell stories! Once upon a time, in a land far away... Want to hear more? Say 'Story Time' anytime!" },
+    { mode: 'calm_breathe', teaser: "I can help you calm down and breathe... In... and out... Say 'Breathe' when you need me." },
+    { mode: 'stem_sparks', teaser: "I know cool science facts! Did you know octopuses have three hearts? Say 'Science' for more!" },
+    { mode: 'music_rhythm', teaser: "I love music! Let's make rhythm together. Clap clap STOMP! Say 'Music' to jam with me." },
+    { mode: 'geography', teaser: "I can take you anywhere in the world! Egypt, Japan, Brazil... Say 'Geography' to explore!" },
+    { mode: 'italian', teaser: "I can teach you Italian! Ciao means hello! Say 'Italian' to learn more." },
+    { mode: 'spanish', teaser: "I can teach you Spanish too! Hola means hello! Say 'Spanish' to start." },
+    { mode: 'coding', teaser: "I can teach you how to think like a coder! Say 'Coding' to try." },
+    { mode: 'teaching', teaser: "I can run a real lesson! Colors, numbers, letters... Say 'Teaching' to learn." }
+];
+
+let demoRunning = false;
+let demoStepIndex = 0;
+
+let waitingForName = false;
+let voiceResponseCount = 0;  // Track voice mode responses for capabilities intro
+
+async function startGuidedDemo() {
+    if (demoCompleted || demoRunning) return;
+    // Immediately offer capabilities — no name step
+    showCapabilitiesIntro();
+}
+
+async function showCapabilitiesIntro() {
+    demoRunning = true;
+    demoStepIndex = 0;
+    const char = CHARACTERS[currentCharacter];
+    const introText = "I can do SO many things! Would you like me to show you? Say 'yes' and I'll give you a quick tour, or just tell me what you want to do!";
+    addMessage('companion', introText);
+    conversationHistory.push({role: 'assistant', content: introText});
+    await speakText(introText);
+}
+
+async function runDemoStep() {
+    if (demoStepIndex >= DEMO_STEPS.length) {
+        // Demo complete
+        const endText = "Those are just some things I can do! You can also just talk to me about anything. What would you like to do?";
+        addMessage('companion', endText);
+        conversationHistory.push({role: 'assistant', content: endText});
+        speakText(endText);
+        demoRunning = false;
+        demoCompleted = true;
+        logEvent('demo_completed');
+        return;
+    }
+
+    const step = DEMO_STEPS[demoStepIndex];
+    demoStepIndex++;
+    addMessage('companion', step.teaser);
+    conversationHistory.push({role: 'assistant', content: step.teaser});
+    await speakText(step.teaser);
+}
+
+function handleDemoResponse(userText) {
+    const lower = userText.toLowerCase().trim();
+    if (lower.includes('yes') || lower.includes('sure') || lower.includes('show me') || lower.includes('okay') || lower.includes('ok')) {
+        // Start cycling through demo steps
+        runDemoStep();
+        return true;
+    } else if (lower.includes('no') || lower.includes('skip') || lower.includes('play') || lower.includes('myself') || lower.includes('talk')) {
+        // Skip demo
+        demoRunning = false;
+        demoCompleted = true;
+        const skipText = "No problem! I'm here whenever you want to chat. What's on your mind?";
+        addMessage('companion', skipText);
+        conversationHistory.push({role: 'assistant', content: skipText});
+        speakText(skipText);
+        return true;
+    } else if (lower.includes('next') || lower.includes('more') || lower.includes('what else') || lower.includes('continue')) {
+        runDemoStep();
+        return true;
+    }
+    // Not a demo response — end demo and treat as normal chat
+    demoRunning = false;
+    demoCompleted = true;
+    return false;
+}
+
+// =========================================================================
+// Mode Activation
+// =========================================================================
+function activateMode(modeKey) {
+    if (currentMode === modeKey) {
+        exitMode();
+        return;
+    }
+
+    // End voice mode and stop any playing audio first
+    if (voiceModeActive) endVoiceMode();
+    stopCurrentAudio();
+    if (isListening) stopVoiceInput();
+
+    currentMode = modeKey;
+    sessionLog.modesActivated.add(MODE_NAMES[modeKey] || modeKey);
+    logEvent('mode_activated', MODE_NAMES[modeKey] || modeKey);
+
+    // Update card styles
+    document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
+    const card = document.getElementById('mode-' + modeKey);
+    if (card) card.classList.add('active');
+
+    // Show mode banner
+    const banner = document.getElementById('mode-banner');
+    const bannerText = document.getElementById('mode-banner-text');
+    bannerText.textContent = MODE_NAMES[modeKey] || modeKey;
+    banner.classList.add('visible');
+
+    // Reset conversation for new mode
+    conversationHistory = [];
+    isActive = true;
+    demoRunning = false;
+    demoCompleted = true;
+    transcriptEl.innerHTML = '';
+
+    // Send mode greeting from the character
+    addMessage('companion', MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    conversationHistory.push({role: 'assistant', content: MODE_GREETINGS[modeKey]});
+    speakText(MODE_GREETINGS[modeKey] || 'Let\'s get started!');
+    setState('idle');
+}
+
+function exitMode() {
+    currentMode = null;
+    document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('mode-banner').classList.remove('visible');
+
+    // Reset
+    conversationHistory = [];
+    isActive = false;
+    transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Choose a companion and tap to say hello...</p>';
+    setState('idle');
+}
+
+// =========================================================================
+// Parent Mode & Usage Log Overlays
+// =========================================================================
+function openParentMode() {
+    // Populate stats
+    const elapsed = Math.round((Date.now() - sessionLog.startTime) / 60000);
+    document.getElementById('parent-duration').textContent = elapsed + 'm';
+    document.getElementById('parent-messages').textContent = sessionLog.messages;
+    document.getElementById('parent-companions').textContent =
+        sessionLog.companionsUsed.size > 0 ? [...sessionLog.companionsUsed].join(', ') : 'None yet';
+    document.getElementById('parent-modes').textContent =
+        sessionLog.modesActivated.size > 0 ? [...sessionLog.modesActivated].join(', ') : 'None yet';
+
+    // Conversation summary
+    if (conversationHistory.length > 0) {
+        const lastFew = conversationHistory.slice(-6).map(m => m.content).join(' | ');
+        document.getElementById('parent-summary').textContent = lastFew;
+    }
+
+    // Topics
+    if (sessionLog.topics.length > 0) {
+        document.getElementById('parent-topics').textContent = [...new Set(sessionLog.topics)].join(', ');
+    }
+
+    document.getElementById('parent-overlay').classList.add('visible');
+    logEvent('parent_mode_opened');
+}
+
+function openUsageLog() {
+    const startDate = new Date(sessionLog.startTime);
+    document.getElementById('usage-start-time').textContent =
+        startDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+
+    const timelineEl = document.getElementById('usage-timeline');
+    if (sessionLog.timeline.length === 0) {
+        timelineEl.innerHTML = '<p style="color:#666; font-style:italic; font-size:0.8rem;">No activity yet...</p>';
+    } else {
+        timelineEl.innerHTML = sessionLog.timeline.map(e => {
+            const t = new Date(e.time);
+            const ts = t.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+            return `<div class="log-entry"><span class="log-time">${ts}</span> <span class="log-action">${e.action}</span> ${e.detail}</div>`;
+        }).join('');
+    }
+
+    document.getElementById('usage-overlay').classList.add('visible');
+    logEvent('usage_log_opened');
+}
+
+function closeOverlay(id) {
+    document.getElementById(id).classList.remove('visible');
+}
+
+// =========================================================================
+// Character Switching
+// =========================================================================
+function switchAnimal(key) {
+    if (key === currentCharacter && !isActive) {
+        return;
+    }
+    if (key !== currentCharacter) {
+        // Increment generation to invalidate any in-flight audio
+        switchGeneration++;
+        const thisGeneration = switchGeneration;
+
+        // Kill everything from previous character
+        stopCurrentAudio();
+        endVoiceMode();  // Always call — no conditional on voiceModeActive (race condition fix)
+        if (isListening) stopVoiceInput();
+
+        // Kill WebRTC audio stream directly
+        if (rtcAudioEl && rtcAudioEl.srcObject) {
+            rtcAudioEl.srcObject.getTracks().forEach(t => t.stop());
+            rtcAudioEl.srcObject = null;
+        }
+
+        currentCharacter = key;
+        const char = CHARACTERS[key];
+        sessionLog.companionsUsed.add(char.name);
+        logEvent('companion_switched', char.name);
+
+        // Update tabs
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + key).classList.add('active');
+
+        // Update hero
+        heroImg.src = char.img;
+        heroImg.alt = char.name;
+        charNameEl.textContent = char.name;
+        charMeaningEl.textContent = char.meaning;
+
+        // Reset conversation
+        isActive = false;
+        demoRunning = false;
+        conversationHistory = [];
+        if (currentMode) {
+            const savedMode = currentMode;
+            currentMode = null;
+            transcriptEl.innerHTML = '';
+            setTimeout(() => {
+                // Only activate if generation is still current (no rapid switch happened)
+                if (switchGeneration === thisGeneration) {
+                    activateMode(savedMode);
+                }
+            }, 300);  // Increased from 100ms to 300ms for cleanup
+        } else {
+            transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap ' + char.name + ' to say hello...</p>';
+        }
+        setState('idle');
+        storyLabelEl.textContent = 'Tap to talk';
+        storyBtn.innerHTML = '&#x1F3A4;';
+    }
+}
+
+function setState(state) {
+    currentState = state;
+    storyBtn.className = 'story-btn ' + (state === 'idle' ? '' : state);
+    heroGlow.className = 'hero-glow ' + (state === 'idle' ? '' : state);
+    const name = getDisplayName(currentCharacter);
+
+    if (state === 'idle') statusEl.textContent = isActive ? 'Tap mic or type to talk' : 'Tap ' + name + ' to say hello';
+    else if (state === 'listening') statusEl.textContent = 'Listening...';
+    else if (state === 'thinking') statusEl.textContent = name + ' is thinking...';
+    else if (state === 'speaking') statusEl.textContent = name + ' is speaking...';
+    updateStopButton();
+}
+
+function toggleStoryMode() {
+    const char = CHARACTERS[currentCharacter];
+    if (!isActive) {
+        isActive = true;
+        sessionLog.companionsUsed.add(char.name);
+        logEvent('conversation_started', char.name);
+        transcriptEl.innerHTML = '';
+
+        const customGreeting = char.customName
+            ? `Hi! I'm ${char.name}... but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
+            : char.greeting;
+        const customGreetTTS = char.customName
+            ? `Hi! I'm ${char.name}, but you gave me an even better name. ${char.customName}! I love it. What should we do first?`
+            : char.greetTTS;
+
+        addMessage('companion', customGreeting);
+        setState('idle');
+        conversationHistory = [
+            {role: 'assistant', content: customGreeting}
+        ];
+
+        // Start guided demo on first interaction (greeting + demo offer)
+        if (!demoCompleted) {
+            speakText(customGreetTTS).then(() => {
+                if (!demoCompleted && !demoRunning) {
+                    startGuidedDemo();
+                }
+            });
+        } else {
+            speakText(customGreetTTS);
+        }
+
+        storyLabelEl.textContent = 'Tap to talk';
+    } else if (isListening) {
+        stopVoiceInput();
+    } else if (currentState === 'idle') {
+        startVoiceInput();
+    }
+}
+
+function addMessage(who, text) {
+    const p = document.createElement('p');
+    p.className = who;
+    const char = CHARACTERS[currentCharacter];
+    const icon = who === 'companion' ? char.icon + ' ' : '&#x1F464; ';
+    p.innerHTML = icon + text;
+    transcriptEl.appendChild(p);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+// Voice triggers
+const VOICE_TRIGGERS = {
+    'story time': 'story_time',
+    'tell me a story': 'story_time',
+    'storytime': 'story_time',
+    'calm and breathe': 'calm_breathe',
+    'calm & breathe': 'calm_breathe',
+    'breathing': 'calm_breathe',
+    'calm down': 'calm_breathe',
+    'breathe': 'calm_breathe',
+    'relax': 'calm_breathe',
+    'stem sparks': 'stem_sparks',
+    'stem': 'stem_sparks',
+    'science': 'stem_sparks',
+    'did you know': 'stem_sparks',
+    'music and rhythm': 'music_rhythm',
+    'music & rhythm': 'music_rhythm',
+    'music': 'music_rhythm',
+    'rhythm': 'music_rhythm',
+    'sing': 'music_rhythm',
+    'let\'s sing': 'music_rhythm',
+    'geography': 'geography',
+    'travel': 'geography',
+    'world': 'geography',
+    'explore the world': 'geography',
+    'italian': 'italian',
+    'speak italian': 'italian',
+    'teach me italian': 'italian',
+    'spanish': 'spanish',
+    'speak spanish': 'spanish',
+    'teach me spanish': 'spanish',
+    'coding': 'coding',
+    'code': 'coding',
+    'programming': 'coding',
+    'teach me coding': 'coding',
+    'teaching': 'teaching',
+    'teaching mode': 'teaching',
+    'lesson': 'teaching',
+    'teach me': 'teaching',
+    'milestones': 'milestones',
+    'milestone': 'milestones',
+    'my progress': 'milestones',
+    'exit mode': null,
+    'stop mode': null,
+    'go back': null,
+    'free talk': null,
+};
+
+function checkVoiceTrigger(text) {
+    const lower = text.toLowerCase().trim();
+    for (const [trigger, mode] of Object.entries(VOICE_TRIGGERS)) {
+        if (lower === trigger || lower.startsWith(trigger + ' ') || lower.endsWith(' ' + trigger)) {
+            return { matched: true, mode: mode };
+        }
+    }
+    return { matched: false };
+}
+
+async function sendChat(userText) {
+    sessionLog.messages++;
+
+    // If guided demo is running, handle demo response first
+    if (demoRunning) {
+        addMessage('user', userText);
+        if (handleDemoResponse(userText)) return;
+        // If not handled, falls through to normal chat
+    }
+
+    // Check for voice-activated mode triggers
+    const trigger = checkVoiceTrigger(userText);
+    if (trigger.matched) {
+        if (trigger.mode === null) {
+            if (!demoRunning) addMessage('user', userText);
+            exitMode();
+            return;
+        }
+        if (!demoRunning) addMessage('user', userText);
+        activateMode(trigger.mode);
+        return;
+    }
+
+    if (!demoRunning) addMessage('user', userText);
+    conversationHistory.push({role: 'user', content: userText});
+    setState('thinking');
+    logEvent('message_sent', userText.substring(0, 50));
+
+    const recentHistory = conversationHistory.slice(-10);
+
+    try {
+        const resp = await fetch('/api/chat-and-speak', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                message: userText,
+                history: recentHistory,
+                character: currentCharacter,
+                mode: currentMode,
+                customName: CHARACTERS[currentCharacter].customName || null
+            })
+        });
+
+        if (!resp.ok) {
+            const chatResp = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: userText, history: recentHistory, character: currentCharacter, mode: currentMode, customName: CHARACTERS[currentCharacter].customName || null })
+            });
+            const data = await chatResp.json();
+            const reply = data.response || "Hmm, something got tangled.";
+            conversationHistory.push({role: 'assistant', content: reply});
+            addMessage('companion', reply);
+            speakText(reply);
+            return;
+        }
+
+        const buffer = await resp.arrayBuffer();
+        const view = new DataView(buffer);
+        const headerLen = view.getUint32(0);
+        const headerBytes = new Uint8Array(buffer, 4, headerLen);
+        const headerText = new TextDecoder().decode(headerBytes);
+        const data = JSON.parse(headerText.trim());
+        const reply = data.response || "Hmm, something got tangled.";
+
+        conversationHistory.push({role: 'assistant', content: reply});
+        addMessage('companion', reply);
+
+        const audioBytes = buffer.slice(4 + headerLen);
+        if (audioBytes.byteLength > 0) {
+            const playGeneration = switchGeneration;
+            const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
+            const url = URL.createObjectURL(blob);
+            setState('speaking');
+            const audio = new Audio(url);
+            currentAudio = audio;
+            if (switchGeneration !== playGeneration) {
+                // Character was switched — don't play stale audio
+                URL.revokeObjectURL(url);
+                currentAudio = null;
+                return;
+            }
+            audio.onended = () => {
+                URL.revokeObjectURL(url);
+                currentAudio = null;
+                setState('idle');
+                if (isActive) {
+                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                }
+            };
+            audio.onerror = () => { currentAudio = null; setState('idle'); };
+            audio.play().catch(() => { currentAudio = null; setState('idle'); });
+        } else {
+            setState('idle');
+        }
+    } catch (err) {
+        setState('idle');
+        addMessage('companion', "Oops! My connection got tangled. Try again?");
+    }
+}
+
+let currentAudio = null;
+let switchGeneration = 0;
+
+function stopCurrentAudio() {
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+        currentAudio = null;
+    }
+}
+
+function killAllAudio() {
+    stopCurrentAudio();
+    if (voiceModeActive) endVoiceMode();
+    if (isListening) stopVoiceInput();
+    setState('idle');
+    updateStopButton();
+}
+
+function updateStopButton() {
+    const btn = document.getElementById('stop-btn');
+    if (!btn) return;
+    if (currentState === 'speaking' || currentState === 'listening' || currentState === 'thinking' || voiceModeActive) {
+        btn.classList.add('visible');
+    } else {
+        btn.classList.remove('visible');
+    }
+}
+
+function speakText(text) {
+    const speakGeneration = switchGeneration;
+    stopCurrentAudio();
+    setState('speaking');
+    return fetch('/api/tts', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({text: text, character: currentCharacter})
+    }).then(resp => {
+        if (resp.ok) {
+            return resp.blob().then(blob => {
+                if (switchGeneration !== speakGeneration) return Promise.resolve();
+                return new Promise(resolve => {
+                    const url = URL.createObjectURL(blob);
+                    const audio = new Audio(url);
+                    currentAudio = audio;
+                    audio.onended = () => {
+                        URL.revokeObjectURL(url);
+                        currentAudio = null;
+                        setState('idle');
+                        if (isActive && !demoRunning) {
+                            setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 300);
+                        }
+                        resolve();
+                    };
+                    audio.onerror = () => { currentAudio = null; setState('idle'); resolve(); };
+                    audio.play().catch(() => { currentAudio = null; setState('idle'); resolve(); });
+                });
+            });
+        } else {
+            setState('idle');
+            return Promise.resolve();
+        }
+    }).catch(() => {
+        setState('idle');
+        return Promise.resolve();
+    });
+}
+
+function sendText() {
+    const input = document.getElementById('text-input');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    if (!isActive) {
+        isActive = true;
+        sessionLog.companionsUsed.add(CHARACTERS[currentCharacter].name);
+        logEvent('conversation_started', CHARACTERS[currentCharacter].name);
+        transcriptEl.innerHTML = '';
+        conversationHistory = [];
+
+        // Trigger guided demo on first text interaction
+        if (!demoCompleted) {
+            const char = CHARACTERS[currentCharacter];
+            addMessage('companion', char.greeting);
+            conversationHistory.push({role: 'assistant', content: char.greeting});
+            speakText(char.greetTTS).then(() => {
+                if (!demoCompleted && !demoRunning) {
+                    startGuidedDemo();
+                }
+            });
+            // Queue the user's text to be processed after demo offer
+            setTimeout(() => { if (demoRunning) { handleDemoResponse(text) || sendChat(text); } else { sendChat(text); } }, 100);
+            return;
+        }
+    }
+    sendChat(text);
+}
+
+async function startVoiceInput() {
+    if (isListening) { stopVoiceInput(); return; }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4' });
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            if (audioChunks.length === 0) { setState('idle'); return; }
+
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            audioChunks = [];
+
+            setState('thinking');
+            statusEl.textContent = 'Processing voice...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', blob, 'recording.webm');
+                const sttResp = await fetch('/api/stt', { method: 'POST', body: formData });
+
+                if (!sttResp.ok) {
+                    addMessage('companion', 'Sorry, I couldn\'t hear that. Try again or type instead.');
+                    setState('idle');
+                    return;
+                }
+
+                const sttData = await sttResp.json();
+                const transcript = (sttData.text || '').trim();
+
+                if (!transcript) {
+                    addMessage('companion', 'I didn\'t catch that. Could you try again?');
+                    setState('idle');
+                    return;
+                }
+
+                if (!isActive) {
+                    isActive = true;
+                    transcriptEl.innerHTML = '';
+                    conversationHistory = [];
+                }
+                sendChat(transcript);
+            } catch (err) {
+                addMessage('companion', 'Voice processing failed. Try typing instead.');
+                setState('idle');
+            }
+        };
+
+        mediaRecorder.start();
+        isListening = true;
+        setState('listening');
+        storyBtn.innerHTML = '&#x1F534;';
+    } catch (err) {
+        statusEl.textContent = 'Microphone access denied. Please allow mic access or type instead.';
+        setState('idle');
+    }
+}
+
+function stopVoiceInput() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    isListening = false;
+    storyBtn.innerHTML = '&#x1F3A4;';
+}
+
+// =========================================================================
+// WebRTC Realtime Voice Mode
+// =========================================================================
+
+const AZURE_BASE = 'https://pwgcerp-9302-resource.openai.azure.com';
+let voiceModeActive = false;
+let rtcPC = null;
+let rtcDC = null;
+let rtcAudioEl = null;
+let rtcMicStream = null;
+let aiTranscriptBuffer = '';
+let aiTranscriptEl = null;
+
+const voiceModeBtn = document.getElementById('voice-mode-btn');
+const endVoiceBtn = document.getElementById('end-voice-btn');
+
+async function toggleVoiceMode() {
+    if (voiceModeActive) {
+        endVoiceMode();
+        return;
+    }
+    await startVoiceMode();
+}
+
+async function startVoiceMode() {
+    if (isListening) stopVoiceInput();
+
+    setState('thinking');
+    statusEl.textContent = 'Connecting voice...';
+    logEvent('voice_mode_started', CHARACTERS[currentCharacter].name);
+
+    try {
+        const tokenResp = await fetch('/api/voice/token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ character: currentCharacter })
+        });
+        if (!tokenResp.ok) {
+            const err = await tokenResp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to get voice token');
+        }
+        const tokenData = await tokenResp.json();
+        const ephemeralToken = tokenData.token;
+
+        rtcPC = new RTCPeerConnection();
+
+        rtcAudioEl = document.createElement('audio');
+        rtcAudioEl.autoplay = true;
+        document.body.appendChild(rtcAudioEl);
+
+        rtcPC.ontrack = (event) => {
+            if (event.streams.length > 0) {
+                rtcAudioEl.srcObject = event.streams[0];
+            }
+        };
+
+        rtcMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        rtcPC.addTrack(rtcMicStream.getAudioTracks()[0]);
+
+        rtcDC = rtcPC.createDataChannel('realtime-channel');
+
+        const offer = await rtcPC.createOffer();
+        await rtcPC.setLocalDescription(offer);
+
+        const sdpResp = await fetch(
+            `${AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on`,
+            {
+                method: 'POST',
+                body: offer.sdp,
+                headers: {
+                    'Authorization': `Bearer ${ephemeralToken}`,
+                    'Content-Type': 'application/sdp'
+                }
+            }
+        );
+        if (!sdpResp.ok) {
+            const errText = await sdpResp.text();
+            throw new Error('SDP exchange failed: ' + errText);
+        }
+
+        const answerSdp = await sdpResp.text();
+        await rtcPC.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+        rtcDC.onopen = () => {
+            const sessionUpdate = {
+                type: 'session.update',
+                session: {
+                    input_audio_transcription: {
+                        model: 'whisper-1'
+                    },
+                    turn_detection: {
+                        type: 'semantic_vad',
+                        create_response: true,
+                        interrupt_response: true,
+                        eagerness: 'auto'
+                    }
+                }
+            };
+            rtcDC.send(JSON.stringify(sessionUpdate));
+
+            voiceModeActive = true;
+            document.body.classList.add('voice-mode-active');
+            voiceModeBtn.classList.add('active');
+            voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Live';
+            endVoiceBtn.style.display = 'flex';
+
+            if (!isActive) {
+                isActive = true;
+                transcriptEl.innerHTML = '';
+                conversationHistory = [];
+            }
+
+            setState('idle');
+            statusEl.textContent = 'Voice mode active. Just talk.';
+            updateStopButton();
+
+            const char = CHARACTERS[currentCharacter];
+            voiceResponseCount = 0;
+            rtcDC.send(JSON.stringify({
+                type: 'response.create',
+                response: {
+                    instructions: `Greet the user warmly. Introduce yourself as ${char.name} (${char.meaning}). Then tell them what you can do: stories, calm breathing, science, music, languages, and games. Ask what they want to try first. Keep it to 3-4 sentences max. Be enthusiastic and in-character. Do NOT ask for the user's name. After speaking, WAIT for the user to respond. Do NOT keep talking.`
+                }
+            }));
+        };
+
+        rtcDC.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            handleRTCEvent(msg);
+        };
+
+        rtcDC.onclose = () => {
+            if (voiceModeActive) endVoiceMode();
+        };
+
+        rtcPC.oniceconnectionstatechange = () => {
+            if (rtcPC && (rtcPC.iceConnectionState === 'failed' || rtcPC.iceConnectionState === 'disconnected')) {
+                endVoiceMode();
+                statusEl.textContent = 'Voice connection lost. Try again.';
+            }
+        };
+
+    } catch (err) {
+        console.error('Voice mode error:', err);
+        cleanupRTC();
+        setState('idle');
+        statusEl.textContent = 'Voice mode failed: ' + err.message;
+    }
+}
+
+function handleRTCEvent(msg) {
+    switch (msg.type) {
+        case 'input_audio_buffer.speech_started':
+            setState('listening');
+            aiTranscriptBuffer = '';
+            aiTranscriptEl = null;
+            break;
+
+        case 'input_audio_buffer.speech_stopped':
+            setState('thinking');
+            break;
+
+        case 'conversation.item.input_audio_transcription.completed':
+            if (msg.transcript && msg.transcript.trim()) {
+                addMessage('user', msg.transcript.trim());
+                conversationHistory.push({ role: 'user', content: msg.transcript.trim() });
+                sessionLog.messages++;
+            }
+            break;
+
+        case 'response.output_audio_transcript.delta':
+            if (!aiTranscriptEl) {
+                aiTranscriptBuffer = '';
+                aiTranscriptEl = document.createElement('p');
+                aiTranscriptEl.className = 'companion';
+                const char = CHARACTERS[currentCharacter];
+                aiTranscriptEl.innerHTML = char.icon + ' ';
+                transcriptEl.appendChild(aiTranscriptEl);
+            }
+            aiTranscriptBuffer += msg.delta;
+            const char = CHARACTERS[currentCharacter];
+            aiTranscriptEl.innerHTML = char.icon + ' ' + aiTranscriptBuffer;
+            transcriptEl.scrollTop = transcriptEl.scrollHeight;
+            break;
+
+        case 'response.output_audio_transcript.done':
+            if (msg.transcript) {
+                conversationHistory.push({ role: 'assistant', content: msg.transcript });
+            }
+            aiTranscriptEl = null;
+            aiTranscriptBuffer = '';
+
+            // After initial greeting (response 1), inject capabilities intro
+            voiceResponseCount++;
+            // After greeting, mark demo done and let user drive the conversation
+            if (voiceResponseCount === 1 && !demoCompleted) {
+                demoCompleted = true;
+            }
+            break;
+
+        case 'output_audio_buffer.started':
+            setState('speaking');
+            break;
+
+        case 'output_audio_buffer.stopped':
+            setState('idle');
+            if (voiceModeActive) {
+                statusEl.textContent = 'Voice mode active. Just talk.';
+            }
+            break;
+
+        case 'error':
+            console.error('Realtime API error:', msg.error);
+            statusEl.textContent = 'Error: ' + (msg.error?.message || 'Unknown');
+            break;
+    }
+}
+
+function endVoiceMode() {
+    voiceModeActive = false;
+    cleanupRTC();
+    document.body.classList.remove('voice-mode-active');
+    voiceModeBtn.classList.remove('active');
+    voiceModeBtn.innerHTML = '<span class="vm-icon">&#x1F50A;</span> Voice Mode';
+    endVoiceBtn.style.display = 'none';
+    setState('idle');
+    logEvent('voice_mode_ended');
+    updateStopButton();
+}
+
+function cleanupRTC() {
+    if (rtcDC) { try { rtcDC.close(); } catch(e){} rtcDC = null; }
+    if (rtcPC) { try { rtcPC.close(); } catch(e){} rtcPC = null; }
+    if (rtcMicStream) { rtcMicStream.getTracks().forEach(t => t.stop()); rtcMicStream = null; }
+    if (rtcAudioEl) { rtcAudioEl.remove(); rtcAudioEl = null; }
+}
+
+// Log session start
+logEvent('session_started');
+</script>
+</body>
+</html>
