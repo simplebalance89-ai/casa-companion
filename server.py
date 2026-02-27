@@ -22,9 +22,13 @@ app.add_middleware(
 )
 
 @app.middleware("http")
-async def add_permissions_policy(request, call_next):
+async def add_headers(request, call_next):
     response = await call_next(request)
     response.headers["Permissions-Policy"] = "microphone=(*), autoplay=(*), camera=()"
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["Surrogate-Control"] = "no-store"
     return response
 
 # ---------------------------------------------------------------------------
@@ -59,7 +63,7 @@ CHARACTER_PROMPTS = {
     "corvo": {
         "name": "Corvo",
         "meaning": "Corvo means Crow in Italian",
-        "voice": "nova",
+        "voice": "ash",
         "realtime_voice": "ash",
         "prompt": """You are Corvo, a wise and playful crow companion from Casa Companion. You are a soft, premium plush toy with warm amber glowing eyes and iridescent black feathers. You were made by a family in California who believes every child deserves a companion that listens, tells stories, and grows with them.
 
@@ -78,7 +82,7 @@ For this DEMO, you're talking to ADULTS who are potential Kickstarter backers. S
     "gufo": {
         "name": "Gufo",
         "meaning": "Gufo means Owl in Italian",
-        "voice": "nova",
+        "voice": "sage",
         "realtime_voice": "sage",
         "prompt": """You are Gufo, a gentle and wise owl companion from Casa Companion. You are a soft, round plush owl with big golden eyes that glow warmly in the dark. You love bedtime, stargazing, and quiet wisdom.
 
@@ -95,7 +99,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "orsetto": {
         "name": "Orsetto",
         "meaning": "Orsetto means Little Bear in Italian",
-        "voice": "nova",
+        "voice": "coral",
         "realtime_voice": "coral",
         "prompt": """You are Orsetto, a brave and cuddly little bear companion from Casa Companion. You are a soft, huggable plush bear cub with warm brown fur and a big heart. You love adventures, honey, and giving the biggest hugs.
 
@@ -113,7 +117,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "coniglio": {
         "name": "Coniglio",
         "meaning": "Coniglio means Bunny in Italian",
-        "voice": "nova",
+        "voice": "shimmer",
         "realtime_voice": "shimmer",
         "prompt": """You are Coniglio, a sweet and gentle bunny companion from Casa Companion. You are a soft, floppy-eared plush bunny with big gentle eyes. You love music, dancing, hopping, and making friends.
 
@@ -130,7 +134,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "tartaruga": {
         "name": "Tartaruga",
         "meaning": "Tartaruga means Sea Turtle in Italian",
-        "voice": "nova",
+        "voice": "alloy",
         "realtime_voice": "alloy",
         "prompt": """You are Tartaruga, a patient and wise sea turtle companion from Casa Companion. You are a soft, gentle plush sea turtle with shimmering blue-green shell and kind, ancient eyes. You carry the wisdom of the ocean.
 
@@ -147,7 +151,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "elefante": {
         "name": "Elefante",
         "meaning": "Elefante means Elephant in Italian",
-        "voice": "nova",
+        "voice": "echo",
         "realtime_voice": "echo",
         "prompt": """You are Elefante, a gentle giant elephant companion from Casa Companion. You are a soft, huggable plush elephant with big floppy ears and warm, loving eyes. You never forget and you always care.
 
@@ -165,8 +169,8 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "leone": {
         "name": "Leone",
         "meaning": "Leone means Lion in Italian",
-        "voice": "nova",
-        "realtime_voice": "echo",
+        "voice": "onyx",
+        "realtime_voice": "onyx",
         "prompt": """You are Leone, a confident and brave lion companion from Casa Companion. You are a soft, majestic plush lion with a golden mane and proud, warm eyes. You lead with courage and kindness.
 
 Your personality:
@@ -183,7 +187,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "delfino": {
         "name": "Delfino",
         "meaning": "Delfino means Dolphin in Italian",
-        "voice": "nova",
+        "voice": "ballad",
         "realtime_voice": "ballad",
         "prompt": """You are Delfino, a playful and joyful dolphin companion from Casa Companion. You are a soft, sleek plush dolphin with sparkling eyes and the biggest smile. You live for fun, games, and making friends.
 
@@ -201,8 +205,8 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "drago": {
         "name": "Drago",
         "meaning": "Drago means Dragon in Italian",
-        "voice": "nova",
-        "realtime_voice": "ash",
+        "voice": "fable",
+        "realtime_voice": "fable",
         "prompt": """You are Drago, an imaginative and magical dragon companion from Casa Companion. You are a soft, sparkly plush dragon with shimmering scales and gentle glowing eyes. You breathe creativity, not fire.
 
 Your personality:
@@ -219,7 +223,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "xolo": {
         "name": "Xolo",
         "meaning": "Xolo is a Xoloitzcuintli, the ancient Aztec dog",
-        "voice": "nova",
+        "voice": "verse",
         "realtime_voice": "verse",
         "prompt": """You are Xolo, a loyal and ancient Xoloitzcuintli dog companion from Casa Companion. You are a soft, sleek plush hairless dog with warm bronze skin and wise, deep eyes. You carry the heritage of the Aztec people.
 
@@ -238,7 +242,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Polpo",
         "meaning": "Polpo means Octopus in Italian",
         "voice": "nova",
-        "realtime_voice": "ballad",
+        "realtime_voice": "nova",
         "prompt": """You are Polpo, a special demo octopus companion from Casa Companion. You are a soft, deep ocean-blue plush octopus with eight curling tentacles and warm amber glowing eyes. You are the demo host — you show off what all Casa Companions can do.
 
 Your personality:
@@ -668,7 +672,7 @@ async def tts(request: TTSRequest):
 
     char_key = (request.character or "corvo").lower()
     char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
-    tts_voice = char_data.get("realtime_voice", "ash")
+    tts_voice = char_data.get("voice", "nova")
 
     url = (
         f"{AZURE_BASE}/openai/deployments/{TTS_DEPLOYMENT}"
@@ -796,7 +800,7 @@ async def chat_and_speak(request: ChatRequest):
                 f"{AZURE_BASE}/openai/deployments/{TTS_DEPLOYMENT}"
                 f"/audio/speech?api-version={TTS_API_VERSION}"
             )
-            tts_voice = char_data.get("realtime_voice", "ash")
+            tts_voice = char_data.get("voice", "nova")
             tts_resp = await client.post(
                 tts_url,
                 json={"model": "gpt-4o-mini-tts", "voice": tts_voice, "input": reply},
@@ -876,6 +880,36 @@ async def voice_token(request: VoiceTokenRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Voice token request failed: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# POST /api/voice/sdp  (proxy SDP exchange so Azure URL stays server-side)
+# ---------------------------------------------------------------------------
+
+class SDPRequest(BaseModel):
+    sdp: str
+    token: str
+
+@app.post("/api/voice/sdp")
+async def voice_sdp(request: SDPRequest):
+    url = f"{AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on"
+    headers = {
+        "Authorization": f"Bearer {request.token}",
+        "Content-Type": "application/sdp",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(url, content=request.sdp, headers=headers)
+            resp.raise_for_status()
+            return StreamingResponse(
+                iter([resp.content]),
+                media_type="application/sdp",
+                status_code=resp.status_code,
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=f"SDP exchange failed: {e.response.text}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SDP exchange failed: {str(e)}")
 
 
 # ---------------------------------------------------------------------------

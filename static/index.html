@@ -2910,9 +2910,6 @@ async function sendChat(userText) {
                 URL.revokeObjectURL(url);
                 currentAudio = null;
                 setState('idle');
-                if (isActive && currentMode !== 'introduction') {
-                    setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 800);
-                }
             };
             audio.onerror = () => { currentAudio = null; setState('idle'); };
             audio.play().catch(() => { currentAudio = null; setState('idle'); });
@@ -2976,9 +2973,6 @@ function speakText(text) {
                         URL.revokeObjectURL(url);
                         currentAudio = null;
                         setState('idle');
-                        if (isActive && !demoRunning && currentMode !== 'introduction') {
-                            setTimeout(() => { if (currentState === 'idle' && isActive) startVoiceInput(); }, 800);
-                        }
                         resolve();
                     };
                     audio.onerror = () => { currentAudio = null; setState('idle'); resolve(); };
@@ -3092,7 +3086,6 @@ function stopVoiceInput() {
 // WebRTC Realtime Voice Mode
 // =========================================================================
 
-const AZURE_BASE = 'https://pwgcerp-9302-resource.openai.azure.com';
 let voiceModeActive = false;
 let rtcPC = null;
 let rtcDC = null;
@@ -3109,11 +3102,11 @@ async function toggleVoiceMode() {
         endVoiceMode();
         return;
     }
-    // Cooldown — disable button for 3s to prevent spam
+    // Brief cooldown to prevent double-tap
     const btn = document.getElementById('voice-primary-btn');
     if (btn.disabled) return;
     btn.disabled = true;
-    setTimeout(() => { btn.disabled = false; }, 3000);
+    setTimeout(() => { btn.disabled = false; }, 1000);
     await startVoiceMode();
 }
 
@@ -3165,7 +3158,12 @@ async function startVoiceMode() {
             }
         };
 
-        rtcMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        rtcMicStream = await navigator.mediaDevices.getUserMedia({ audio: {
+            noiseSuppression: true,
+            echoCancellation: true,
+            autoGainControl: true,
+            channelCount: 1
+        } });
         rtcPC.addTrack(rtcMicStream.getAudioTracks()[0]);
 
         rtcDC = rtcPC.createDataChannel('realtime-channel');
@@ -3173,17 +3171,11 @@ async function startVoiceMode() {
         const offer = await rtcPC.createOffer();
         await rtcPC.setLocalDescription(offer);
 
-        const sdpResp = await fetch(
-            `${AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on`,
-            {
-                method: 'POST',
-                body: offer.sdp,
-                headers: {
-                    'Authorization': `Bearer ${ephemeralToken}`,
-                    'Content-Type': 'application/sdp'
-                }
-            }
-        );
+        const sdpResp = await fetch('/api/voice/sdp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sdp: offer.sdp, token: ephemeralToken })
+        });
         if (!sdpResp.ok) {
             const errText = await sdpResp.text();
             throw new Error('SDP exchange failed: ' + errText);
@@ -3203,7 +3195,7 @@ async function startVoiceMode() {
                         type: 'semantic_vad',
                         create_response: true,
                         interrupt_response: true,
-                        eagerness: 'medium'
+                        eagerness: 'low'
                     }
                 }
             };
