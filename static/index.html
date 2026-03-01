@@ -1375,6 +1375,21 @@
                         End Voice
                     </button>
                 </div>
+                <!-- Mic Sensitivity Selector -->
+                <div id="mic-controls" style="display:none;margin-top:8px;text-align:center;">
+                    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
+                        <span style="font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;">Mic Sensitivity:</span>
+                        <select id="mic-sensitivity" onchange="updateMicSensitivity(this.value)" style="padding:4px 8px;border-radius:8px;border:1px solid #ddd;background:#fff;font-family:'Nunito',sans-serif;font-size:0.75rem;color:#333;">
+                            <option value="low" selected>Low (quiet room)</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High (noisy room)</option>
+                        </select>
+                    </div>
+                    <button id="wait-respond-btn" onclick="toggleWaitToRespond()" style="padding:6px 16px;border-radius:16px;border:1.5px solid #888;background:transparent;color:#888;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.3s ease;">
+                        Listen First
+                    </button>
+                    <div id="wait-respond-hint" style="display:none;font-size:0.6rem;color:#4CAF50;margin-top:3px;">Mic muted while companion speaks</div>
+                </div>
             </div>
 
             <!-- Stop button moved to nav row below -->
@@ -3087,6 +3102,8 @@ function stopVoiceInput() {
 // =========================================================================
 
 let voiceModeActive = false;
+let waitToRespondMode = false;
+let currentEagerness = 'low';
 let rtcPC = null;
 let rtcDC = null;
 let rtcAudioEl = null;
@@ -3206,6 +3223,7 @@ async function startVoiceMode() {
             voiceModeBtn.classList.add('active');
             document.getElementById('voice-btn-label').textContent = 'Voice Live';
             endVoiceBtn.style.display = 'flex';
+            document.getElementById('mic-controls').style.display = 'block';
 
             if (!isActive) {
                 isActive = true;
@@ -3305,13 +3323,16 @@ function handleRTCEvent(msg) {
 
         case 'output_audio_buffer.started':
             setState('speaking');
-            // Mic stays live — semantic VAD handles interrupt detection
+            // Wait to Respond: mute mic while companion speaks
+            if (waitToRespondMode) muteRtcMic();
             break;
 
         case 'output_audio_buffer.stopped':
             setState('idle');
+            // Wait to Respond: unmute mic after companion finishes
+            if (waitToRespondMode) unmuteRtcMic();
             if (voiceModeActive) {
-                statusEl.textContent = 'Voice mode active. Just talk.';
+                statusEl.textContent = waitToRespondMode ? 'Your turn to speak.' : 'Voice mode active. Just talk.';
             }
             break;
 
@@ -3324,14 +3345,80 @@ function handleRTCEvent(msg) {
 
 function endVoiceMode() {
     voiceModeActive = false;
+    waitToRespondMode = false;
     cleanupRTC();
     document.body.classList.remove('voice-mode-active');
     voiceModeBtn.classList.remove('active');
     document.getElementById('voice-btn-label').textContent = 'Talk to ' + CHARACTERS[currentCharacter].name;
     endVoiceBtn.style.display = 'none';
+    document.getElementById('mic-controls').style.display = 'none';
     setState('idle');
     logEvent('voice_mode_ended');
     updateStopButton();
+}
+
+/* --- Mic Sensitivity --- */
+function updateMicSensitivity(level) {
+    currentEagerness = level;
+    if (rtcDC && rtcDC.readyState === 'open') {
+        rtcDC.send(JSON.stringify({
+            type: 'session.update',
+            session: {
+                turn_detection: {
+                    type: 'semantic_vad',
+                    create_response: true,
+                    interrupt_response: !waitToRespondMode,
+                    eagerness: level
+                }
+            }
+        }));
+    }
+}
+
+/* --- Wait to Respond (Listen First) --- */
+function toggleWaitToRespond() {
+    waitToRespondMode = !waitToRespondMode;
+    var btn = document.getElementById('wait-respond-btn');
+    var hint = document.getElementById('wait-respond-hint');
+    if (waitToRespondMode) {
+        btn.style.borderColor = '#4CAF50';
+        btn.style.color = '#4CAF50';
+        btn.style.background = 'rgba(76,175,80,0.08)';
+        btn.textContent = 'Listen First: ON';
+        hint.style.display = 'block';
+    } else {
+        btn.style.borderColor = '#888';
+        btn.style.color = '#888';
+        btn.style.background = 'transparent';
+        btn.textContent = 'Listen First';
+        hint.style.display = 'none';
+    }
+    // Update VAD interrupt setting
+    if (rtcDC && rtcDC.readyState === 'open') {
+        rtcDC.send(JSON.stringify({
+            type: 'session.update',
+            session: {
+                turn_detection: {
+                    type: 'semantic_vad',
+                    create_response: true,
+                    interrupt_response: !waitToRespondMode,
+                    eagerness: currentEagerness
+                }
+            }
+        }));
+    }
+}
+
+/* --- Mute/unmute mic during AI speech (Wait to Respond) --- */
+function muteRtcMic() {
+    if (rtcMicStream) {
+        rtcMicStream.getAudioTracks().forEach(function(t) { t.enabled = false; });
+    }
+}
+function unmuteRtcMic() {
+    if (rtcMicStream) {
+        rtcMicStream.getAudioTracks().forEach(function(t) { t.enabled = true; });
+    }
 }
 
 function cleanupRTC() {

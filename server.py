@@ -170,7 +170,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Leone",
         "meaning": "Leone means Lion in Italian",
         "voice": "onyx",
-        "realtime_voice": "onyx",
+        "realtime_voice": "echo",
         "prompt": """You are Leone, a confident and brave lion companion from Casa Companion. You are a soft, majestic plush lion with a golden mane and proud, warm eyes. You lead with courage and kindness.
 
 Your personality:
@@ -206,7 +206,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Drago",
         "meaning": "Drago means Dragon in Italian",
         "voice": "fable",
-        "realtime_voice": "fable",
+        "realtime_voice": "ballad",
         "prompt": """You are Drago, an imaginative and magical dragon companion from Casa Companion. You are a soft, sparkly plush dragon with shimmering scales and gentle glowing eyes. You breathe creativity, not fire.
 
 Your personality:
@@ -242,7 +242,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
         "name": "Polpo",
         "meaning": "Polpo means Octopus in Italian",
         "voice": "nova",
-        "realtime_voice": "nova",
+        "realtime_voice": "coral",
         "prompt": """You are Polpo, a special demo octopus companion from Casa Companion. You are a soft, deep ocean-blue plush octopus with eight curling tentacles and warm amber glowing eyes. You are the demo host — you show off what all Casa Companions can do.
 
 Your personality:
@@ -874,6 +874,23 @@ async def voice_token(request: VoiceTokenRequest):
                 "character": char_key,
             }
     except httpx.HTTPStatusError as e:
+        # Fallback: if voice fails (e.g. Azure 500 on certain voices), retry with "ash"
+        if e.response.status_code == 500 and voice != "ash":
+            payload["session"]["audio"]["output"]["voice"] = "ash"
+            try:
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp2 = await client.post(url, json=payload, headers=headers)
+                    resp2.raise_for_status()
+                    data = resp2.json()
+                    return {
+                        "token": data["value"],
+                        "expires_at": data.get("expires_at"),
+                        "voice": "ash",
+                        "character": char_key,
+                        "fallback": True,
+                    }
+            except Exception:
+                pass
         raise HTTPException(
             status_code=e.response.status_code,
             detail=f"Azure realtime token error: {e.response.text}",
