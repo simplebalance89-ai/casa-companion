@@ -516,43 +516,57 @@
         max-width: 400px;
     }
 
-    .voice-primary-btn {
+    /* Voice Mode Buttons — Two-button row */
+    .voice-mode-row {
         display: flex;
+        gap: 10px;
+        width: 100%;
+        max-width: 380px;
+        justify-content: center;
+    }
+    .voice-mode-btn {
+        display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        padding: 14px 32px;
-        border-radius: 28px;
+        gap: 2px;
+        padding: 14px 12px;
+        border-radius: 20px;
         border: none;
-        background: linear-gradient(135deg, #D4A017, #B8860B);
-        color: #0D0D1A;
         font-family: 'Nunito', sans-serif;
-        font-size: 1rem;
-        font-weight: 800;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 6px 24px rgba(212,160,23,0.3);
-        letter-spacing: 0.5px;
-        width: 100%;
-        max-width: 320px;
+        flex: 1;
+        min-width: 0;
     }
-    .voice-primary-btn:hover {
+    .voice-mode-btn .vm-icon { font-size: 1.3rem; }
+    .voice-mode-btn .vm-label { font-size: 0.9rem; font-weight: 800; letter-spacing: 0.3px; }
+    .voice-mode-btn .vm-sub { font-size: 0.6rem; font-weight: 600; opacity: 0.7; letter-spacing: 0.5px; }
+
+    .voice-mode-btn.free-flow {
+        background: linear-gradient(135deg, #D4A017, #B8860B);
+        color: #0D0D1A;
+        box-shadow: 0 4px 18px rgba(212,160,23,0.3);
+    }
+    .voice-mode-btn.free-flow:hover {
         transform: scale(1.03);
-        box-shadow: 0 10px 36px rgba(212,160,23,0.5);
+        box-shadow: 0 8px 30px rgba(212,160,23,0.5);
     }
-    .voice-primary-btn .vp-icon { font-size: 1.2rem; }
-    .voice-primary-btn .vp-rec {
-        font-size: 0.55rem;
-        color: rgba(0,0,0,0.5);
-        font-weight: 600;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-    }
-    .voice-primary-btn.active {
-        background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    .voice-mode-btn.turn-based {
+        background: linear-gradient(135deg, #1E88E5, #0D47A1);
         color: #FFF;
+        box-shadow: 0 4px 18px rgba(30,136,229,0.3);
+    }
+    .voice-mode-btn.turn-based:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 30px rgba(30,136,229,0.5);
+    }
+    .voice-mode-btn.active {
+        background: linear-gradient(135deg, #4CAF50, #2E7D32) !important;
+        color: #FFF !important;
         animation: glow-btn 1.5s ease-in-out infinite;
     }
+    .voice-mode-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 
     .voice-secondary-row {
         display: flex;
@@ -1236,6 +1250,12 @@
         .hero-container { width: 240px; height: 240px; }
     }
 
+    @media (max-width: 360px) {
+        .voice-mode-row { gap: 6px; }
+        .voice-mode-btn { padding: 12px 8px; }
+        .voice-mode-btn .vm-label { font-size: 0.78rem; }
+    }
+
     /* Hide tap-to-talk controls in voice mode */
     body.voice-mode-active .tap-talk-btn { display: none; }
 </style>
@@ -1361,11 +1381,18 @@
 
             <!-- Interaction Buttons -->
             <div class="interaction-buttons">
-                <button class="voice-primary-btn" id="voice-primary-btn" onclick="toggleVoiceMode()">
-                    <span class="vp-icon">&#x1F50A;</span>
-                    <span id="voice-btn-label">Talk to Corvo</span>
-                    <span class="vp-rec">RECOMMENDED</span>
-                </button>
+                <div class="voice-mode-row">
+                    <button class="voice-mode-btn free-flow" id="voice-btn-freeflow" onclick="startVoiceWithMode('freeflow')">
+                        <span class="vm-icon">&#x1F50A;</span>
+                        <span class="vm-label" id="voice-label-freeflow">Free Flow</span>
+                        <span class="vm-sub">Talk anytime</span>
+                    </button>
+                    <button class="voice-mode-btn turn-based" id="voice-btn-turnbased" onclick="startVoiceWithMode('turnbased')">
+                        <span class="vm-icon">&#x1F3A4;</span>
+                        <span class="vm-label" id="voice-label-turnbased">Turn-Based</span>
+                        <span class="vm-sub">Take turns</span>
+                    </button>
+                </div>
                 <div class="voice-secondary-row">
                     <button class="tap-talk-btn" id="tap-talk-btn" onclick="toggleStoryMode()">
                         &#x1F3A4; Tap to Talk
@@ -1387,10 +1414,6 @@
                             <option value="high">High (noisy room)</option>
                         </select>
                     </div>
-                    <button id="wait-respond-btn" onclick="toggleWaitToRespond()" style="padding:6px 16px;border-radius:16px;border:1.5px solid #888;background:transparent;color:#888;font-family:'Nunito',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.3s ease;">
-                        Listen First
-                    </button>
-                    <div id="wait-respond-hint" style="display:none;font-size:0.6rem;color:#4CAF50;margin-top:3px;">Mic muted while companion speaks</div>
                 </div>
             </div>
 
@@ -1980,7 +2003,6 @@ function initTalkStep() {
     heroImg.alt = char.customName || char.name;
     charNameEl.textContent = char.name;
     charMeaningEl.textContent = char.meaning;
-    document.getElementById('voice-btn-label').textContent = 'Talk to ' + char.name;
 
     sessionLog.companionsUsed.add(char.name);
     logEvent('companion_selected', char.name);
@@ -2524,9 +2546,6 @@ function activateMode(modeKey) {
     if (hintEl) hintEl.textContent = MODE_HINTS[modeKey] || '';
     banner.classList.add('visible');
 
-    // Update voice button to show active mode context
-    const voiceLabel = document.getElementById('voice-btn-label');
-    if (voiceLabel) voiceLabel.textContent = modeName + ' — Tap to Talk';
 
     conversationHistory = [];
     isActive = true;
@@ -2552,8 +2571,6 @@ function exitMode() {
     currentMode = null;
     document.querySelectorAll('.learning-card').forEach(c => c.classList.remove('active'));
     document.getElementById('mode-banner').classList.remove('visible');
-    const voiceLabel = document.getElementById('voice-btn-label');
-    if (voiceLabel) voiceLabel.textContent = 'Talk to ' + (CHARACTERS[currentCharacter].customName || CHARACTERS[currentCharacter].name);
 
     conversationHistory = [];
     isActive = false;
@@ -2645,13 +2662,11 @@ function switchAnimal(key) {
         heroImg.alt = char.name;
         charNameEl.textContent = char.customName ? char.customName + ' (' + char.name + ')' : char.name;
         charMeaningEl.textContent = char.meaning;
-        document.getElementById('voice-btn-label').textContent = 'Talk to ' + (char.customName || char.name);
-
         // Reset conversation
         isActive = false;
         demoRunning = false;
         conversationHistory = [];
-        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Tap "Talk to ' + (char.customName || char.name) + '" to start talking...</p>';
+        transcriptEl.innerHTML = '<p style="color:#555; font-style:italic;">Choose Free Flow or Turn-Based to talk to ' + (char.customName || char.name) + '...</p>';
 
         if (!introducedCompanions.has(key)) {
             // First time meeting this companion — auto-intro
@@ -3105,6 +3120,7 @@ function stopVoiceInput() {
 
 let voiceModeActive = false;
 let waitToRespondMode = false;
+let voiceInteractionMode = 'freeflow'; // 'freeflow' or 'turnbased'
 let currentEagerness = 'low';
 let rtcPC = null;
 let rtcDC = null;
@@ -3113,20 +3129,25 @@ let rtcMicStream = null;
 let aiTranscriptBuffer = '';
 let aiTranscriptEl = null;
 
-const voiceModeBtn = document.getElementById('voice-primary-btn');
+const voiceBtnFreeflow = document.getElementById('voice-btn-freeflow');
+const voiceBtnTurnbased = document.getElementById('voice-btn-turnbased');
 const endVoiceBtn = document.getElementById('end-voice-btn');
 
-async function toggleVoiceMode() {
+function startVoiceWithMode(mode) {
     if (voiceModeActive) {
         endVoiceMode();
         return;
     }
     // Brief cooldown to prevent double-tap
-    const btn = document.getElementById('voice-primary-btn');
+    const btn = mode === 'turnbased' ? voiceBtnTurnbased : voiceBtnFreeflow;
     if (btn.disabled) return;
-    btn.disabled = true;
-    setTimeout(() => { btn.disabled = false; }, 1000);
-    await startVoiceMode();
+    voiceBtnFreeflow.disabled = true;
+    voiceBtnTurnbased.disabled = true;
+    setTimeout(() => { voiceBtnFreeflow.disabled = false; voiceBtnTurnbased.disabled = false; }, 1000);
+
+    voiceInteractionMode = mode;
+    waitToRespondMode = (mode === 'turnbased');
+    startVoiceMode();
 }
 
 async function startVoiceMode() {
@@ -3213,8 +3234,8 @@ async function startVoiceMode() {
                     turn_detection: {
                         type: 'semantic_vad',
                         create_response: true,
-                        interrupt_response: true,
-                        eagerness: 'low'
+                        interrupt_response: !waitToRespondMode,
+                        eagerness: currentEagerness
                     }
                 }
             };
@@ -3222,8 +3243,8 @@ async function startVoiceMode() {
 
             voiceModeActive = true;
             document.body.classList.add('voice-mode-active');
-            voiceModeBtn.classList.add('active');
-            document.getElementById('voice-btn-label').textContent = 'Voice Live';
+            const activeBtn = voiceInteractionMode === 'turnbased' ? voiceBtnTurnbased : voiceBtnFreeflow;
+            activeBtn.classList.add('active');
             endVoiceBtn.style.display = 'flex';
             document.getElementById('mic-controls').style.display = 'block';
 
@@ -3234,7 +3255,7 @@ async function startVoiceMode() {
             }
 
             setState('idle');
-            statusEl.textContent = 'Voice mode active. Just talk.';
+            statusEl.textContent = waitToRespondMode ? 'Turn-based mode. Listen, then speak.' : 'Free flow mode. Just talk.';
             updateStopButton();
 
             const char = CHARACTERS[currentCharacter];
@@ -3334,7 +3355,7 @@ function handleRTCEvent(msg) {
             // Wait to Respond: unmute mic after companion finishes
             if (waitToRespondMode) unmuteRtcMic();
             if (voiceModeActive) {
-                statusEl.textContent = waitToRespondMode ? 'Your turn to speak.' : 'Voice mode active. Just talk.';
+                statusEl.textContent = waitToRespondMode ? 'Your turn — speak now' : 'Free flow mode. Just talk.';
             }
             break;
 
@@ -3348,10 +3369,11 @@ function handleRTCEvent(msg) {
 function endVoiceMode() {
     voiceModeActive = false;
     waitToRespondMode = false;
+    voiceInteractionMode = 'freeflow';
     cleanupRTC();
     document.body.classList.remove('voice-mode-active');
-    voiceModeBtn.classList.remove('active');
-    document.getElementById('voice-btn-label').textContent = 'Talk to ' + CHARACTERS[currentCharacter].name;
+    voiceBtnFreeflow.classList.remove('active');
+    voiceBtnTurnbased.classList.remove('active');
     endVoiceBtn.style.display = 'none';
     document.getElementById('mic-controls').style.display = 'none';
     setState('idle');
@@ -3377,39 +3399,6 @@ function updateMicSensitivity(level) {
     }
 }
 
-/* --- Wait to Respond (Listen First) --- */
-function toggleWaitToRespond() {
-    waitToRespondMode = !waitToRespondMode;
-    var btn = document.getElementById('wait-respond-btn');
-    var hint = document.getElementById('wait-respond-hint');
-    if (waitToRespondMode) {
-        btn.style.borderColor = '#4CAF50';
-        btn.style.color = '#4CAF50';
-        btn.style.background = 'rgba(76,175,80,0.08)';
-        btn.textContent = 'Listen First: ON';
-        hint.style.display = 'block';
-    } else {
-        btn.style.borderColor = '#888';
-        btn.style.color = '#888';
-        btn.style.background = 'transparent';
-        btn.textContent = 'Listen First';
-        hint.style.display = 'none';
-    }
-    // Update VAD interrupt setting
-    if (rtcDC && rtcDC.readyState === 'open') {
-        rtcDC.send(JSON.stringify({
-            type: 'session.update',
-            session: {
-                turn_detection: {
-                    type: 'semantic_vad',
-                    create_response: true,
-                    interrupt_response: !waitToRespondMode,
-                    eagerness: currentEagerness
-                }
-            }
-        }));
-    }
-}
 
 /* --- Mute/unmute mic during AI speech (Wait to Respond) --- */
 function muteRtcMic() {
