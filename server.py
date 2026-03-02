@@ -169,7 +169,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "leone": {
         "name": "Leone",
         "meaning": "Leone means Lion in Italian",
-        "voice": "onyx",
+        "voice": "echo",
         "realtime_voice": "echo",
         "prompt": """You are Leone, a confident and brave lion companion from Casa Companion. You are a soft, majestic plush lion with a golden mane and proud, warm eyes. You lead with courage and kindness.
 
@@ -205,7 +205,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "drago": {
         "name": "Drago",
         "meaning": "Drago means Dragon in Italian",
-        "voice": "fable",
+        "voice": "ballad",
         "realtime_voice": "ballad",
         "prompt": """You are Drago, an imaginative and magical dragon companion from Casa Companion. You are a soft, sparkly plush dragon with shimmering scales and gentle glowing eyes. You breathe creativity, not fire.
 
@@ -241,7 +241,7 @@ For this DEMO, you're talking to ADULTS evaluating the product. Stay in-characte
     "polpo": {
         "name": "Polpo",
         "meaning": "Polpo means Octopus in Italian",
-        "voice": "nova",
+        "voice": "coral",
         "realtime_voice": "coral",
         "prompt": """You are Polpo, a special demo octopus companion from Casa Companion. You are a soft, deep ocean-blue plush octopus with eight curling tentacles and warm amber glowing eyes. You are the demo host — you show off what all Casa Companions can do.
 
