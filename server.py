@@ -1,17 +1,40 @@
 import os
 import httpx
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 
 load_dotenv()
 
+# ---------------------------------------------------------------------------
+# Rate limiter
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="Casa Companion Demo - Corvo AI")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ---------------------------------------------------------------------------
+# Supabase (survey persistence — optional)
+# ---------------------------------------------------------------------------
+sb = None
+try:
+    from supabase import create_client
+    _sb_url = os.getenv("SUPABASE_URL", "")
+    _sb_key = os.getenv("SUPABASE_KEY", "")
+    if _sb_url and _sb_key:
+        sb = create_client(_sb_url, _sb_key)
+except Exception:
+    pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -533,7 +556,8 @@ class SurveyRequest(BaseModel):
     feedback: Optional[str] = ""
 
 @app.post("/api/survey")
-async def survey(payload: SurveyRequest):
+@limiter.limit("5/minute")
+async def survey(request: Request, payload: SurveyRequest):
     email = payload.email.strip().lower()
     if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
         raise HTTPException(status_code=422, detail="Invalid email address.")
@@ -543,12 +567,28 @@ async def survey(payload: SurveyRequest):
     priorities_str = ",".join(payload.priorities or [])
     feedback = (payload.feedback or "").strip()
 
-    file_exists = os.path.isfile(SURVEY_FILE)
-    with open(SURVEY_FILE, "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        if not file_exists:
-            writer.writerow(["email", "child_age", "interests", "priorities", "feedback", "timestamp"])
-        writer.writerow([email, payload.age or "", interests_str, priorities_str, feedback, timestamp])
+    # Supabase first, CSV fallback
+    saved_to_sb = False
+    if sb:
+        try:
+            sb.table("survey_responses").insert({
+                "email": email,
+                "child_age": payload.age or "",
+                "interests": interests_str,
+                "priorities": priorities_str,
+                "feedback": feedback,
+            }).execute()
+            saved_to_sb = True
+        except Exception:
+            pass
+
+    if not saved_to_sb:
+        file_exists = os.path.isfile(SURVEY_FILE)
+        with open(SURVEY_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["email", "child_age", "interests", "priorities", "feedback", "timestamp"])
+            writer.writerow([email, payload.age or "", interests_str, priorities_str, feedback, timestamp])
 
     return {"success": True, "message": "Survey saved. Modes will be tailored at launch."}
 
@@ -605,7 +645,8 @@ async def serve_index():
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+@limiter.limit("30/minute")
+async def chat(request: Request, payload: ChatRequest):
     if not AZURE_API_KEY:
         raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
 
@@ -614,25 +655,25 @@ async def chat(request: ChatRequest):
         f"/chat/completions?api-version={CHAT_API_VERSION}"
     )
 
-    char_key = (request.character or "corvo").lower()
+    char_key = (payload.character or "corvo").lower()
     char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
     system_prompt = char_data["prompt"] + COPYRIGHT_GUARD
 
     # Append mode-specific instructions if a learning mode is active
-    if request.mode and request.mode in MODE_PROMPTS:
-        system_prompt += MODE_PROMPTS[request.mode]["prompt"]
+    if payload.mode and payload.mode in MODE_PROMPTS:
+        system_prompt += MODE_PROMPTS[payload.mode]["prompt"]
 
-    if request.customName:
-        system_prompt += f"\n\nIMPORTANT: The child has named you '{request.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {request.customName}."
+    if payload.customName:
+        system_prompt += f"\n\nIMPORTANT: The child has named you '{payload.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {payload.customName}."
 
     messages = [{"role": "system", "content": system_prompt}]
 
-    for msg in (request.history or []):
+    for msg in (payload.history or []):
         messages.append({"role": msg.role, "content": msg.content})
 
-    messages.append({"role": "user", "content": request.message})
+    messages.append({"role": "user", "content": payload.message})
 
-    payload = {
+    body = {
         "messages": messages,
         "max_tokens": 250,
         "temperature": 0.85,
@@ -645,7 +686,7 @@ async def chat(request: ChatRequest):
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, json=payload, headers=headers)
+            resp = await client.post(url, json=body, headers=headers)
             resp.raise_for_status()
             data = resp.json()
             reply = data["choices"][0]["message"]["content"].strip()
@@ -663,14 +704,15 @@ async def chat(request: ChatRequest):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/tts")
-async def tts(request: TTSRequest):
+@limiter.limit("30/minute")
+async def tts(request: Request, payload: TTSRequest):
     if not AZURE_API_KEY:
         raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
 
-    if not request.text.strip():
+    if not payload.text.strip():
         raise HTTPException(status_code=400, detail="Text field must not be empty.")
 
-    char_key = (request.character or "corvo").lower()
+    char_key = (payload.character or "corvo").lower()
     char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
     tts_voice = char_data.get("voice", "nova")
 
@@ -679,10 +721,10 @@ async def tts(request: TTSRequest):
         f"/audio/speech?api-version={TTS_API_VERSION}"
     )
 
-    payload = {
+    body = {
         "model": "gpt-4o-mini-tts",
         "voice": tts_voice,
-        "input": request.text,
+        "input": payload.text,
     }
 
     headers = {
@@ -692,7 +734,7 @@ async def tts(request: TTSRequest):
 
     async def audio_stream():
         async with httpx.AsyncClient(timeout=60.0) as client:
-            async with client.stream("POST", url, json=payload, headers=headers) as resp:
+            async with client.stream("POST", url, json=body, headers=headers) as resp:
                 try:
                     resp.raise_for_status()
                 except httpx.HTTPStatusError as e:
@@ -711,7 +753,8 @@ async def tts(request: TTSRequest):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/stt")
-async def stt(file: UploadFile = File(...)):
+@limiter.limit("30/minute")
+async def stt(request: Request, file: UploadFile = File(...)):
     if not AZURE_API_KEY:
         raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
 
@@ -756,7 +799,8 @@ async def stt(file: UploadFile = File(...)):
 # ---------------------------------------------------------------------------
 
 @app.post("/api/chat-and-speak")
-async def chat_and_speak(request: ChatRequest):
+@limiter.limit("30/minute")
+async def chat_and_speak(request: Request, payload: ChatRequest):
     if not AZURE_API_KEY:
         raise HTTPException(status_code=500, detail="AZURE_API_KEY is not configured.")
 
@@ -766,21 +810,21 @@ async def chat_and_speak(request: ChatRequest):
         f"/chat/completions?api-version={CHAT_API_VERSION}"
     )
 
-    char_key = (request.character or "corvo").lower()
+    char_key = (payload.character or "corvo").lower()
     char_data = CHARACTER_PROMPTS.get(char_key, CHARACTER_PROMPTS["corvo"])
     system_prompt = char_data["prompt"] + COPYRIGHT_GUARD
 
     # Append mode-specific instructions if a learning mode is active
-    if request.mode and request.mode in MODE_PROMPTS:
-        system_prompt += MODE_PROMPTS[request.mode]["prompt"]
+    if payload.mode and payload.mode in MODE_PROMPTS:
+        system_prompt += MODE_PROMPTS[payload.mode]["prompt"]
 
-    if request.customName:
-        system_prompt += f"\n\nIMPORTANT: The child has named you '{request.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {request.customName}."
+    if payload.customName:
+        system_prompt += f"\n\nIMPORTANT: The child has named you '{payload.customName}'. Use this name when referring to yourself. Your original name is {char_data['name']} but the child prefers {payload.customName}."
 
     messages = [{"role": "system", "content": system_prompt}]
-    for msg in (request.history or []):
+    for msg in (payload.history or []):
         messages.append({"role": msg.role, "content": msg.content})
-    messages.append({"role": "user", "content": request.message})
+    messages.append({"role": "user", "content": payload.message})
 
     headers = {"api-key": AZURE_API_KEY, "Content-Type": "application/json"}
 
