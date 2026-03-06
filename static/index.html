@@ -2645,6 +2645,8 @@ function switchAnimal(key) {
 
         // Kill ALL audio sources — prevents overlap between old and new animal
         killAllAudio();
+        // Belt-and-suspenders: explicit WebRTC cleanup in case endVoiceMode missed anything
+        cleanupRTC();
 
         if (rtcAudioEl && rtcAudioEl.srcObject) {
             rtcAudioEl.srcObject.getTracks().forEach(t => t.stop());
@@ -2681,7 +2683,7 @@ function switchAnimal(key) {
                 if (switchGeneration === thisGeneration) {
                     activateMode('introduction');
                 }
-            }, 300);
+            }, 600);
         } else if (currentMode && currentMode !== 'introduction') {
             // Already met — stay in current mode with new companion
             const savedMode = currentMode;
@@ -2691,7 +2693,7 @@ function switchAnimal(key) {
                 if (switchGeneration === thisGeneration) {
                     activateMode(savedMode);
                 }
-            }, 300);
+            }, 600);
         } else {
             currentMode = null;
             document.getElementById('mode-banner').classList.remove('visible');
@@ -3129,7 +3131,7 @@ function stopVoiceInput() {
 let voiceModeActive = false;
 let waitToRespondMode = false;
 let voiceInteractionMode = 'freeflow'; // 'freeflow' or 'turnbased'
-let currentEagerness = 'low';
+let currentEagerness = 'medium';
 let rtcPC = null;
 let rtcDC = null;
 let rtcAudioEl = null;
