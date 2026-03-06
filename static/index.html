@@ -2643,9 +2643,8 @@ function switchAnimal(key) {
         switchGeneration++;
         const thisGeneration = switchGeneration;
 
-        stopCurrentAudio();
-        endVoiceMode();
-        if (isListening) stopVoiceInput();
+        // Kill ALL audio sources — prevents overlap between old and new animal
+        killAllAudio();
 
         if (rtcAudioEl && rtcAudioEl.srcObject) {
             rtcAudioEl.srcObject.getTracks().forEach(t => t.stop());
@@ -2933,6 +2932,7 @@ async function sendChat(userText) {
         const audioBytes = buffer.slice(4 + headerLen);
         if (audioBytes.byteLength > 0) {
             const playGeneration = switchGeneration;
+            if (switchGeneration !== playGeneration) return;
             const blob = new Blob([audioBytes], {type: 'audio/mpeg'});
             const url = URL.createObjectURL(blob);
             setState('speaking');
@@ -2945,11 +2945,14 @@ async function sendChat(userText) {
             }
             audio.onended = () => {
                 URL.revokeObjectURL(url);
+                if (switchGeneration !== playGeneration) return;
                 currentAudio = null;
                 setState('idle');
             };
             audio.onerror = () => { currentAudio = null; setState('idle'); };
-            audio.play().catch(() => { currentAudio = null; setState('idle'); });
+            audio.play().then(() => {
+                if (switchGeneration !== playGeneration) { audio.pause(); audio.src = ''; currentAudio = null; }
+            }).catch(() => { currentAudio = null; setState('idle'); });
         } else {
             setState('idle');
         }
@@ -2991,7 +2994,7 @@ function updateStopButton() {
 }
 
 function speakText(text) {
-    const thisAudioGen = audioGeneration;
+    const thisGen = switchGeneration;
     stopCurrentAudio();
     setState('speaking');
     return fetch('/api/tts', {
@@ -3001,7 +3004,7 @@ function speakText(text) {
     }).then(resp => {
         if (resp.ok) {
             return resp.blob().then(blob => {
-                if (audioGeneration !== thisAudioGen) return Promise.resolve();
+                if (switchGeneration !== thisGen) return Promise.resolve();
                 return new Promise(resolve => {
                     const url = URL.createObjectURL(blob);
                     const audio = new Audio(url);
