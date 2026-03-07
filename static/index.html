@@ -3451,5 +3451,19 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 </script>
+<script>
+/* ── Error logging ── */
+(function(){
+  function postError(source, message, detail){
+    try { fetch('/api/errors',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source:source,message:message,detail:(detail||'').substring(0,500)})}); } catch(e){}
+  }
+  window.onerror = function(msg, url, line, col, err){
+    postError('window.onerror', msg, (url||'')+':'+line+':'+col+' '+(err&&err.stack||''));
+  };
+  window.addEventListener('unhandledrejection', function(ev){
+    postError('unhandledrejection', String(ev.reason), ev.reason&&ev.reason.stack||'');
+  });
+})();
+</script>
 </body>
 </html>

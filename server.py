@@ -1,5 +1,8 @@
 import os
 import httpx
+import traceback
+from collections import deque
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +16,19 @@ from slowapi.errors import RateLimitExceeded
 
 
 load_dotenv()
+
+# ---------------------------------------------------------------------------
+# In-memory error log
+# ---------------------------------------------------------------------------
+_error_log = deque(maxlen=100)
+
+def log_error(source: str, message: str, detail: str = ""):
+    _error_log.appendleft({
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+        "message": message,
+        "detail": detail[:500],
+    })
 
 # ---------------------------------------------------------------------------
 # Rate limiter
@@ -701,11 +717,13 @@ async def chat(request: Request, payload: ChatRequest):
             reply = data["choices"][0]["message"]["content"].strip()
             return ChatResponse(response=reply)
     except httpx.HTTPStatusError as e:
+        log_error("chat", "Azure OpenAI chat error", e.response.text)
         raise HTTPException(
             status_code=e.response.status_code,
             detail=f"Azure OpenAI chat error: {e.response.text}",
         )
     except Exception as e:
+        log_error("chat", "Chat request failed", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Chat request failed: {str(e)}")
 
 # ---------------------------------------------------------------------------
@@ -796,11 +814,13 @@ async def stt(request: Request, file: UploadFile = File(...)):
             transcribed = data.get("text", "").strip()
             return {"text": transcribed}
     except httpx.HTTPStatusError as e:
+        log_error("stt", "Azure Whisper error", e.response.text)
         raise HTTPException(
             status_code=e.response.status_code,
             detail=f"Azure Whisper error: {e.response.text}",
         )
     except Exception as e:
+        log_error("stt", "STT request failed", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"STT request failed: {str(e)}")
 
 # ---------------------------------------------------------------------------
@@ -875,8 +895,10 @@ async def chat_and_speak(request: Request, payload: ChatRequest):
             return StreamingResponse(combined_stream(), media_type="application/octet-stream")
 
     except httpx.HTTPStatusError as e:
+        log_error("chat+speak", "Azure error", e.response.text)
         raise HTTPException(status_code=e.response.status_code, detail=f"Azure error: {e.response.text}")
     except Exception as e:
+        log_error("chat+speak", "Chat+speak failed", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Chat+speak failed: {str(e)}")
 
 
@@ -944,11 +966,13 @@ async def voice_token(request: VoiceTokenRequest):
                     }
             except Exception:
                 pass
+        log_error("voice-token", "Azure realtime token error", e.response.text)
         raise HTTPException(
             status_code=e.response.status_code,
             detail=f"Azure realtime token error: {e.response.text}",
         )
     except Exception as e:
+        log_error("voice-token", "Voice token request failed", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Voice token request failed: {str(e)}")
 
 
@@ -977,10 +1001,30 @@ async def voice_sdp(request: SDPRequest):
                 status_code=resp.status_code,
             )
     except httpx.HTTPStatusError as e:
+        log_error("sdp", "SDP exchange failed", e.response.text)
         raise HTTPException(status_code=e.response.status_code, detail=f"SDP exchange failed: {e.response.text}")
     except Exception as e:
+        log_error("sdp", "SDP exchange failed", traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"SDP exchange failed: {str(e)}")
 
+
+# ---------------------------------------------------------------------------
+# Error log endpoints
+# ---------------------------------------------------------------------------
+
+@app.get("/api/errors")
+async def get_errors():
+    return list(_error_log)
+
+@app.post("/api/errors")
+async def post_error(request: Request):
+    body = await request.json()
+    log_error(
+        source=body.get("source", "frontend"),
+        message=body.get("message", "unknown"),
+        detail=body.get("detail", ""),
+    )
+    return {"ok": True}
 
 # ---------------------------------------------------------------------------
 # Health check
