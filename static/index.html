@@ -448,6 +448,37 @@
         50% { transform: scale(1.1); opacity: 1; }
     }
 
+    /* ===== INTERACTIVE VISUAL CANVAS ===== */
+    .visual-canvas {
+        position: absolute;
+        inset: -60px;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        border-radius: 50%;
+    }
+    .visual-canvas canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+    .visual-canvas.touch-active {
+        pointer-events: auto;
+    }
+    /* Touch sparkle feedback */
+    .sparkle {
+        position: absolute;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        pointer-events: none;
+        animation: sparkle-pop 0.6s ease-out forwards;
+    }
+    @keyframes sparkle-pop {
+        0% { transform: scale(0); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.8; }
+        100% { transform: scale(0); opacity: 0; }
+    }
+
     .hero-img {
         width: 100%;
         height: 100%;
@@ -1364,6 +1395,7 @@
                 </div>
 
                 <div class="hero-container" onclick="handleHeroTap()">
+                    <div class="visual-canvas touch-active" id="visualCanvas" ontouchstart="onVisualTouch(event)" onmousedown="onVisualTouch(event)"><canvas id="vizCanvas"></canvas></div>
                     <div id="hero-glow" class="hero-glow"></div>
                     <img id="hero-img" src="/static/images/heroes/crow.webp" alt="Corvo" class="hero-img"
                          onerror="this.style.display='none'">
@@ -3445,6 +3477,329 @@ async function clearAllCache() {
     localStorage.clear();
     window.location.href = window.location.pathname + '?v=' + Date.now();
 }
+
+// =========================================================================
+// Interactive Visual Engine — mode-aware animations
+// =========================================================================
+(function() {
+    var canvas = document.getElementById('vizCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var particles = [];
+    var vizState = 'idle';
+    var vizMode = null;
+    var animFrame = null;
+    var W = 0, H = 0, cx = 0, cy = 0;
+
+    function resize() {
+        var container = canvas.parentElement;
+        var r = window.devicePixelRatio || 1;
+        W = container.offsetWidth;
+        H = container.offsetHeight;
+        canvas.width = W * r;
+        canvas.height = H * r;
+        ctx.setTransform(r, 0, 0, r, 0, 0);
+        cx = W / 2;
+        cy = H / 2;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Mode → visual theme mapping
+    var THEMES = {
+        story_time:    { emoji: ['bear','star','tree','moon','bird'], colors: ['#FFE082','#A78BFA','#6EE7B7','#F9A8D4'], speed: 0.4 },
+        calm_breathe:  { emoji: ['star','moon','cloud','wave'], colors: ['#93C5FD','#C4B5FD','#A5B4FC','#E0E7FF'], speed: 0.15 },
+        music_rhythm:  { emoji: ['note','note2','clef'], colors: ['#F472B6','#A78BFA','#34D399','#FBBF24'], speed: 0.6 },
+        stem_sparks:   { emoji: ['gear','bolt','atom','star'], colors: ['#38BDF8','#22D3EE','#A78BFA','#FBBF24'], speed: 0.5 },
+        coding:        { emoji: ['code','gear','bolt'], colors: ['#22D3EE','#34D399','#818CF8'], speed: 0.5 },
+        homework:      { emoji: ['book','pencil','star'], colors: ['#FBBF24','#F472B6','#34D399'], speed: 0.4 },
+        teaching:      { emoji: ['book','star','bulb'], colors: ['#FFE082','#A78BFA','#38BDF8'], speed: 0.4 },
+        geography:     { emoji: ['globe','star','tree'], colors: ['#34D399','#38BDF8','#FBBF24'], speed: 0.35 },
+        languages:     { emoji: ['star','book','globe'], colors: ['#F472B6','#FBBF24','#A78BFA'], speed: 0.4 },
+        milestones:    { emoji: ['star','heart','trophy'], colors: ['#FFE082','#F472B6','#34D399'], speed: 0.35 },
+        introduction:  { emoji: ['star','heart','wave'], colors: ['#FFE082','#F472B6','#93C5FD'], speed: 0.3 }
+    };
+    var DEFAULT_THEME = { emoji: ['star','circle','dot'], colors: ['#D4A017','#FFE082','#A78BFA'], speed: 0.25 };
+
+    // Simple shape drawers (no external assets)
+    var SHAPES = {
+        star: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath();
+            for (var i = 0; i < 5; i++) {
+                var a = (i * 72 - 90) * Math.PI / 180;
+                var b = ((i * 72) + 36 - 90) * Math.PI / 180;
+                ctx.lineTo(x + Math.cos(a) * s, y + Math.sin(a) * s);
+                ctx.lineTo(x + Math.cos(b) * s * 0.4, y + Math.sin(b) * s * 0.4);
+            }
+            ctx.closePath(); ctx.fill();
+        },
+        circle: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+        },
+        dot: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(x, y, s * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        },
+        moon: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, s, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0D0D1A'; ctx.beginPath(); ctx.arc(x + s * 0.35, y - s * 0.15, s * 0.75, 0, Math.PI * 2); ctx.fill();
+        },
+        heart: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath();
+            ctx.moveTo(x, y + s * 0.3);
+            ctx.bezierCurveTo(x - s, y - s * 0.5, x - s * 0.5, y - s, x, y - s * 0.4);
+            ctx.bezierCurveTo(x + s * 0.5, y - s, x + s, y - s * 0.5, x, y + s * 0.3);
+            ctx.fill();
+        },
+        note: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, s * 0.5, s * 0.35, -0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + s * 0.4, y); ctx.lineTo(x + s * 0.4, y - s * 1.2); ctx.stroke();
+        },
+        note2: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, s * 0.45, s * 0.3, -0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x + s * 0.8, y - s * 0.3, s * 0.45, s * 0.3, -0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = c; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + s * 0.35, y); ctx.lineTo(x + s * 0.35, y - s); ctx.lineTo(x + s * 1.15, y - s * 1.3); ctx.lineTo(x + s * 1.15, y - s * 0.3); ctx.stroke();
+        },
+        clef: function(ctx, x, y, s, c) { SHAPES.note(ctx, x, y, s, c); },
+        bear: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c;
+            ctx.beginPath(); ctx.arc(x - s * 0.5, y - s * 0.6, s * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + s * 0.5, y - s * 0.6, s * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x, y, s * 0.7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0D0D1A';
+            ctx.beginPath(); ctx.arc(x - s * 0.2, y - s * 0.15, s * 0.08, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + s * 0.2, y - s * 0.15, s * 0.08, 0, Math.PI * 2); ctx.fill();
+        },
+        tree: function(ctx, x, y, s, c) {
+            ctx.fillStyle = '#8B6914'; ctx.fillRect(x - s * 0.1, y, s * 0.2, s * 0.5);
+            ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x, y - s * 0.8); ctx.lineTo(x - s * 0.5, y + s * 0.1); ctx.lineTo(x + s * 0.5, y + s * 0.1); ctx.closePath(); ctx.fill();
+        },
+        bird: function(ctx, x, y, s, c) {
+            ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x - s * 0.5, y); ctx.quadraticCurveTo(x - s * 0.15, y - s * 0.5, x, y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + s * 0.15, y - s * 0.5, x + s * 0.5, y); ctx.stroke();
+        },
+        cloud: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.arc(x, y, s * 0.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x - s * 0.4, y + s * 0.1, s * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + s * 0.4, y + s * 0.1, s * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+        },
+        wave: function(ctx, x, y, s, c) {
+            ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            for (var i = -1; i <= 1; i += 0.1) ctx.lineTo(x + i * s, y + Math.sin(i * Math.PI * 2) * s * 0.3);
+            ctx.stroke(); ctx.globalAlpha = 1;
+        },
+        globe: function(ctx, x, y, s, c) {
+            ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, s * 0.6, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(x, y, s * 0.25, s * 0.6, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x - s * 0.6, y); ctx.lineTo(x + s * 0.6, y); ctx.stroke();
+        },
+        gear: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c;
+            for (var i = 0; i < 6; i++) {
+                var a = (i * 60) * Math.PI / 180;
+                ctx.fillRect(x + Math.cos(a) * s * 0.5 - 2, y + Math.sin(a) * s * 0.5 - 2, 4, 4);
+            }
+            ctx.beginPath(); ctx.arc(x, y, s * 0.35, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#0D0D1A'; ctx.beginPath(); ctx.arc(x, y, s * 0.15, 0, Math.PI * 2); ctx.fill();
+        },
+        bolt: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath();
+            ctx.moveTo(x - s * 0.1, y - s * 0.6); ctx.lineTo(x + s * 0.3, y - s * 0.6);
+            ctx.lineTo(x, y); ctx.lineTo(x + s * 0.3, y);
+            ctx.lineTo(x - s * 0.2, y + s * 0.6); ctx.lineTo(x + s * 0.05, y + s * 0.1);
+            ctx.lineTo(x - s * 0.2, y + s * 0.1); ctx.closePath(); ctx.fill();
+        },
+        atom: function(ctx, x, y, s, c) {
+            ctx.strokeStyle = c; ctx.lineWidth = 1;
+            for (var i = 0; i < 3; i++) {
+                ctx.beginPath(); ctx.ellipse(x, y, s * 0.7, s * 0.25, i * 60 * Math.PI / 180, 0, Math.PI * 2); ctx.stroke();
+            }
+            ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y, s * 0.12, 0, Math.PI * 2); ctx.fill();
+        },
+        book: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.fillRect(x - s * 0.4, y - s * 0.5, s * 0.8, s);
+            ctx.fillStyle = '#0D0D1A'; ctx.fillRect(x - s * 0.02, y - s * 0.45, s * 0.04, s * 0.9);
+        },
+        pencil: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.fillRect(x - s * 0.08, y - s * 0.5, s * 0.16, s * 0.8);
+            ctx.fillStyle = '#FFE082'; ctx.beginPath();
+            ctx.moveTo(x - s * 0.08, y + s * 0.3); ctx.lineTo(x + s * 0.08, y + s * 0.3); ctx.lineTo(x, y + s * 0.55); ctx.closePath(); ctx.fill();
+        },
+        bulb: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x, y - s * 0.15, s * 0.45, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#8B6914'; ctx.fillRect(x - s * 0.15, y + s * 0.25, s * 0.3, s * 0.2);
+        },
+        trophy: function(ctx, x, y, s, c) {
+            ctx.fillStyle = c;
+            ctx.beginPath(); ctx.moveTo(x - s * 0.35, y - s * 0.5); ctx.lineTo(x + s * 0.35, y - s * 0.5);
+            ctx.lineTo(x + s * 0.25, y + s * 0.1); ctx.lineTo(x - s * 0.25, y + s * 0.1); ctx.closePath(); ctx.fill();
+            ctx.fillRect(x - s * 0.05, y + s * 0.1, s * 0.1, s * 0.2);
+            ctx.fillRect(x - s * 0.2, y + s * 0.3, s * 0.4, s * 0.08);
+        },
+        code: function(ctx, x, y, s, c) {
+            ctx.strokeStyle = c; ctx.lineWidth = 2; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x - s * 0.2, y - s * 0.3); ctx.lineTo(x - s * 0.5, y); ctx.lineTo(x - s * 0.2, y + s * 0.3); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x + s * 0.2, y - s * 0.3); ctx.lineTo(x + s * 0.5, y); ctx.lineTo(x + s * 0.2, y + s * 0.3); ctx.stroke();
+        }
+    };
+
+    function getTheme() { return THEMES[vizMode] || DEFAULT_THEME; }
+
+    function spawnParticle() {
+        var theme = getTheme();
+        var emoji = theme.emoji[Math.floor(Math.random() * theme.emoji.length)];
+        var color = theme.colors[Math.floor(Math.random() * theme.colors.length)];
+        var angle = Math.random() * Math.PI * 2;
+        var dist = 30 + Math.random() * (Math.min(W, H) * 0.35);
+        return {
+            x: cx + Math.cos(angle) * dist,
+            y: cy + Math.sin(angle) * dist,
+            vx: (Math.random() - 0.5) * theme.speed,
+            vy: (Math.random() - 0.5) * theme.speed - 0.2,
+            size: 6 + Math.random() * 10,
+            shape: emoji,
+            color: color,
+            alpha: 0,
+            fadeIn: true,
+            life: 200 + Math.random() * 300,
+            age: 0,
+            rotation: Math.random() * Math.PI * 2,
+            rotSpeed: (Math.random() - 0.5) * 0.02
+        };
+    }
+
+    function spawnSparkle(x, y) {
+        var theme = getTheme();
+        for (var i = 0; i < 6; i++) {
+            var angle = Math.random() * Math.PI * 2;
+            var speed = 1 + Math.random() * 2;
+            particles.push({
+                x: x, y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                size: 3 + Math.random() * 5,
+                shape: 'star',
+                color: theme.colors[Math.floor(Math.random() * theme.colors.length)],
+                alpha: 1,
+                fadeIn: false,
+                life: 30 + Math.random() * 20,
+                age: 0,
+                rotation: 0,
+                rotSpeed: 0.1
+            });
+        }
+    }
+
+    var maxParticles = { idle: 8, speaking: 20, listening: 12, thinking: 15 };
+    var spawnRate = { idle: 60, speaking: 8, listening: 20, thinking: 15 };
+    var frameCount = 0;
+
+    function update() {
+        frameCount++;
+        var max = maxParticles[vizState] || 8;
+        var rate = spawnRate[vizState] || 60;
+
+        // Spawn new particles
+        if (particles.length < max && frameCount % rate === 0) {
+            particles.push(spawnParticle());
+        }
+
+        // Speaking mode: pulsing intensity
+        var speakPulse = vizState === 'speaking' ? 0.5 + Math.sin(frameCount * 0.08) * 0.5 : 1;
+
+        ctx.clearRect(0, 0, W, H);
+
+        for (var i = particles.length - 1; i >= 0; i--) {
+            var p = particles[i];
+            p.age++;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rotation += p.rotSpeed;
+
+            // Fade in/out
+            if (p.fadeIn && p.alpha < 1) {
+                p.alpha = Math.min(1, p.alpha + 0.03);
+                if (p.alpha >= 1) p.fadeIn = false;
+            }
+            if (p.age > p.life * 0.7) {
+                p.alpha = Math.max(0, p.alpha - 0.02);
+            }
+
+            // Remove dead particles
+            if (p.age > p.life || p.alpha <= 0) {
+                particles.splice(i, 1);
+                continue;
+            }
+
+            // Draw
+            ctx.save();
+            ctx.globalAlpha = p.alpha * speakPulse;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            var drawFn = SHAPES[p.shape] || SHAPES.circle;
+            drawFn(ctx, 0, 0, p.size, p.color);
+            ctx.restore();
+        }
+
+        animFrame = requestAnimationFrame(update);
+    }
+
+    // Start/stop based on state
+    function startViz() {
+        if (animFrame) return;
+        resize();
+        update();
+    }
+    function stopViz() {
+        if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+        particles = [];
+        if (ctx) ctx.clearRect(0, 0, W, H);
+    }
+
+    // Hook into setState
+    var origSetState = window.setState;
+    window.setState = function(state) {
+        origSetState(state);
+        vizState = state;
+        vizMode = window.currentMode;
+        if (state === 'idle' && !window.currentMode) {
+            // No mode active, show minimal ambient
+            startViz();
+        } else {
+            startViz();
+        }
+    };
+
+    // Hook into activateMode/exitMode
+    var origActivateMode = window.activateMode;
+    window.activateMode = function(modeKey) {
+        vizMode = modeKey;
+        particles = []; // clear old particles for new theme
+        origActivateMode(modeKey);
+        startViz();
+    };
+    var origExitMode = window.exitMode;
+    window.exitMode = function() {
+        vizMode = null;
+        origExitMode();
+    };
+
+    // Touch interaction
+    window.onVisualTouch = function(e) {
+        var rect = canvas.getBoundingClientRect();
+        var touch = e.touches ? e.touches[0] : e;
+        var x = touch.clientX - rect.left;
+        var y = touch.clientY - rect.top;
+        spawnSparkle(x * (W / rect.width), y * (H / rect.height));
+    };
+
+    // Auto-start ambient on load
+    startViz();
+})();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
