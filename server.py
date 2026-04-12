@@ -75,7 +75,7 @@ async def add_headers(request, call_next):
 # ---------------------------------------------------------------------------
 
 AZURE_API_KEY = os.getenv("AZURE_API_KEY", "")
-AZURE_BASE = "https://pwgcerp-9302-resource.openai.azure.com"
+AZURE_BASE = os.getenv("AZURE_BASE", "https://gce-personal-resource.openai.azure.com")
 
 CHAT_DEPLOYMENT = "gpt-4o"
 CHAT_API_VERSION = "2024-12-01-preview"
