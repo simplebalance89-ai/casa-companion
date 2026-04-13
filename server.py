@@ -802,6 +802,14 @@ async def serve_manifest():
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/tv-live2d")
+async def tv_live2d_page():
+    p = os.path.join("static", "tv-live2d.html")
+    if not os.path.exists(p):
+        raise HTTPException(status_code=404, detail="tv-live2d.html not found")
+    with open(p, "r", encoding="utf-8") as f:
+        return HTMLResponse(f.read(), headers={"Cache-Control": "no-cache, no-store, must-revalidate"})
+
 @app.get("/tv")
 async def tv_page():
     tv_path = os.path.join("static", "tv.html")
