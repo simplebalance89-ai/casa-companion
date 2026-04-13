@@ -80,7 +80,9 @@ AZURE_BASE = os.getenv("AZURE_BASE", "https://gce-personal-resource.openai.azure
 CHAT_DEPLOYMENT = "gpt-4o"
 CHAT_API_VERSION = "2024-12-01-preview"
 
-REALTIME_DEPLOYMENT = "gpt-4o-realtime"
+REALTIME_DEPLOYMENT = "gpt-audio-1.5"
+REALTIME_BASE = os.getenv("REALTIME_BASE", "https://ai-peterwilson7092ai011379814834.openai.azure.com")
+REALTIME_API_KEY = os.getenv("REALTIME_API_KEY", os.getenv("AZURE_AI_PETERWILSON_KEY", ""))
 
 TTS_DEPLOYMENT = "gpt-4o-mini-tts"
 TTS_API_VERSION = "2025-04-01-preview"
@@ -1096,10 +1098,12 @@ async def voice_token(request: VoiceTokenRequest):
     system_prompt = char_data["prompt"] + COPYRIGHT_GUARD
     voice = char_data.get("realtime_voice", "ash")
 
-    url = f"{AZURE_BASE}/openai/v1/realtime/client_secrets"
+    rt_base = REALTIME_BASE or AZURE_BASE
+    rt_key = REALTIME_API_KEY or AZURE_API_KEY
+    url = f"{rt_base}/openai/v1/realtime/client_secrets"
 
     headers = {
-        "api-key": AZURE_API_KEY,
+        "api-key": rt_key,
         "Content-Type": "application/json",
     }
 
@@ -1165,7 +1169,8 @@ class SDPRequest(BaseModel):
 
 @app.post("/api/voice/sdp")
 async def voice_sdp(request: SDPRequest):
-    url = f"{AZURE_BASE}/openai/v1/realtime/calls?webrtcfilter=on"
+    rt_base = REALTIME_BASE or AZURE_BASE
+    url = f"{rt_base}/openai/v1/realtime/calls?webrtcfilter=on"
     headers = {
         "Authorization": f"Bearer {request.token}",
         "Content-Type": "application/sdp",
