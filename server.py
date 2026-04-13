@@ -80,9 +80,9 @@ AZURE_BASE = os.getenv("AZURE_BASE", "https://gce-personal-resource.openai.azure
 CHAT_DEPLOYMENT = "gpt-4o"
 CHAT_API_VERSION = "2024-12-01-preview"
 
-REALTIME_DEPLOYMENT = "gpt-audio-1.5"
-REALTIME_BASE = os.getenv("REALTIME_BASE", "https://ai-peterwilson7092ai011379814834.openai.azure.com")
-REALTIME_API_KEY = os.getenv("REALTIME_API_KEY", os.getenv("AZURE_AI_PETERWILSON_KEY", ""))
+REALTIME_DEPLOYMENT = os.getenv("REALTIME_DEPLOYMENT", "gpt-realtime")
+REALTIME_BASE = os.getenv("REALTIME_BASE", "https://ai-peterwconveyance8025ai117912890367.openai.azure.com")
+REALTIME_API_KEY = os.getenv("REALTIME_API_KEY", "")
 
 TTS_DEPLOYMENT = "gpt-4o-mini-tts"
 TTS_API_VERSION = "2025-04-01-preview"
