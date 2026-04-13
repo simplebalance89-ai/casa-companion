@@ -253,6 +253,27 @@
         font-size: 0.85rem;
         color: #8A7A5A;
     }
+    .cat-tab {
+        padding: 6px 16px;
+        border-radius: 20px;
+        border: 1.5px solid rgba(212,160,23,0.3);
+        background: rgba(255,255,255,0.03);
+        color: #8A7A5A;
+        font-family: 'Nunito', sans-serif;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .cat-tab:hover {
+        border-color: #D4A017;
+        color: #FFE082;
+    }
+    .cat-tab.active {
+        background: rgba(212,160,23,0.15);
+        border-color: #D4A017;
+        color: #FFE082;
+    }
     .companion-grid {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -1355,6 +1376,14 @@
             <label style="font-family:'Playfair Display',serif; font-size:0.95rem; color:#FFE082; display:block; margin-bottom:8px;">What's your name? <span style="font-size:0.7rem; color:#8A7A5A;">(optional)</span></label>
             <input type="text" id="custom-name-input" name="companion-nickname-x7q" placeholder="Your child's name..." maxlength="20" autocomplete="new-password" data-lpignore="true" data-form-type="other" style="width:80%; max-width:280px; padding:10px 14px; border-radius:12px; border:2px solid rgba(212,160,23,0.3); background:rgba(255,255,255,0.05); color:#FFFEF7; font-family:'Nunito',sans-serif; font-size:1rem; text-align:center; outline:none; transition:border-color 0.3s;" onfocus="this.style.borderColor='#D4A017'" onblur="this.style.borderColor='rgba(212,160,23,0.3)'">
         </div>
+        <div id="category-tabs" style="display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px 16px 16px; max-width:600px; margin:0 auto;">
+            <button class="cat-tab active" data-cat="all" onclick="filterCategory('all')">All</button>
+            <button class="cat-tab" data-cat="baby" onclick="filterCategory('baby')">Baby & Toddler</button>
+            <button class="cat-tab" data-cat="kids" onclick="filterCategory('kids')">Kids</button>
+            <button class="cat-tab" data-cat="music" onclick="filterCategory('music')">Music</button>
+            <button class="cat-tab" data-cat="family" onclick="filterCategory('family')">Family</button>
+            <button class="cat-tab" data-cat="adventure" onclick="filterCategory('adventure')">Adventure</button>
+        </div>
         <div class="companion-grid" id="companion-grid">
             <!-- Populated by JS -->
         </div>
@@ -1816,6 +1845,7 @@ setInterval(updateBattery, 30000);
 // =========================================================================
 const CHARACTERS = {
     corvo: {
+        category: "kids",
         name: 'Corvo',
         animal: 'Crow',
         meaning: 'Corvo means Crow in Italian',
@@ -1826,6 +1856,7 @@ const CHARACTERS = {
         icon: '&#x1F426;'
     },
     gufo: {
+        category: "kids",
         name: 'Gufo',
         animal: 'Owl',
         meaning: 'Gufo means Owl in Italian',
@@ -1836,6 +1867,7 @@ const CHARACTERS = {
         icon: '&#x1F989;'
     },
     orsetto: {
+        category: "baby",
         name: 'Orsetto',
         animal: 'Bear',
         meaning: 'Orsetto means Little Bear in Italian',
@@ -1846,6 +1878,7 @@ const CHARACTERS = {
         icon: '&#x1F43B;'
     },
     coniglio: {
+        category: "baby",
         name: 'Coniglio',
         animal: 'Bunny',
         meaning: 'Coniglio means Bunny in Italian',
@@ -1856,6 +1889,7 @@ const CHARACTERS = {
         icon: '&#x1F430;'
     },
     tartaruga: {
+        category: "baby",
         name: 'Tartaruga',
         animal: 'Sea Turtle',
         meaning: 'Tartaruga means Sea Turtle in Italian',
@@ -1866,6 +1900,7 @@ const CHARACTERS = {
         icon: '&#x1F422;'
     },
     elefante: {
+        category: "baby",
         name: 'Elefante',
         animal: 'Elephant',
         meaning: 'Elefante means Elephant in Italian',
@@ -1876,6 +1911,7 @@ const CHARACTERS = {
         icon: '&#x1F418;'
     },
     leone: {
+        category: "kids",
         name: 'Leone',
         animal: 'Lion',
         meaning: 'Leone means Lion in Italian',
@@ -1886,6 +1922,7 @@ const CHARACTERS = {
         icon: '&#x1F981;'
     },
     delfino: {
+        category: "baby",
         name: 'Delfino',
         animal: 'Dolphin',
         meaning: 'Delfino means Dolphin in Italian',
@@ -1896,6 +1933,7 @@ const CHARACTERS = {
         icon: '&#x1F42C;'
     },
     drago: {
+        category: "kids",
         name: 'Drago',
         animal: 'Dragon',
         meaning: 'Drago means Dragon in Italian',
@@ -1906,6 +1944,7 @@ const CHARACTERS = {
         icon: '&#x1F409;'
     },
     xolo: {
+        category: "kids",
         name: 'Xolo',
         animal: 'Xoloitzcuintli',
         meaning: 'Xolo is a Xoloitzcuintli, the ancient Aztec dog',
@@ -1916,6 +1955,7 @@ const CHARACTERS = {
         icon: '&#x1F415;'
     },
     scheletro: {
+        category: "music",
         name: 'Scheletro',
         animal: 'Gentleman',
         meaning: 'The Elegant Performer',
@@ -1926,6 +1966,7 @@ const CHARACTERS = {
         icon: '&#127917;'
     },
     ragno: {
+        category: "adventure",
         name: 'Ragno',
         animal: 'Spider',
         meaning: 'The Brave Explorer',
@@ -1936,6 +1977,7 @@ const CHARACTERS = {
         icon: '&#128375;'
     },
     veloce: {
+        category: "baby",
         name: 'Veloce',
         animal: 'Race Car',
         meaning: 'The Italian Racer',
@@ -1946,6 +1988,7 @@ const CHARACTERS = {
         icon: '&#128663;'
     },
     stellino: {
+        category: "baby",
         name: 'Stellino',
         animal: 'Alien',
         meaning: 'The Star Explorer',
@@ -1956,6 +1999,7 @@ const CHARACTERS = {
         icon: '&#128125;'
     },
     sacco: {
+        category: "kids",
         name: 'Sacco',
         animal: 'Patchwork Creature',
         meaning: 'The Cozy Storyteller',
@@ -1966,6 +2010,7 @@ const CHARACTERS = {
         icon: '&#129522;'
     },
     spugna: {
+        category: "baby",
         name: 'Spugna',
         animal: 'Sea Sponge',
         meaning: 'The Ocean Friend',
@@ -1976,6 +2021,7 @@ const CHARACTERS = {
         icon: '&#127754;'
     },
     rocco: {
+        category: "music",
         name: 'Rocco',
         animal: 'Wolf',
         meaning: 'The Rock Legend',
@@ -1986,6 +2032,7 @@ const CHARACTERS = {
         icon: '&#127928;'
     },
     vinile: {
+        category: "music",
         name: 'Vinile',
         animal: 'Panther',
         meaning: 'The House Master',
@@ -1996,6 +2043,7 @@ const CHARACTERS = {
         icon: '&#127911;'
     },
     battito: {
+        category: "music",
         name: 'Battito',
         animal: 'Hawk',
         meaning: 'The Techno Scientist',
@@ -2006,6 +2054,7 @@ const CHARACTERS = {
         icon: '&#9881;'
     },
     onda: {
+        category: "music",
         name: 'Onda',
         animal: 'Phoenix',
         meaning: 'The Festival Phoenix',
@@ -2016,6 +2065,7 @@ const CHARACTERS = {
         icon: '&#127752;'
     },
     maestra: {
+        category: "kids",
         name: 'Maestra',
         animal: 'Fox',
         meaning: 'The Beloved Teacher',
@@ -2026,6 +2076,7 @@ const CHARACTERS = {
         icon: '&#128218;'
     },
     costruttore: {
+        category: "kids",
         name: 'Costruttore',
         animal: 'Bear',
         meaning: 'The Master Builder',
@@ -2036,6 +2087,7 @@ const CHARACTERS = {
         icon: '&#128296;'
     },
     dottore: {
+        category: "kids",
         name: 'Dottore',
         animal: 'Panda',
         meaning: 'The Gentle Healer',
@@ -2046,6 +2098,7 @@ const CHARACTERS = {
         icon: '&#129657;'
     },
     pietro: {
+        category: "family",
         name: 'Pietro',
         animal: 'Founder',
         meaning: 'The Creator',
@@ -2056,6 +2109,7 @@ const CHARACTERS = {
         icon: '&#9749;'
     },
     borsa: {
+        category: "family",
         name: 'Borsa',
         animal: 'Chameleon',
         meaning: 'The Edge Finder',
@@ -2066,6 +2120,7 @@ const CHARACTERS = {
         icon: '&#128200;'
     },
     mamma: {
+        category: "baby",
         name: 'Mamma',
         animal: 'Swan',
         meaning: 'The Heart of Home',
@@ -2076,6 +2131,7 @@ const CHARACTERS = {
         icon: '&#128149;'
     },
     verita: {
+        category: "family",
         name: 'Verita',
         animal: 'Eagle',
         meaning: 'The Truth Teller',
@@ -2086,6 +2142,7 @@ const CHARACTERS = {
         icon: '&#129413;'
     },
     forza: {
+        category: "kids",
         name: 'Forza',
         animal: 'Cat',
         meaning: 'The Fitness Coach',
@@ -2096,6 +2153,7 @@ const CHARACTERS = {
         icon: '&#128170;'
     },
     bella: {
+        category: "family",
         name: 'Bella',
         animal: 'Peacock',
         meaning: 'The Style Queen',
@@ -2106,6 +2164,7 @@ const CHARACTERS = {
         icon: '&#10024;'
     },
     cuoco: {
+        category: "family",
         name: 'Cuoco',
         animal: 'Rooster',
         meaning: 'The Fire Chef',
@@ -2116,6 +2175,7 @@ const CHARACTERS = {
         icon: '&#128293;'
     },
     nonna: {
+        category: "family",
         name: 'Nonna',
         animal: 'Hedgehog',
         meaning: "Everybody's Grandma",
@@ -2126,6 +2186,7 @@ const CHARACTERS = {
         icon: '&#127850;'
     },
     cucita: {
+        category: "kids",
         name: "Cucita",
         animal: "Ragdoll",
         meaning: "The Stitched Heart",
@@ -2137,6 +2198,7 @@ const CHARACTERS = {
     },
     // Hidden demo character — not shown in companion grid
     polpo: {
+        category: "demo",
         name: 'Polpo',
         animal: 'Octopus',
         meaning: 'Polpo means Octopus in Italian',
@@ -2203,11 +2265,21 @@ function updateProgress(step) {
 // =========================================================================
 // Step 1: Companion Grid
 // =========================================================================
+let currentCategory = 'all';
+
+function filterCategory(cat) {
+    currentCategory = cat;
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.cat-tab[data-cat="${cat}"]`).classList.add('active');
+    buildCompanionGrid();
+}
+
 function buildCompanionGrid() {
     const grid = document.getElementById('companion-grid');
     grid.innerHTML = '';
     for (const [key, char] of Object.entries(CHARACTERS)) {
-        if (char.hidden) continue; // Skip hidden demo characters
+        if (char.hidden) continue;
+        if (currentCategory !== 'all' && char.category !== currentCategory) continue;
         const card = document.createElement('div');
         card.className = 'companion-card' + (key === currentCharacter ? ' selected' : '');
         card.id = 'cc-' + key;
