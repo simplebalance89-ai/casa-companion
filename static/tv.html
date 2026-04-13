@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Casa Companion TV</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --amplitude: 0;
+    --glow-color: rgba(255, 255, 255, 0.15);
+    --glow-spread: 40px;
+}
+
+html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+}
+
+#scene {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+/* --- Background particles --- */
+#particles {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.25);
+    animation: particleFloat linear infinite;
+    will-change: transform, opacity;
+}
+
+@keyframes particleFloat {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+/* --- Character container --- */
+#character-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+#glow {
+    position: absolute;
+    width: 110%;
+    height: 110%;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+    filter: blur(30px);
+    pointer-events: none;
+    will-change: opacity, transform;
+    transform: translateZ(0);
+    transition: opacity 0.6s ease;
+}
+
+#hero {
+    position: relative;
+    height: 60vh;
+    max-height: 70vw;
+    width: auto;
+    object-fit: contain;
+    z-index: 1;
+    will-change: transform;
+    transform: translateZ(0);
+    filter: drop-shadow(0 0 var(--glow-spread) var(--glow-color));
+    transition: filter 0.4s ease;
+}
+
+#eye-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.08) 0%, transparent 50%);
+    pointer-events: none;
+    will-change: opacity;
+    transform: translateZ(0);
+    opacity: 0.3;
+    transition: opacity 0.4s ease;
+}
+
+/* --- State: Idle --- */
+.state-idle #character-wrap {
+    animation: idleFloat 3s ease-in-out infinite;
+}
+.state-idle #glow {
+    animation: idleGlow 4s ease-in-out infinite;
+    --glow-color: rgba(255, 255, 255, 0.1);
+}
+.state-idle #eye-overlay { opacity: 0.2; }
+
+@keyframes idleFloat {
+    0%, 100% { transform: translateY(0) translateZ(0); }
+    50% { transform: translateY(-4px) translateZ(0); }
+}
+
+@keyframes idleGlow {
+    0%, 100% { opacity: 0.4; transform: scale(1) translateZ(0); }
+    50% { opacity: 0.7; transform: scale(1.05) translateZ(0); }
+}
+
+/* --- State: Listening --- */
+.state-listening #character-wrap {
+    animation: listenPulse 1.2s ease-in-out infinite;
+}
+.state-listening #glow {
+    animation: listenGlow 1.2s ease-in-out infinite;
+    --glow-color: rgba(80, 160, 255, 0.35);
+}
+.state-listening #hero {
+    --glow-color: rgba(80, 160, 255, 0.4);
+    --glow-spread: 50px;
+}
+.state-listening #eye-overlay { opacity: 0.5; }
+
+@keyframes listenPulse {
+    0%, 100% { transform: scale(1) translateZ(0); }
+    50% { transform: scale(1.02) translateZ(0); }
+}
+
+@keyframes listenGlow {
+    0%, 100% { opacity: 0.5; transform: scale(1) translateZ(0); }
+    50% { opacity: 1; transform: scale(1.1) translateZ(0); }
+}
+
+/* --- State: Thinking --- */
+.state-thinking #character-wrap {
+    animation: thinkTilt 2s ease-in-out infinite;
+}
+.state-thinking #glow {
+    animation: thinkGlow 1.8s ease-in-out infinite;
+    --glow-color: rgba(255, 200, 60, 0.3);
+}
+.state-thinking #hero {
+    --glow-color: rgba(255, 200, 60, 0.35);
+    --glow-spread: 45px;
+}
+.state-thinking #eye-overlay { opacity: 0.6; }
+
+@keyframes thinkTilt {
+    0%, 100% { transform: rotate(0deg) translateZ(0); }
+    25% { transform: rotate(-1.5deg) translateZ(0); }
+    75% { transform: rotate(1.5deg) translateZ(0); }
+}
+
+@keyframes thinkGlow {
+    0%, 100% { opacity: 0.4; transform: scale(1) translateZ(0); }
+    50% { opacity: 0.9; transform: scale(1.08) translateZ(0); }
+}
+
+/* --- State: Speaking --- */
+.state-speaking #character-wrap {
+    animation: speakBob 0.4s ease-in-out infinite;
+    transform: scale(calc(1 + var(--amplitude) * 0.04)) translateZ(0);
+}
+.state-speaking #glow {
+    animation: speakGlow 0.6s ease-in-out infinite;
+    --glow-color: rgba(80, 220, 120, 0.35);
+    transform: scale(calc(1 + var(--amplitude) * 0.15)) translateZ(0);
+}
+.state-speaking #hero {
+    --glow-color: rgba(80, 220, 120, 0.4);
+    --glow-spread: calc(40px + var(--amplitude) * 30px);
+}
+.state-speaking #eye-overlay {
+    opacity: calc(0.3 + var(--amplitude) * 0.5);
+}
+
+@keyframes speakBob {
+    0%, 100% { transform: translateY(0) scale(calc(1 + var(--amplitude) * 0.04)) translateZ(0); }
+    50% { transform: translateY(-3px) scale(calc(1.01 + var(--amplitude) * 0.04)) translateZ(0); }
+}
+
+@keyframes speakGlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* --- Character name --- */
+#char-name {
+    margin-top: 24px;
+    font-size: 1.4rem;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.6;
+    z-index: 1;
+}
+
+/* --- Transcript overlay --- */
+#transcript {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 80vw;
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: 300;
+    line-height: 1.5;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+    pointer-events: none;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+}
+#transcript.visible { opacity: 0.85; }
+
+/* --- Tap prompt --- */
+#tap-prompt {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    opacity: 0.4;
+    z-index: 10;
+    transition: opacity 0.4s ease;
+}
+
+#tap-prompt.hidden { opacity: 0; pointer-events: none; }
+
+#mic-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.state-listening #mic-icon {
+    background: rgba(80, 160, 255, 0.6);
+    animation: micPulse 1s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(80, 160, 255, 0.4);
+}
+
+@keyframes micPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+}
+
+/* --- Fade in --- */
+#scene {
+    opacity: 0;
+    animation: fadeIn 1.5s ease forwards;
+    animation-delay: 0.3s;
+}
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+</style>
+</head>
+<body class="state-idle">
+
+<div id="particles"></div>
+
+<div id="scene">
+    <div id="character-wrap">
+        <div id="glow"></div>
+        <img id="hero" src="" alt="Character">
+        <div id="eye-overlay"></div>
+    </div>
+    <div id="char-name"></div>
+</div>
+
+<div id="transcript"></div>
+
+<div id="tap-prompt">
+    <div id="mic-icon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+    </div>
+    <span>Tap anywhere to talk</span>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const params = new URLSearchParams(window.location.search);
+    const characterKey = params.get('character') || 'stellino';
+
+    let state = 'idle';
+    let conversationHistory = [];
+    let isListening = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let currentAudio = null;
+    let audioCtx = null;
+    let analyser = null;
+    let amplitudeRAF = null;
+    let transcriptTimeout = null;
+
+    const heroEl = document.getElementById('hero');
+    const nameEl = document.getElementById('char-name');
+    const transcriptEl = document.getElementById('transcript');
+    const tapPrompt = document.getElementById('tap-prompt');
+
+    // --- Particles ---
+    function createParticles() {
+        const container = document.getElementById('particles');
+        const count = 30;
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = (Math.random() * 15) + 's';
+            p.style.width = p.style.height = (2 + Math.random() * 3) + 'px';
+            p.style.opacity = 0.1 + Math.random() * 0.3;
+            container.appendChild(p);
+        }
+    }
+
+    // --- State machine ---
+    function setState(newState) {
+        state = newState;
+        document.body.className = 'state-' + newState;
+        tapPrompt.className = (newState === 'idle') ? '' : 'hidden';
+    }
+
+    // --- Init character ---
+    async function initCharacter() {
+        heroEl.src = '/static/images/heroes/' + characterKey + '.webp';
+        heroEl.onerror = () => {
+            heroEl.src = '/static/images/heroes/stellino.webp';
+        };
+
+        try {
+            const resp = await fetch('/api/characters');
+            const chars = await resp.json();
+            const info = chars[characterKey];
+            if (info) {
+                nameEl.textContent = info.name;
+            } else {
+                nameEl.textContent = characterKey.charAt(0).toUpperCase() + characterKey.slice(1);
+            }
+        } catch {
+            nameEl.textContent = characterKey.charAt(0).toUpperCase() + characterKey.slice(1);
+        }
+    }
+
+    // --- Show transcript ---
+    function showTranscript(text) {
+        if (transcriptTimeout) clearTimeout(transcriptTimeout);
+        transcriptEl.textContent = text;
+        transcriptEl.classList.add('visible');
+        transcriptTimeout = setTimeout(() => {
+            transcriptEl.classList.remove('visible');
+        }, 8000);
+    }
+
+    // --- Audio amplitude tracking ---
+    function playAudioWithAmplitude(url) {
+        stopCurrentAudio();
+        setState('speaking');
+
+        const audio = new Audio(url);
+        currentAudio = audio;
+
+        audio.onended = () => {
+            cleanupAmplitude();
+            URL.revokeObjectURL(url);
+            currentAudio = null;
+            setState('idle');
+        };
+        audio.onerror = () => {
+            cleanupAmplitude();
+            currentAudio = null;
+            setState('idle');
+        };
+
+        audio.play().then(() => {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaElementSource(audio);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                trackAmplitude();
+            } catch {
+                // amplitude tracking not critical
+            }
+        }).catch(() => {
+            currentAudio = null;
+            setState('idle');
+        });
+    }
+
+    function trackAmplitude() {
+        if (!analyser) return;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+
+        function tick() {
+            analyser.getByteFrequencyData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) sum += data[i];
+            const avg = sum / data.length / 255;
+            const smoothed = Math.min(1, avg * 2.5);
+            document.body.style.setProperty('--amplitude', smoothed.toFixed(3));
+            amplitudeRAF = requestAnimationFrame(tick);
+        }
+        tick();
+    }
+
+    function cleanupAmplitude() {
+        if (amplitudeRAF) {
+            cancelAnimationFrame(amplitudeRAF);
+            amplitudeRAF = null;
+        }
+        document.body.style.setProperty('--amplitude', '0');
+        analyser = null;
+    }
+
+    function stopCurrentAudio() {
+        cleanupAmplitude();
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.src = '';
+            currentAudio = null;
+        }
+    }
+
+    // --- Chat + Speak ---
+    async function sendMessage(text) {
+        conversationHistory.push({ role: 'user', content: text });
+        setState('thinking');
+
+        const recentHistory = conversationHistory.slice(-10);
+
+        try {
+            const resp = await fetch('/api/chat-and-speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: text,
+                    history: recentHistory,
+                    character: characterKey,
+                    mode: null,
+                    customName: null
+                })
+            });
+
+            if (!resp.ok) {
+                setState('idle');
+                return;
+            }
+
+            const buffer = await resp.arrayBuffer();
+            const view = new DataView(buffer);
+            const headerLen = view.getUint32(0);
+            const headerBytes = new Uint8Array(buffer, 4, headerLen);
+            const header = JSON.parse(new TextDecoder().decode(headerBytes).trim());
+            const reply = header.response || '';
+
+            conversationHistory.push({ role: 'assistant', content: reply });
+            if (reply) showTranscript(reply);
+
+            const audioBytes = buffer.slice(4 + headerLen);
+            if (audioBytes.byteLength > 0) {
+                const blob = new Blob([audioBytes], { type: 'audio/mpeg' });
+                const url = URL.createObjectURL(blob);
+                playAudioWithAmplitude(url);
+            } else {
+                setState('idle');
+            }
+        } catch {
+            setState('idle');
+        }
+    }
+
+    // --- Greeting ---
+    async function greet() {
+        setState('thinking');
+
+        try {
+            const resp = await fetch('/api/chat-and-speak', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: 'Say hello and introduce yourself warmly',
+                    history: [],
+                    character: characterKey,
+                    mode: 'introduction',
+                    customName: null
+                })
+            });
+
+            if (!resp.ok) {
+                setState('idle');
+                return;
+            }
+
+            const buffer = await resp.arrayBuffer();
+            const view = new DataView(buffer);
+            const headerLen = view.getUint32(0);
+            const headerBytes = new Uint8Array(buffer, 4, headerLen);
+            const header = JSON.parse(new TextDecoder().decode(headerBytes).trim());
+            const reply = header.response || '';
+
+            conversationHistory.push({ role: 'assistant', content: reply });
+            if (reply) showTranscript(reply);
+
+            const audioBytes = buffer.slice(4 + headerLen);
+            if (audioBytes.byteLength > 0) {
+                const blob = new Blob([audioBytes], { type: 'audio/mpeg' });
+                const url = URL.createObjectURL(blob);
+                playAudioWithAmplitude(url);
+            } else {
+                setState('idle');
+            }
+        } catch {
+            setState('idle');
+        }
+    }
+
+    // --- Voice input (tap to talk) ---
+    async function startVoiceInput() {
+        if (isListening) {
+            stopVoiceInput();
+            return;
+        }
+
+        stopCurrentAudio();
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    noiseSuppression: true,
+                    echoCancellation: true,
+                    autoGainControl: true,
+                    channelCount: 1
+                }
+            });
+
+            audioChunks = [];
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
+            mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop());
+                if (audioChunks.length === 0) { setState('idle'); return; }
+
+                const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                audioChunks = [];
+
+                setState('thinking');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', blob, 'recording.webm');
+                    const sttResp = await fetch('/api/stt', { method: 'POST', body: formData });
+
+                    if (!sttResp.ok) {
+                        showTranscript("I couldn't hear that. Try again.");
+                        setState('idle');
+                        return;
+                    }
+
+                    const sttData = await sttResp.json();
+                    const transcript = (sttData.text || '').trim();
+
+                    if (!transcript) {
+                        showTranscript("I didn't catch that. Try again.");
+                        setState('idle');
+                        return;
+                    }
+
+                    showTranscript(transcript);
+                    sendMessage(transcript);
+                } catch {
+                    setState('idle');
+                }
+            };
+
+            mediaRecorder.start();
+            isListening = true;
+            setState('listening');
+        } catch {
+            setState('idle');
+        }
+    }
+
+    function stopVoiceInput() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        isListening = false;
+    }
+
+    // --- Touch/click handler ---
+    let touchStartTime = 0;
+
+    document.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (state === 'thinking') return;
+
+        if (state === 'speaking') {
+            stopCurrentAudio();
+            setState('idle');
+            return;
+        }
+
+        touchStartTime = Date.now();
+        startVoiceInput();
+    });
+
+    document.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        if (isListening) {
+            const held = Date.now() - touchStartTime;
+            if (held > 300) {
+                stopVoiceInput();
+            } else {
+                setTimeout(() => stopVoiceInput(), 2000);
+            }
+        }
+    });
+
+    // --- Init ---
+    createParticles();
+    initCharacter();
+    setTimeout(greet, 1000);
+})();
+</script>
+</body>
+</html>

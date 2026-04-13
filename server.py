@@ -802,6 +802,23 @@ async def serve_manifest():
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/tv")
+async def tv_page():
+    tv_path = os.path.join("static", "tv.html")
+    if not os.path.exists(tv_path):
+        raise HTTPException(status_code=404, detail="tv.html not found in static/")
+    with open(tv_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
+    )
+
 @app.get("/")
 async def serve_index():
     index_path = os.path.join("static", "index.html")
