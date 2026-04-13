@@ -22,7 +22,21 @@ canvas {
     inset: 0;
     width: 100%;
     height: 100%;
-    will-change: transform;
+    z-index: 1;
+}
+#character-layer {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+#character-layer img {
+    max-height: 55vh;
+    max-width: 80vw;
+    object-fit: contain;
+    filter: drop-shadow(0 0 40px rgba(255, 170, 50, 0.15));
 }
 #char-name {
     position: fixed;
@@ -82,6 +96,7 @@ canvas {
 </head>
 <body>
 <canvas id="canvas"></canvas>
+<div id="character-layer"><img id="char-img" src="" alt=""></div>
 <div id="char-name"></div>
 <div id="transcript"></div>
 <div id="tap-prompt">Tap anywhere to talk</div>
@@ -93,20 +108,24 @@ canvas {
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const charImg = document.getElementById('char-img');
+    const charLayer = document.getElementById('character-layer');
     const nameEl = document.getElementById('char-name');
     const transcriptEl = document.getElementById('transcript');
     const tapPrompt = document.getElementById('tap-prompt');
     const stateDot = document.getElementById('state-dot');
 
     const params = new URLSearchParams(window.location.search);
-    const characterKey = params.get('character') || 'stellino';
+    const characterKey = params.get('character') || 'corvo';
 
     let W = 0, H = 0;
-    let time = 0;
     let state = 'idle';
-    let stateBlend = { idle: 1, listening: 0, thinking: 0, speaking: 0 };
-    let stateTarget = { idle: 1, listening: 0, thinking: 0, speaking: 0 };
-    const BLEND_SPEED = 0.04;
+    let prevFrameKey = '';
+    let bobPhase = 0;
+    let breathePhase = 0;
+    let idleVariant = 0;
+    let idleSwapTimer = 0;
+    let firstInteraction = false;
 
     let conversationHistory = [];
     let isListening = false;
@@ -117,47 +136,61 @@ canvas {
     let analyser = null;
     let amplitude = 0;
     let smoothAmplitude = 0;
-
-    let mouseX = 0.5, mouseY = 0.5;
-    let eyeTargetX = 0, eyeTargetY = 0;
-    let eyeCurrentX = 0, eyeCurrentY = 0;
-    let randomEyeTarget = { x: 0, y: 0, nextChange: 0 };
-
-    let blinkTimer = 0;
-    let blinkPhase = 0;
-    let nextBlink = 3000;
-
-    let fidgetTimer = 0;
-    let fidgetType = 0;
-    let fidgetAmount = 0;
-
     let transcriptTimeout = null;
-    let firstInteraction = false;
+    let mouthOpen = false;
+    let mouthToggleTimer = 0;
 
-    const stars = [];
-    const freckles = [];
+    // --- Character frames ---
+    const FRAME_BASE = `/static/images/tv/${characterKey}/`;
+    const FRAME_KEYS = [
+        'idle', 'idle2', 'alert', 'wings_spread',
+        'beak_open', 'beak_closed', 'happy', 'sleepy'
+    ];
+    const frames = {};
+    let framesLoaded = 0;
 
-    class Spring {
-        constructor(stiffness = 0.08, damping = 0.82) {
-            this.x = 0; this.y = 0;
-            this.vx = 0; this.vy = 0;
-            this.tx = 0; this.ty = 0;
-            this.stiffness = stiffness;
-            this.damping = damping;
-        }
-        setTarget(x, y) { this.tx = x; this.ty = y; }
-        nudge(fx, fy) { this.vx += fx; this.vy += fy; }
-        update() {
-            this.vx = (this.vx + (this.tx - this.x) * this.stiffness) * this.damping;
-            this.vy = (this.vy + (this.ty - this.y) * this.stiffness) * this.damping;
-            this.x += this.vx;
-            this.y += this.vy;
+    FRAME_KEYS.forEach(key => {
+        const img = new Image();
+        img.onload = () => { framesLoaded++; };
+        img.onerror = () => { framesLoaded++; };
+        img.src = FRAME_BASE + characterKey + '_' + key + '.png';
+        frames[key] = img;
+    });
+
+    // Fallback: use hero image if frames not available
+    const heroImg = new Image();
+    heroImg.src = `/static/images/heroes/${characterKey === 'corvo' ? 'crow' : characterKey}.webp`;
+
+    // --- Fireflies (Corvo's forest world) ---
+    const fireflies = [];
+    const FIREFLY_COUNT = 60;
+
+    function initFireflies() {
+        for (let i = 0; i < FIREFLY_COUNT; i++) {
+            fireflies.push({
+                x: Math.random(),
+                y: Math.random(),
+                size: 1 + Math.random() * 2.5,
+                speed: 0.0002 + Math.random() * 0.0005,
+                drift: Math.random() * Math.PI * 2,
+                driftSpeed: 0.3 + Math.random() * 0.7,
+                pulseSpeed: 0.5 + Math.random() * 1.5,
+                pulseOffset: Math.random() * Math.PI * 2,
+                brightness: 0.3 + Math.random() * 0.7,
+                hue: 35 + Math.random() * 25 // warm amber to gold
+            });
         }
     }
 
-    const antennaL = new Spring(0.06, 0.85);
-    const antennaR = new Spring(0.06, 0.85);
+    // --- Moon ---
+    const moon = {
+        x: 0.78,
+        y: 0.15,
+        radius: 0.04,
+        glow: 0.15
+    };
 
+    // --- Resize ---
     function resize() {
         W = canvas.width = window.innerWidth * devicePixelRatio;
         H = canvas.height = window.innerHeight * devicePixelRatio;
@@ -166,578 +199,227 @@ canvas {
     }
     window.addEventListener('resize', resize);
     resize();
+    initFireflies();
 
-    for (let i = 0; i < 50; i++) {
-        stars.push({
-            x: Math.random(),
-            y: Math.random(),
-            size: 0.5 + Math.random() * 1.5,
-            twinkleSpeed: 0.5 + Math.random() * 2,
-            twinkleOffset: Math.random() * Math.PI * 2,
-            brightness: 0.3 + Math.random() * 0.7
-        });
-    }
-
-    for (let i = 0; i < 5; i++) {
-        freckles.push({
-            angle: (i / 5) * Math.PI * 2 + (Math.random() - 0.5) * 0.5,
-            dist: 0.25 + Math.random() * 0.15,
-            size: 0.015 + Math.random() * 0.01,
-            twinkleSpeed: 1 + Math.random() * 2,
-            twinkleOffset: Math.random() * Math.PI * 2
-        });
-    }
-
-    function lerp(a, b, t) { return a + (b - a) * t; }
-
+    // --- State ---
     function setState(newState) {
         state = newState;
-        stateTarget = { idle: 0, listening: 0, thinking: 0, speaking: 0 };
-        stateTarget[newState] = 1;
-
         const dotColors = { idle: '#555', listening: '#50a0ff', thinking: '#ffc83c', speaking: '#50dc78' };
         stateDot.style.background = dotColors[newState] || '#555';
-
         if (newState !== 'idle' && !firstInteraction) {
             firstInteraction = true;
             tapPrompt.classList.add('hidden');
         }
-        if (newState === 'idle' && !firstInteraction) {
-            tapPrompt.classList.remove('hidden');
+    }
+
+    // --- Get current frame based on state ---
+    function getCurrentFrameKey() {
+        switch (state) {
+            case 'speaking':
+                return mouthOpen ? 'beak_open' : 'beak_closed';
+            case 'listening':
+                return 'alert';
+            case 'thinking':
+                return 'idle';
+            case 'idle':
+            default:
+                return idleVariant === 0 ? 'idle' : 'idle2';
         }
     }
 
-    function drawStar(cx, cy, r, points, inset) {
-        ctx.beginPath();
-        for (let i = 0; i < points * 2; i++) {
-            const angle = (i * Math.PI) / points - Math.PI / 2;
-            const rad = i % 2 === 0 ? r : r * inset;
-            const x = cx + Math.cos(angle) * rad;
-            const y = cy + Math.sin(angle) * rad;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-    }
-
-    function drawBackground(t) {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, W, H);
-
-        const nebulaGrad = ctx.createRadialGradient(W * 0.3, H * 0.4, 0, W * 0.3, H * 0.4, W * 0.6);
-        nebulaGrad.addColorStop(0, 'rgba(30, 10, 50, 0.15)');
-        nebulaGrad.addColorStop(0.5, 'rgba(15, 15, 45, 0.08)');
-        nebulaGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = nebulaGrad;
-        ctx.fillRect(0, 0, W, H);
-
-        const nebulaGrad2 = ctx.createRadialGradient(W * 0.7, H * 0.6, 0, W * 0.7, H * 0.6, W * 0.5);
-        nebulaGrad2.addColorStop(0, 'rgba(10, 20, 50, 0.12)');
-        nebulaGrad2.addColorStop(1, 'transparent');
-        ctx.fillStyle = nebulaGrad2;
-        ctx.fillRect(0, 0, W, H);
-
-        for (const s of stars) {
-            const twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(t * 0.001 * s.twinkleSpeed + s.twinkleOffset));
-            const alpha = s.brightness * twinkle;
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            ctx.beginPath();
-            ctx.arc(s.x * W, s.y * H, s.size * devicePixelRatio, 0, Math.PI * 2);
-            ctx.fill();
-        }
-    }
-
-    function drawCharacterGlow(cx, cy, size, t) {
-        const glowColors = {
-            idle: [255, 255, 255, 0.04],
-            listening: [80, 160, 255, 0.12],
-            thinking: [255, 200, 60, 0.1],
-            speaking: [80, 220, 120, 0.1 + smoothAmplitude * 0.1]
-        };
-        let r = 0, g = 0, b = 0, a = 0;
-        for (const key of ['idle', 'listening', 'thinking', 'speaking']) {
-            const c = glowColors[key];
-            const w = stateBlend[key];
-            r += c[0] * w; g += c[1] * w; b += c[2] * w; a += c[3] * w;
-        }
-
-        const pulse = 1 + 0.05 * Math.sin(t * 0.002);
-        const glowSize = size * 1.6 * pulse;
-        const grad = ctx.createRadialGradient(cx, cy, size * 0.3, cx, cy, glowSize);
-        grad.addColorStop(0, `rgba(${r|0}, ${g|0}, ${b|0}, ${a})`);
-        grad.addColorStop(1, 'transparent');
+    // --- Draw dark forest background ---
+    function drawBackground(ts) {
+        // Deep forest gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#050510');
+        grad.addColorStop(0.3, '#0a0a18');
+        grad.addColorStop(0.6, '#0d1a0d');
+        grad.addColorStop(1, '#060d06');
         ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Moon glow
+        const mx = moon.x * W, my = moon.y * H;
+        const mr = moon.radius * Math.min(W, H);
+        const moonGlow = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 8);
+        moonGlow.addColorStop(0, 'rgba(180, 200, 220, 0.12)');
+        moonGlow.addColorStop(0.3, 'rgba(140, 160, 200, 0.05)');
+        moonGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = moonGlow;
+        ctx.fillRect(0, 0, W, H);
+
+        // Moon disc
+        ctx.fillStyle = 'rgba(200, 210, 230, 0.15)';
         ctx.beginPath();
-        ctx.arc(cx, cy, glowSize, 0, Math.PI * 2);
+        ctx.arc(mx, my, mr, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Tree silhouettes at bottom
+        drawTrees(ts);
+
+        // Fireflies
+        drawFireflies(ts);
+    }
+
+    function drawTrees(ts) {
+        const treeBaseY = H * 0.75;
+        ctx.fillStyle = '#020604';
+
+        // Left tree cluster
+        drawTree(W * 0.05, treeBaseY, W * 0.08, H * 0.5);
+        drawTree(W * 0.12, treeBaseY, W * 0.06, H * 0.45);
+        drawTree(W * 0.02, treeBaseY, W * 0.05, H * 0.35);
+
+        // Right tree cluster
+        drawTree(W * 0.88, treeBaseY, W * 0.07, H * 0.48);
+        drawTree(W * 0.95, treeBaseY, W * 0.06, H * 0.42);
+        drawTree(W * 0.82, treeBaseY, W * 0.05, H * 0.3);
+
+        // Far background trees (lighter)
+        ctx.fillStyle = '#040806';
+        drawTree(W * 0.2, treeBaseY, W * 0.04, H * 0.25);
+        drawTree(W * 0.75, treeBaseY, W * 0.04, H * 0.28);
+        drawTree(W * 0.35, treeBaseY, W * 0.03, H * 0.2);
+        drawTree(W * 0.65, treeBaseY, W * 0.03, H * 0.22);
+
+        // Ground
+        const groundGrad = ctx.createLinearGradient(0, treeBaseY, 0, H);
+        groundGrad.addColorStop(0, '#030804');
+        groundGrad.addColorStop(1, '#010301');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, treeBaseY, W, H - treeBaseY);
+    }
+
+    function drawTree(x, baseY, width, height) {
+        ctx.beginPath();
+        ctx.moveTo(x - width * 0.1, baseY);
+        ctx.lineTo(x - width * 0.5, baseY - height * 0.4);
+        ctx.lineTo(x - width * 0.3, baseY - height * 0.5);
+        ctx.lineTo(x - width * 0.6, baseY - height * 0.7);
+        ctx.lineTo(x - width * 0.2, baseY - height * 0.8);
+        ctx.lineTo(x, baseY - height);
+        ctx.lineTo(x + width * 0.2, baseY - height * 0.8);
+        ctx.lineTo(x + width * 0.6, baseY - height * 0.7);
+        ctx.lineTo(x + width * 0.3, baseY - height * 0.5);
+        ctx.lineTo(x + width * 0.5, baseY - height * 0.4);
+        ctx.lineTo(x + width * 0.1, baseY);
+        ctx.closePath();
         ctx.fill();
     }
 
-    function drawBody(cx, cy, size, t) {
-        ctx.save();
+    function drawFireflies(ts) {
+        for (const f of fireflies) {
+            const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(ts * 0.001 * f.pulseSpeed + f.pulseOffset));
+            const alpha = f.brightness * pulse;
 
-        const tiltIdle = fidgetAmount * Math.sin(t * 0.0015) * 0.02;
-        const tiltListening = stateBlend.listening * 0.04;
-        const tiltThinking = stateBlend.thinking * 0.05 * Math.sin(t * 0.0008);
-        const tilt = tiltIdle + tiltListening + tiltThinking;
+            // Drift movement
+            const dx = Math.sin(ts * 0.001 * f.driftSpeed + f.drift) * 0.02;
+            const dy = Math.cos(ts * 0.001 * f.driftSpeed * 0.7 + f.drift) * 0.015;
+            const fx = (f.x + dx) * W;
+            const fy = (f.y + dy) * H;
 
-        ctx.translate(cx, cy);
-        ctx.rotate(tilt);
+            // Glow
+            const glowR = f.size * 4 * devicePixelRatio;
+            const glow = ctx.createRadialGradient(fx, fy, 0, fx, fy, glowR);
+            glow.addColorStop(0, `hsla(${f.hue}, 80%, 65%, ${alpha * 0.4})`);
+            glow.addColorStop(1, 'transparent');
+            ctx.fillStyle = glow;
+            ctx.fillRect(fx - glowR, fy - glowR, glowR * 2, glowR * 2);
 
-        const bw = size * 0.55;
-        const bh = size * 0.7;
-
-        const bodyGrad = ctx.createLinearGradient(0, -bh * 0.5, 0, bh * 0.5);
-        bodyGrad.addColorStop(0, '#8aff6a');
-        bodyGrad.addColorStop(0.4, '#5cdb3e');
-        bodyGrad.addColorStop(1, '#3aad22');
-
-        ctx.fillStyle = bodyGrad;
-        ctx.beginPath();
-        ctx.ellipse(0, bh * 0.05, bw * 0.45, bh * 0.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = bodyGrad;
-        ctx.beginPath();
-        ctx.ellipse(0, -bh * 0.15, bw * 0.4, bh * 0.42, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const highlightGrad = ctx.createRadialGradient(-bw * 0.1, -bh * 0.3, 0, 0, -bh * 0.1, bw * 0.4);
-        highlightGrad.addColorStop(0, 'rgba(200, 255, 180, 0.35)');
-        highlightGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = highlightGrad;
-        ctx.beginPath();
-        ctx.ellipse(0, -bh * 0.15, bw * 0.38, bh * 0.4, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const beltY = bh * 0.12;
-        ctx.fillStyle = '#3a6fc9';
-        ctx.beginPath();
-        ctx.ellipse(0, beltY, bw * 0.47, bh * 0.06, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const beltHighlight = ctx.createLinearGradient(0, beltY - bh * 0.04, 0, beltY + bh * 0.04);
-        beltHighlight.addColorStop(0, 'rgba(100, 160, 255, 0.4)');
-        beltHighlight.addColorStop(1, 'rgba(30, 60, 150, 0.2)');
-        ctx.fillStyle = beltHighlight;
-        ctx.beginPath();
-        ctx.ellipse(0, beltY, bw * 0.47, bh * 0.06, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#ffd700';
-        drawStar(0, beltY, size * 0.035, 5, 0.4);
-        ctx.fill();
-
-        for (const f of freckles) {
-            const fx = Math.cos(f.angle) * bw * f.dist * 1.8;
-            const fy = Math.sin(f.angle) * bh * f.dist * 1.2 - bh * 0.1;
-
-            let freckleBright = 0.5 + 0.5 * Math.sin(t * 0.002 * f.twinkleSpeed + f.twinkleOffset);
-
-            const listeningPulse = stateBlend.listening * (0.5 + 0.5 * Math.sin(t * 0.004 + f.twinkleOffset));
-            const thinkingPulse = stateBlend.thinking * (0.5 + 0.5 * Math.sin(t * 0.003 + f.twinkleOffset));
-            const speakingPulse = stateBlend.speaking * (0.5 + 0.5 * Math.sin(t * 0.006 + f.twinkleOffset));
-
-            const blueR = lerp(255, 150, listeningPulse);
-            const blueG = lerp(255, 200, listeningPulse);
-            const blueB = lerp(200, 255, listeningPulse);
-
-            const goldR = lerp(blueR, 255, thinkingPulse);
-            const goldG = lerp(blueG, 215, thinkingPulse);
-            const goldB = lerp(blueB, 80, thinkingPulse);
-
-            freckleBright = Math.min(1, freckleBright + speakingPulse * 0.5);
-
-            ctx.fillStyle = `rgba(${goldR|0}, ${goldG|0}, ${goldB|0}, ${freckleBright * 0.8})`;
-            drawStar(fx, fy, size * f.size, 4, 0.5);
+            // Core
+            ctx.fillStyle = `hsla(${f.hue}, 90%, 75%, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(fx, fy, f.size * devicePixelRatio * 0.5, 0, Math.PI * 2);
             ctx.fill();
         }
-
-        ctx.restore();
-        return { bw, bh, tilt };
     }
 
-    function drawEye(cx, cy, size, t, bodyTilt) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(bodyTilt);
+    // --- Character animation ---
+    function updateCharacter(ts, dt) {
+        // Bob
+        bobPhase += dt * 0.0008;
+        const bob = Math.sin(bobPhase) * 8;
 
-        const eyeY = -size * 0.18;
-        const eyeRadius = size * 0.18;
+        // Breathe (scale pulse)
+        breathePhase += dt * 0.001;
+        const breathe = 1 + Math.sin(breathePhase) * 0.008;
 
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.ellipse(0, eyeY, eyeRadius, eyeRadius * 0.95, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const eyeShadow = ctx.createRadialGradient(0, eyeY - eyeRadius * 0.3, 0, 0, eyeY, eyeRadius);
-        eyeShadow.addColorStop(0, 'rgba(200, 220, 255, 0.15)');
-        eyeShadow.addColorStop(0.7, 'rgba(180, 200, 240, 0.05)');
-        eyeShadow.addColorStop(1, 'rgba(150, 170, 200, 0.15)');
-        ctx.fillStyle = eyeShadow;
-        ctx.beginPath();
-        ctx.ellipse(0, eyeY, eyeRadius, eyeRadius * 0.95, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const maxIrisOffset = eyeRadius * 0.25;
-        let targetIX = eyeCurrentX * maxIrisOffset;
-        let targetIY = eyeCurrentY * maxIrisOffset;
-
-        if (stateBlend.listening > 0.3) {
-            targetIX = lerp(targetIX, 0, stateBlend.listening);
-            targetIY = lerp(targetIY, 0, stateBlend.listening);
-        }
-        if (stateBlend.thinking > 0.3) {
-            targetIX = lerp(targetIX, maxIrisOffset * 0.6, stateBlend.thinking);
-            targetIY = lerp(targetIY, -maxIrisOffset * 0.7, stateBlend.thinking);
-        }
-
-        const irisRadius = eyeRadius * 0.55;
-        const pupilDilation = 1 + stateBlend.listening * 0.15;
-
-        const irisGrad = ctx.createRadialGradient(targetIX, eyeY + targetIY, 0, targetIX, eyeY + targetIY, irisRadius);
-        irisGrad.addColorStop(0, '#1a1a2e');
-        irisGrad.addColorStop(0.5, '#2d2d5e');
-        irisGrad.addColorStop(0.8, '#1a1a3a');
-        irisGrad.addColorStop(1, '#0d0d1a');
-        ctx.fillStyle = irisGrad;
-        ctx.beginPath();
-        ctx.ellipse(targetIX, eyeY + targetIY, irisRadius * pupilDilation, irisRadius * 0.95 * pupilDilation, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const pupilRadius = irisRadius * 0.45 * pupilDilation;
-        ctx.fillStyle = '#050510';
-        ctx.beginPath();
-        ctx.arc(targetIX, eyeY + targetIY, pupilRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.beginPath();
-        ctx.arc(targetIX + irisRadius * 0.3, eyeY + targetIY - irisRadius * 0.3, irisRadius * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.beginPath();
-        ctx.arc(targetIX - irisRadius * 0.25, eyeY + targetIY + irisRadius * 0.15, irisRadius * 0.08, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (blinkPhase > 0) {
-            const lidClose = blinkPhase;
-            ctx.fillStyle = '#4acd2a';
-            ctx.beginPath();
-            ctx.ellipse(0, eyeY - eyeRadius * (1 - lidClose), eyeRadius * 1.1, eyeRadius * lidClose, 0, 0, Math.PI);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(0, eyeY + eyeRadius * (1 - lidClose), eyeRadius * 1.1, eyeRadius * lidClose, 0, Math.PI, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.restore();
-    }
-
-    function drawMouth(cx, cy, size, t, bodyTilt) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(bodyTilt);
-
-        const mouthY = size * 0.12;
-        const mouthWidth = size * 0.1;
-
-        const openness = stateBlend.speaking * smoothAmplitude;
-        const listeningOpen = stateBlend.listening * 0.15;
-        const thinkingPurse = stateBlend.thinking * 0.3;
-
-        const mouthOpen = Math.max(openness, listeningOpen);
-
-        if (mouthOpen < 0.05 && thinkingPurse < 0.1) {
-            ctx.strokeStyle = '#2a7a15';
-            ctx.lineWidth = size * 0.012;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(-mouthWidth * 0.5, mouthY);
-            ctx.quadraticCurveTo(0, mouthY + size * 0.03, mouthWidth * 0.5, mouthY);
-            ctx.stroke();
-        } else if (thinkingPurse > 0.1 && mouthOpen < 0.1) {
-            ctx.fillStyle = '#2a6a15';
-            ctx.beginPath();
-            const purseSize = size * 0.025 * thinkingPurse;
-            ctx.ellipse(0, mouthY, purseSize * 0.8, purseSize, 0, 0, Math.PI * 2);
-            ctx.fill();
-        } else {
-            const openH = size * 0.04 + mouthOpen * size * 0.12;
-            const openW = mouthWidth * 0.3 + mouthOpen * mouthWidth * 0.7;
-
-            const mouthGrad = ctx.createRadialGradient(0, mouthY, 0, 0, mouthY, openW);
-            mouthGrad.addColorStop(0, '#1a3a10');
-            mouthGrad.addColorStop(0.6, '#2a5a18');
-            mouthGrad.addColorStop(1, '#3a7a22');
-            ctx.fillStyle = mouthGrad;
-            ctx.beginPath();
-            ctx.ellipse(0, mouthY, openW, openH, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (mouthOpen > 0.3) {
-                ctx.fillStyle = '#f06070';
-                ctx.beginPath();
-                ctx.ellipse(0, mouthY + openH * 0.4, openW * 0.4, openH * 0.3, 0, 0, Math.PI);
-                ctx.fill();
+        // Idle variant swap
+        if (state === 'idle') {
+            idleSwapTimer += dt;
+            if (idleSwapTimer > 5000 + Math.random() * 3000) {
+                idleVariant = idleVariant === 0 ? 1 : 0;
+                idleSwapTimer = 0;
             }
         }
 
-        ctx.restore();
-    }
-
-    function drawAntenna(cx, cy, size, t, bodyTilt, spring, side) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(bodyTilt);
-
-        const baseX = side * size * 0.08;
-        const baseY = -size * 0.42;
-
-        const perkUp = stateBlend.listening * -size * 0.06;
-        const thinkCurl = stateBlend.thinking * (side < 0 ? size * 0.08 : 0);
-        const speakBounce = stateBlend.speaking * smoothAmplitude * size * 0.04;
-
-        const tipX = baseX + side * size * 0.12 + spring.x * size * 0.15 + thinkCurl;
-        const tipY = baseY - size * 0.18 + perkUp + spring.y * size * 0.1 - speakBounce;
-
-        const midX = baseX + (tipX - baseX) * 0.5 + spring.x * size * 0.05;
-        const midY = baseY + (tipY - baseY) * 0.4;
-
-        ctx.strokeStyle = '#4acd2a';
-        ctx.lineWidth = size * 0.018;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(baseX, baseY);
-        ctx.quadraticCurveTo(midX, midY, tipX, tipY);
-        ctx.stroke();
-
-        const orbRadius = size * 0.025;
-        const glowIntensity = 0.3 + stateBlend.speaking * smoothAmplitude * 0.7 + stateBlend.listening * 0.3;
-
-        const orbGlow = ctx.createRadialGradient(tipX, tipY, 0, tipX, tipY, orbRadius * 3);
-        orbGlow.addColorStop(0, `rgba(150, 255, 100, ${glowIntensity * 0.5})`);
-        orbGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = orbGlow;
-        ctx.beginPath();
-        ctx.arc(tipX, tipY, orbRadius * 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        const orbGrad = ctx.createRadialGradient(tipX - orbRadius * 0.3, tipY - orbRadius * 0.3, 0, tipX, tipY, orbRadius);
-        orbGrad.addColorStop(0, `rgba(200, 255, 150, ${0.6 + glowIntensity * 0.4})`);
-        orbGrad.addColorStop(0.7, '#6aef3a');
-        orbGrad.addColorStop(1, '#4acd2a');
-        ctx.fillStyle = orbGrad;
-        ctx.beginPath();
-        ctx.arc(tipX, tipY, orbRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    function drawArm(cx, cy, size, t, bodyTilt, side) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(bodyTilt);
-
-        const shoulderX = side * size * 0.27;
-        const shoulderY = size * 0.05;
-
-        const idleSway = Math.sin(t * 0.0015 + side * 1.5) * 0.1;
-        const speakGesture = stateBlend.speaking * smoothAmplitude * (side > 0 ? 0.6 : 0.2);
-        const listenRaise = stateBlend.listening * 0.25;
-        const waveAngle = idleSway - speakGesture - listenRaise;
-
-        const armLen = size * 0.14;
-        const elbowX = shoulderX + Math.cos(Math.PI * 0.5 + side * 0.6 + waveAngle) * armLen * 0.6;
-        const elbowY = shoulderY + Math.sin(Math.PI * 0.5 + side * 0.6 + waveAngle) * armLen * 0.6;
-        const handX = elbowX + Math.cos(Math.PI * 0.4 + side * 0.5 + waveAngle * 1.3) * armLen * 0.5;
-        const handY = elbowY + Math.sin(Math.PI * 0.4 + side * 0.5 + waveAngle * 1.3) * armLen * 0.5;
-
-        ctx.strokeStyle = '#4acd2a';
-        ctx.lineWidth = size * 0.04;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.beginPath();
-        ctx.moveTo(shoulderX, shoulderY);
-        ctx.lineTo(elbowX, elbowY);
-        ctx.lineTo(handX, handY);
-        ctx.stroke();
-
-        ctx.fillStyle = '#5cdb3e';
-        ctx.beginPath();
-        ctx.arc(handX, handY, size * 0.022, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    function drawLeg(cx, cy, size, t, bodyTilt, side) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(bodyTilt);
-
-        const hipX = side * size * 0.1;
-        const hipY = size * 0.33;
-
-        const idleSway = Math.sin(t * 0.001 + side * 2) * 0.04;
-        const speakBounce = stateBlend.speaking * smoothAmplitude * 0.05;
-
-        const legLen = size * 0.1;
-        const footX = hipX + side * size * 0.03 + Math.sin(t * 0.001 + side) * size * 0.01;
-        const footY = hipY + legLen + idleSway * size * 0.1 - speakBounce * size * 0.5;
-
-        ctx.strokeStyle = '#4acd2a';
-        ctx.lineWidth = size * 0.04;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(hipX, hipY);
-        ctx.lineTo(footX, footY);
-        ctx.stroke();
-
-        ctx.fillStyle = '#3a9a1e';
-        ctx.beginPath();
-        ctx.ellipse(footX + side * size * 0.015, footY, size * 0.03, size * 0.015, side * 0.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    function updateBlinkTimer(dt) {
-        blinkTimer += dt;
-        if (blinkPhase > 0) {
-            blinkPhase -= dt * 0.008;
-            if (blinkPhase <= 0) {
-                blinkPhase = 0;
-                nextBlink = 3000 + Math.random() * 4000;
-                blinkTimer = 0;
+        // Mouth toggle for speaking (synced to amplitude)
+        if (state === 'speaking') {
+            if (analyser) {
+                const data = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(data);
+                let sum = 0;
+                for (let i = 0; i < data.length; i++) sum += data[i];
+                amplitude = sum / data.length / 255;
             }
-        } else if (blinkTimer > nextBlink) {
-            blinkPhase = 1;
-        }
-        if (stateBlend.speaking > 0.5 && Math.random() < 0.001 * dt) {
-            blinkPhase = 1;
-        }
-    }
-
-    function updateEyeTarget(t) {
-        if (t > randomEyeTarget.nextChange) {
-            randomEyeTarget.x = (Math.random() - 0.5) * 1.2;
-            randomEyeTarget.y = (Math.random() - 0.5) * 0.8;
-            randomEyeTarget.nextChange = t + 2000 + Math.random() * 3000;
-        }
-
-        const hasMouseInput = mouseX !== 0.5 || mouseY !== 0.5;
-        if (hasMouseInput) {
-            eyeTargetX = (mouseX - 0.5) * 2;
-            eyeTargetY = (mouseY - 0.5) * 2;
+            smoothAmplitude += (amplitude - smoothAmplitude) * 0.3;
+            mouthOpen = smoothAmplitude > 0.08;
         } else {
-            eyeTargetX = randomEyeTarget.x;
-            eyeTargetY = randomEyeTarget.y;
+            smoothAmplitude *= 0.9;
+            mouthOpen = false;
         }
 
-        eyeCurrentX = lerp(eyeCurrentX, eyeTargetX, 0.07);
-        eyeCurrentY = lerp(eyeCurrentY, eyeTargetY, 0.07);
-    }
+        // Update character image
+        const frameKey = getCurrentFrameKey();
+        const frame = frames[frameKey];
+        const useFrame = frame && frame.complete && frame.naturalWidth > 0;
 
-    function updateFidget(t) {
-        fidgetTimer += 16;
-        if (fidgetTimer > 5000 + Math.random() * 8000) {
-            fidgetTimer = 0;
-            fidgetType = Math.floor(Math.random() * 3);
-            fidgetAmount = 0.5 + Math.random() * 0.5;
-        }
-        fidgetAmount *= 0.995;
-    }
-
-    function updateAntennaPhysics(t) {
-        const idleSwayX = Math.sin(t * 0.001) * 0.3;
-        const idleSwayY = Math.cos(t * 0.0013) * 0.2;
-        const speakKickX = stateBlend.speaking * smoothAmplitude * (Math.random() - 0.5) * 2;
-        const speakKickY = stateBlend.speaking * smoothAmplitude * (Math.random() - 0.5);
-
-        antennaL.setTarget(-idleSwayX * 0.5, idleSwayY);
-        antennaR.setTarget(idleSwayX * 0.5, idleSwayY);
-
-        if (Math.random() < 0.05 * stateBlend.speaking * smoothAmplitude) {
-            antennaL.nudge(speakKickX * 0.3, speakKickY * 0.3);
-            antennaR.nudge(-speakKickX * 0.3, speakKickY * 0.3);
+        if (useFrame) {
+            if (charImg.src !== frame.src) charImg.src = frame.src;
+        } else if (heroImg.complete && heroImg.naturalWidth > 0) {
+            if (charImg.src !== heroImg.src) charImg.src = heroImg.src;
         }
 
-        antennaL.update();
-        antennaR.update();
+        // Apply transforms
+        const thinkPulse = state === 'thinking' ? (1 + Math.sin(ts * 0.003) * 0.02) : 1;
+        const speakBounce = state === 'speaking' ? (smoothAmplitude * 3) : 0;
+        const totalBob = bob + speakBounce;
+        const totalScale = breathe * thinkPulse;
+
+        charLayer.style.transform = `translate(-50%, calc(-50% + ${totalBob}px)) scale(${totalScale})`;
+
+        // Glow intensity based on state
+        const glowBase = 20;
+        const glowExtra = state === 'speaking' ? smoothAmplitude * 40 : 0;
+        const glowListening = state === 'listening' ? 20 : 0;
+        const glowThinking = state === 'thinking' ? 10 : 0;
+        const totalGlow = glowBase + glowExtra + glowListening + glowThinking;
+        charImg.style.filter = `drop-shadow(0 0 ${totalGlow}px rgba(255, 170, 50, ${0.15 + smoothAmplitude * 0.2}))`;
     }
 
-    function updateStateBlend() {
-        for (const key of ['idle', 'listening', 'thinking', 'speaking']) {
-            stateBlend[key] = lerp(stateBlend[key], stateTarget[key], BLEND_SPEED);
-        }
-    }
-
-    function updateAmplitude() {
-        if (analyser && state === 'speaking') {
-            const data = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(data);
-            let sum = 0;
-            for (let i = 0; i < data.length; i++) sum += data[i];
-            amplitude = (sum / data.length) / 255;
-        } else {
-            amplitude *= 0.9;
-        }
-        smoothAmplitude = lerp(smoothAmplitude, Math.min(1, amplitude * 2.5), 0.15);
-    }
-
+    // --- Render loop ---
     let lastTime = 0;
+
     function render(ts) {
-        requestAnimationFrame(render);
-        const dt = ts - lastTime;
+        const dt = lastTime ? ts - lastTime : 16;
         lastTime = ts;
-        time = ts;
-
-        updateStateBlend();
-        updateAmplitude();
-        updateBlinkTimer(dt);
-        updateEyeTarget(ts);
-        updateFidget(ts);
-        updateAntennaPhysics(ts);
-
-        const charSize = Math.min(W, H) * 0.55;
-        const charX = W * 0.5;
-        const floatY = Math.sin(ts * 0.0008) * charSize * 0.01 * (1 - stateBlend.speaking * 0.5);
-        const speakBob = stateBlend.speaking * smoothAmplitude * Math.sin(ts * 0.015) * charSize * 0.008;
-        const charY = H * 0.48 - floatY - speakBob;
 
         drawBackground(ts);
-        drawCharacterGlow(charX, charY, charSize * 0.4, ts);
+        updateCharacter(ts, dt);
 
-        const tiltIdle = fidgetAmount * Math.sin(ts * 0.0015) * 0.02;
-        const tiltListening = stateBlend.listening * 0.04;
-        const tiltThinking = stateBlend.thinking * 0.05 * Math.sin(ts * 0.0008);
-        const bodyTilt = tiltIdle + tiltListening + tiltThinking;
-
-        drawLeg(charX, charY, charSize, ts, bodyTilt, -1);
-        drawLeg(charX, charY, charSize, ts, bodyTilt, 1);
-        drawArm(charX, charY, charSize, ts, bodyTilt, -1);
-        drawArm(charX, charY, charSize, ts, bodyTilt, 1);
-        drawBody(charX, charY, charSize, ts);
-        drawAntenna(charX, charY, charSize, ts, bodyTilt, antennaL, -1);
-        drawAntenna(charX, charY, charSize, ts, bodyTilt, antennaR, 1);
-        drawEye(charX, charY, charSize, ts, bodyTilt);
-        drawMouth(charX, charY, charSize, ts, bodyTilt);
+        requestAnimationFrame(render);
     }
 
-    canvas.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX / window.innerWidth;
-        mouseY = e.clientY / window.innerHeight;
+    // --- Cursor hide ---
+    let cursorTimer = null;
+    document.addEventListener('mousemove', () => {
+        document.body.style.cursor = 'default';
+        if (cursorTimer) clearTimeout(cursorTimer);
+        cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
     });
-    canvas.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 0) {
-            mouseX = e.touches[0].clientX / window.innerWidth;
-            mouseY = e.touches[0].clientY / window.innerHeight;
-        }
-    });
+    cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 3000);
 
-    // --- Voice integration (preserved from original) ---
+    // --- Voice integration ---
 
     function showTranscript(text) {
         if (transcriptTimeout) clearTimeout(transcriptTimeout);
@@ -986,7 +668,7 @@ canvas {
         }
     });
 
-    // --- Init character name ---
+    // --- Init ---
     (async function initCharacter() {
         try {
             const resp = await fetch('/api/characters');
