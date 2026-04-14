@@ -26,17 +26,18 @@ canvas {
 }
 #character-layer {
     position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0; left: 0;
     z-index: 2;
     pointer-events: none;
     transition: opacity 0.3s ease;
+    will-change: transform;
 }
 #character-layer img {
-    max-height: 55vh;
-    max-width: 80vw;
+    max-height: 45vh;
+    max-width: 60vw;
     object-fit: contain;
     filter: drop-shadow(0 0 40px rgba(255, 170, 50, 0.15));
+    display: block;
 }
 #char-name {
     position: fixed;
@@ -126,6 +127,107 @@ canvas {
     let idleVariant = 0;
     let idleSwapTimer = 0;
     let firstInteraction = false;
+
+    // --- Flight / behavior engine ---
+    // Perches in viewport fractions. Corvo hops between these.
+    const PERCHES = [
+        { x: 0.50, y: 0.55 },  // center, on a branch
+        { x: 0.18, y: 0.42 },  // left tree branch
+        { x: 0.82, y: 0.45 },  // right tree branch
+        { x: 0.30, y: 0.32 },  // high-left
+        { x: 0.70, y: 0.35 },  // high-right
+        { x: 0.50, y: 0.28 }   // near the moon
+    ];
+    let currentPerchIdx = 0;
+    let perchX = PERCHES[0].x;
+    let perchY = PERCHES[0].y;
+    let flightMode = 'perched';        // 'perched' | 'flying'
+    let flightStart = 0;
+    let flightDuration = 0;
+    let fromX = perchX, fromY = perchY;
+    let toX = perchX,   toY = perchY;
+    let arcHeight = 0;
+    let facingRight = true;
+    let wingFlapOn = true;
+    let wingFlapAccum = 0;
+    let nextFlightAt = 0;
+    let bankAngle = 0;
+
+    function scheduleNextFlight(ts) {
+        // 6–16s between flights
+        nextFlightAt = ts + 6000 + Math.random() * 10000;
+    }
+
+    function startFlight(ts) {
+        // Pick a different perch
+        let nextIdx = currentPerchIdx;
+        while (nextIdx === currentPerchIdx) {
+            nextIdx = Math.floor(Math.random() * PERCHES.length);
+        }
+        const next = PERCHES[nextIdx];
+        fromX = perchX; fromY = perchY;
+        toX = next.x;   toY = next.y;
+        facingRight = toX >= fromX;
+        const dist = Math.hypot(toX - fromX, toY - fromY);
+        flightDuration = 1800 + dist * 2400;           // farther = longer
+        arcHeight = 0.08 + dist * 0.25;                // farther = higher arc
+        flightStart = ts;
+        flightMode = 'flying';
+        currentPerchIdx = nextIdx;
+    }
+
+    function updateFlight(ts, dt) {
+        if (flightMode === 'perched') {
+            perchX = PERCHES[currentPerchIdx].x;
+            perchY = PERCHES[currentPerchIdx].y;
+            if (state === 'idle' && ts > nextFlightAt) {
+                startFlight(ts);
+            }
+            bankAngle *= 0.85;
+            return { flying: false, x: perchX, y: perchY };
+        }
+
+        // Flying
+        const raw = (ts - flightStart) / flightDuration;
+        const t = Math.min(1, Math.max(0, raw));
+        // Smoothstep — gentle takeoff, gentle landing
+        const ease = t * t * (3 - 2 * t);
+
+        const x = fromX + (toX - fromX) * ease;
+        const lineY = fromY + (toY - fromY) * ease;
+        const arc = Math.sin(t * Math.PI) * arcHeight;   // up-arc
+        const y = lineY - arc;
+
+        // Wing flap — 6 flaps/sec
+        wingFlapAccum += dt;
+        if (wingFlapAccum > 160) {
+            wingFlapOn = !wingFlapOn;
+            wingFlapAccum = 0;
+        }
+
+        // Bank into direction of travel + dip while climbing/descending
+        const climbRate = Math.cos(t * Math.PI);        // +1 at takeoff, -1 at landing
+        const bankTarget = (facingRight ? 1 : -1) * (8 + climbRate * 6);
+        bankAngle += (bankTarget - bankAngle) * 0.15;
+
+        if (t >= 1) {
+            flightMode = 'perched';
+            perchX = toX; perchY = toY;
+            scheduleNextFlight(ts);
+            return { flying: false, x: perchX, y: perchY };
+        }
+
+        // If conversation starts mid-flight, cut the flight short and land at nearest perch
+        if (state !== 'idle' && t > 0.15) {
+            // Snap to destination early
+            flightMode = 'perched';
+            perchX = toX; perchY = toY;
+            scheduleNextFlight(ts);
+            return { flying: false, x: perchX, y: perchY };
+        }
+
+        return { flying: true, x, y };
+    }
 
     let conversationHistory = [];
     let isListening = false;
@@ -336,16 +438,19 @@ canvas {
 
     // --- Character animation ---
     function updateCharacter(ts, dt) {
-        // Bob
+        // Flight first — position comes from here
+        const flight = updateFlight(ts, dt);
+
+        // Bob (only while perched)
         bobPhase += dt * 0.0008;
-        const bob = Math.sin(bobPhase) * 8;
+        const bob = flight.flying ? 0 : Math.sin(bobPhase) * 8;
 
-        // Breathe (scale pulse)
+        // Breathe (scale pulse) — only while perched
         breathePhase += dt * 0.001;
-        const breathe = 1 + Math.sin(breathePhase) * 0.008;
+        const breathe = flight.flying ? 1 : 1 + Math.sin(breathePhase) * 0.008;
 
-        // Idle variant swap
-        if (state === 'idle') {
+        // Idle variant swap (only when perched & idle)
+        if (state === 'idle' && !flight.flying) {
             idleSwapTimer += dt;
             if (idleSwapTimer > 5000 + Math.random() * 3000) {
                 idleVariant = idleVariant === 0 ? 1 : 0;
@@ -369,8 +474,13 @@ canvas {
             mouthOpen = false;
         }
 
-        // Update character image
-        const frameKey = getCurrentFrameKey();
+        // Pick frame — flight overrides state-based frame
+        let frameKey;
+        if (flight.flying) {
+            frameKey = wingFlapOn ? 'wings_spread' : 'alert';
+        } else {
+            frameKey = getCurrentFrameKey();
+        }
         const frame = frames[frameKey];
         const useFrame = frame && frame.complete && frame.naturalWidth > 0;
 
@@ -380,16 +490,26 @@ canvas {
             if (charImg.src !== heroImg.src) charImg.src = heroImg.src;
         }
 
+        // Position (viewport coords → pixels)
+        const px = flight.x * window.innerWidth;
+        const py = flight.y * window.innerHeight;
+
         // Apply transforms
         const thinkPulse = state === 'thinking' ? (1 + Math.sin(ts * 0.003) * 0.02) : 1;
         const speakBounce = state === 'speaking' ? (smoothAmplitude * 3) : 0;
         const totalBob = bob + speakBounce;
-        const totalScale = breathe * thinkPulse;
+        const baseScale = breathe * thinkPulse;
+        const flipX = facingRight ? 1 : -1;
 
-        charLayer.style.transform = `translate(-50%, calc(-50% + ${totalBob}px)) scale(${totalScale})`;
+        charLayer.style.left = `${px}px`;
+        charLayer.style.top = `${py + totalBob}px`;
+        charLayer.style.transform =
+            `translate(-50%, -50%) ` +
+            `rotate(${bankAngle}deg) ` +
+            `scale(${baseScale * flipX}, ${baseScale})`;
 
-        // Glow intensity based on state
-        const glowBase = 20;
+        // Glow — brighter during flight
+        const glowBase = flight.flying ? 35 : 20;
         const glowExtra = state === 'speaking' ? smoothAmplitude * 40 : 0;
         const glowListening = state === 'listening' ? 20 : 0;
         const glowThinking = state === 'thinking' ? 10 : 0;
@@ -679,6 +799,9 @@ canvas {
             nameEl.textContent = characterKey.charAt(0).toUpperCase() + characterKey.slice(1);
         }
     })();
+
+    // First flight kicks in ~10s after load — gives greet time to finish
+    nextFlightAt = performance.now() + 10000;
 
     requestAnimationFrame(render);
     setTimeout(greet, 1000);
