@@ -102,6 +102,7 @@ import { RenderPass }    from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass }    from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass }    from 'three/addons/postprocessing/ShaderPass.js';
+import { BokehPass }     from 'three/addons/postprocessing/BokehPass.js';
 
 const canvas = document.getElementById('scene');
 const loadingEl = document.getElementById('loading');
@@ -194,6 +195,14 @@ composer.setSize(window.innerWidth, window.innerHeight);
 
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
+
+// Depth of field — focus on Corvo, blur everything else. Hides mesh flaws.
+const bokehPass = new BokehPass(scene, camera, {
+    focus: 8.0,
+    aperture: 0.0020,
+    maxblur: 0.015,
+});
+composer.addPass(bokehPass);
 
 // UnrealBloom — glows moonlight, fireflies, rim. Threshold low for dark scene.
 const bloomPass = new UnrealBloomPass(
@@ -423,6 +432,83 @@ for (let i = 0; i < FIREFLY_COUNT; i++) {
     });
 }
 scene.add(fireflyMesh);
+
+// --- Particle swirl (orbits Corvo; glints when he speaks / is alert) ---
+const SWIRL_COUNT = 40;
+const swirlGeo = new THREE.SphereGeometry(0.03, 5, 5);
+const swirlMat = new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0.8 });
+const swirlMesh = new THREE.InstancedMesh(swirlGeo, swirlMat, SWIRL_COUNT);
+swirlMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const swirlData = [];
+for (let i = 0; i < SWIRL_COUNT; i++) {
+    swirlData.push({
+        radius: 0.9 + Math.random() * 1.6,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.0004 + Math.random() * 0.0007,
+        yOffset: (Math.random() - 0.5) * 1.4,
+        wobblePhase: Math.random() * Math.PI * 2,
+        wobbleSpeed: 0.001 + Math.random() * 0.002,
+        scale: 0.6 + Math.random() * 0.7,
+    });
+}
+scene.add(swirlMesh);
+const _swirlMat = new THREE.Matrix4();
+const _swirlPos = new THREE.Vector3();
+const _swirlScl = new THREE.Vector3();
+const _swirlQuat = new THREE.Quaternion();
+
+// --- Drifting leaves (sprite planes that fall diagonally and rotate) ---
+const LEAF_COUNT = 24;
+const leafTex = (() => {
+    const size = 64;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = size;
+    const g = cv.getContext('2d');
+    g.fillStyle = 'rgba(0,0,0,0)';
+    g.fillRect(0, 0, size, size);
+    // Simple leaf silhouette — two curves meeting at tips
+    g.fillStyle = 'rgba(140, 100, 60, 1)';
+    g.beginPath();
+    g.moveTo(size * 0.5, size * 0.1);
+    g.bezierCurveTo(size * 0.9, size * 0.35, size * 0.9, size * 0.65, size * 0.5, size * 0.9);
+    g.bezierCurveTo(size * 0.1, size * 0.65, size * 0.1, size * 0.35, size * 0.5, size * 0.1);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = 'rgba(60, 40, 20, 0.6)';
+    g.lineWidth = 1.5;
+    g.beginPath();
+    g.moveTo(size * 0.5, size * 0.15);
+    g.lineTo(size * 0.5, size * 0.85);
+    g.stroke();
+    return new THREE.CanvasTexture(cv);
+})();
+const leafMat = new THREE.MeshBasicMaterial({
+    map: leafTex, transparent: true, depthWrite: false,
+    side: THREE.DoubleSide, color: 0x996a3a,
+});
+const leafMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.3, 0.3), leafMat, LEAF_COUNT);
+leafMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const leaves = [];
+for (let i = 0; i < LEAF_COUNT; i++) {
+    leaves.push({
+        x: (Math.random() - 0.5) * 22,
+        y: 4 + Math.random() * 8,
+        z: (Math.random() - 0.5) * 18 - 2,
+        vy: -0.002 - Math.random() * 0.003,
+        vx: (Math.random() - 0.5) * 0.004,
+        vz: (Math.random() - 0.5) * 0.003,
+        rot: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.01,
+        tiltPhase: Math.random() * Math.PI * 2,
+        scale: 0.6 + Math.random() * 0.6,
+    });
+}
+scene.add(leafMesh);
+const _leafMat = new THREE.Matrix4();
+const _leafPos = new THREE.Vector3();
+const _leafScl = new THREE.Vector3();
+const _leafQuat = new THREE.Quaternion();
+const _leafEuler = new THREE.Euler();
 
 // --- Corvo (loaded async) ---
 let corvo = null;            // THREE.Group root
@@ -870,6 +956,62 @@ function animate() {
             corvo.position.z
         );
     }
+
+    // Depth of field — focus tracks Corvo's distance from camera; aperture opens when speaking
+    if (corvo) {
+        const focalDist = camera.position.distanceTo(corvo.position);
+        const bu = bokehPass.uniforms;
+        // Animation modulates focus + aperture for a living camera
+        bu.focus.value    += (focalDist - bu.focus.value) * 0.08;
+        const tgtAperture = 0.0018 + smoothAmplitude * 0.0022 + mood.arousal * 0.0008;
+        bu.aperture.value += (tgtAperture - bu.aperture.value) * 0.05;
+        bu.maxblur.value   = 0.014 + mood.worldMemory * 0.006;
+    }
+
+    // Swirl particles orbiting Corvo
+    if (corvo) {
+        const swirlBright = 0.4 + smoothAmplitude * 1.2 + mood.arousal * 0.3 + mood.energy * 0.4;
+        swirlMat.opacity = Math.min(1, 0.45 + swirlBright * 0.35);
+        for (let i = 0; i < SWIRL_COUNT; i++) {
+            const s = swirlData[i];
+            s.phase += dt * s.speed * (0.5 + mood.arousal * 1.2 + smoothAmplitude * 2);
+            const r = s.radius + Math.sin(now * s.wobbleSpeed + s.wobblePhase) * 0.35;
+            const x = corvo.position.x + Math.cos(s.phase) * r;
+            const y = corvo.position.y + s.yOffset + Math.sin(s.phase * 0.6) * 0.4;
+            const z = corvo.position.z + Math.sin(s.phase) * r;
+            _swirlPos.set(x, y, z);
+            const sc = s.scale * (0.7 + swirlBright * 0.6);
+            _swirlScl.set(sc, sc, sc);
+            _swirlMat.compose(_swirlPos, _swirlQuat, _swirlScl);
+            swirlMesh.setMatrixAt(i, _swirlMat);
+        }
+        swirlMesh.instanceMatrix.needsUpdate = true;
+    }
+
+    // Drifting leaves
+    for (let i = 0; i < LEAF_COUNT; i++) {
+        const lf = leaves[i];
+        lf.x += lf.vx;
+        lf.y += lf.vy;
+        lf.z += lf.vz;
+        lf.rot += lf.rotSpeed;
+        lf.tiltPhase += dt * 0.001;
+        // Wobble horizontally as they fall
+        lf.x += Math.sin(lf.tiltPhase) * 0.003;
+        // Respawn if below ground
+        if (lf.y < 0.1) {
+            lf.x = (Math.random() - 0.5) * 22;
+            lf.y = 8 + Math.random() * 4;
+            lf.z = (Math.random() - 0.5) * 18 - 2;
+        }
+        _leafPos.set(lf.x, lf.y, lf.z);
+        _leafEuler.set(Math.sin(lf.tiltPhase) * 0.6, lf.rot, Math.cos(lf.tiltPhase) * 0.4);
+        _leafQuat.setFromEuler(_leafEuler);
+        _leafScl.set(lf.scale, lf.scale, 1);
+        _leafMat.compose(_leafPos, _leafQuat, _leafScl);
+        leafMesh.setMatrixAt(i, _leafMat);
+    }
+    leafMesh.instanceMatrix.needsUpdate = true;
 
     // God rays opacity + mist drift modulated by mood
     godRayMat.opacity = 0.22 + smoothAmplitude * 0.3 + mood.arousal * 0.12;
