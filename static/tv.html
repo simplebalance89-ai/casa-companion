@@ -32,13 +32,34 @@ canvas {
     transition: opacity 0.3s ease;
     will-change: transform;
 }
-#character-layer img {
+#character-layer > img {
     max-height: 45vh;
     max-width: 60vw;
     object-fit: contain;
     filter: drop-shadow(0 0 40px rgba(255, 170, 50, 0.15));
     display: block;
 }
+/* --- Rigged character (Corvo) --- */
+#rig {
+    position: relative;
+    width: 1024px;
+    height: 1024px;
+    filter: drop-shadow(0 0 40px rgba(255, 170, 50, 0.15));
+    display: none;
+}
+#rig.visible { display: block; }
+#rig .layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 1024px;
+    height: 1024px;
+    pointer-events: none;
+    will-change: transform, opacity;
+}
+#rig #l-left-wing  { transform-origin: 482px 400px; }
+#rig #l-right-wing { transform-origin: 573px 400px; }
+#rig #l-head       { transform-origin: 512px 450px; }
+#rig #l-beak       { transform-origin: 528px 350px; }
 #char-name {
     position: fixed;
     top: 30px;
@@ -97,7 +118,19 @@ canvas {
 </head>
 <body>
 <canvas id="canvas"></canvas>
-<div id="character-layer"><img id="char-img" src="" alt=""></div>
+<div id="character-layer">
+    <img id="char-img" src="" alt="">
+    <div id="rig">
+        <img class="layer" id="l-body"       src="" alt="">
+        <img class="layer" id="l-tail"       src="" alt="">
+        <img class="layer" id="l-legs"       src="" alt="">
+        <img class="layer" id="l-left-wing"  src="" alt="">
+        <img class="layer" id="l-right-wing" src="" alt="">
+        <img class="layer" id="l-head"       src="" alt="">
+        <img class="layer" id="l-eye"        src="" alt="">
+        <img class="layer" id="l-beak"       src="" alt="">
+    </div>
+</div>
 <div id="char-name"></div>
 <div id="transcript"></div>
 <div id="tap-prompt">Tap anywhere to talk</div>
@@ -262,6 +295,44 @@ canvas {
     // Fallback: use hero image if frames not available
     const heroImg = new Image();
     heroImg.src = `/static/images/heroes/${characterKey === 'corvo' ? 'crow' : characterKey}.webp`;
+
+    // --- Layered rig (Corvo) ---
+    const RIG_BASE = `/static/images/tv/${characterKey}/layers/`;
+    const RIG_LAYERS = {
+        'l-body':       'body_trunk.png',
+        'l-tail':       'tail.png',
+        'l-legs':       'legs.png',
+        'l-left-wing':  'left_wing.png',
+        'l-right-wing': 'right_wing.png',
+        'l-head':       'head.png',
+        'l-eye':        'eye.png',
+        'l-beak':       'beak.png',
+    };
+    const rigEl = document.getElementById('rig');
+    let rigReady = false;
+    let rigFailed = false;
+    let rigLoaded = 0;
+    const rigTotal = Object.keys(RIG_LAYERS).length;
+
+    Object.entries(RIG_LAYERS).forEach(([id, file]) => {
+        const el = document.getElementById(id);
+        el.onload = () => {
+            rigLoaded++;
+            if (rigLoaded === rigTotal) {
+                rigReady = true;
+                rigEl.classList.add('visible');
+                charImg.style.display = 'none';
+            }
+        };
+        el.onerror = () => {
+            rigFailed = true;
+        };
+        el.src = RIG_BASE + file;
+    });
+
+    // Blink state
+    let blinkUntil = 0;
+    let nextBlinkAt = performance.now() + 2000 + Math.random() * 4000;
 
     // --- Fireflies (Corvo's forest world) ---
     const fireflies = [];
@@ -501,12 +572,54 @@ canvas {
         const baseScale = breathe * thinkPulse;
         const flipX = facingRight ? 1 : -1;
 
+        // Rig container needs a base scale to fit the 1024x1024 canvas into the viewport
+        const rigFit = Math.min(
+            window.innerHeight * 0.55 / 1024,
+            window.innerWidth * 0.55 / 1024
+        );
+        const outerScale = rigReady ? rigFit * baseScale : baseScale;
+
         charLayer.style.left = `${px}px`;
         charLayer.style.top = `${py + totalBob}px`;
         charLayer.style.transform =
             `translate(-50%, -50%) ` +
             `rotate(${bankAngle}deg) ` +
-            `scale(${baseScale * flipX}, ${baseScale})`;
+            `scale(${outerScale * flipX}, ${outerScale})`;
+
+        // --- Layer-level rig updates (Corvo) ---
+        if (rigReady) {
+            // Wing flap — fast in flight, gentle when perched
+            const flapFreq = flight.flying ? 6.0 : 0.6;                 // Hz
+            const flapMag  = flight.flying ? 28   : 4;                  // degrees
+            const flapPhase = Math.sin(ts * 0.001 * flapFreq * Math.PI * 2);
+            const leftWingDeg  =  flapPhase * flapMag;
+            const rightWingDeg = -flapPhase * flapMag;
+            document.getElementById('l-left-wing').style.transform  = `rotate(${leftWingDeg}deg)`;
+            document.getElementById('l-right-wing').style.transform = `rotate(${rightWingDeg}deg)`;
+
+            // Beak opens with audio amplitude when speaking. Scale Y from top anchor.
+            const beakScale = 1 + (state === 'speaking' ? smoothAmplitude * 2.5 : 0);
+            document.getElementById('l-beak').style.transform = `scaleY(${beakScale})`;
+
+            // Blink — close eye briefly every few seconds
+            if (ts > nextBlinkAt && blinkUntil <= ts) {
+                blinkUntil = ts + 120;
+                nextBlinkAt = ts + 2200 + Math.random() * 4500;
+            }
+            const blinking = ts < blinkUntil;
+            document.getElementById('l-eye').style.opacity = blinking ? '0' : '1';
+
+            // Head tilt when listening
+            const headTilt = state === 'listening' ? 6 : 0;
+            document.getElementById('l-head').style.transform = `rotate(${headTilt}deg)`;
+
+            // Legs — hide mid-flight
+            document.getElementById('l-legs').style.opacity = flight.flying ? '0' : '1';
+
+            // Tail — gentle idle wag
+            const tailPhase = Math.sin(ts * 0.002) * 2;
+            document.getElementById('l-tail').style.transform = `rotate(${tailPhase}deg)`;
+        }
 
         // Glow — brighter during flight
         const glowBase = flight.flying ? 35 : 20;
@@ -514,7 +627,11 @@ canvas {
         const glowListening = state === 'listening' ? 20 : 0;
         const glowThinking = state === 'thinking' ? 10 : 0;
         const totalGlow = glowBase + glowExtra + glowListening + glowThinking;
-        charImg.style.filter = `drop-shadow(0 0 ${totalGlow}px rgba(255, 170, 50, ${0.15 + smoothAmplitude * 0.2}))`;
+        const glowRgba = `rgba(255, 170, 50, ${0.15 + smoothAmplitude * 0.2})`;
+        charImg.style.filter = `drop-shadow(0 0 ${totalGlow}px ${glowRgba})`;
+        if (rigReady) {
+            rigEl.style.filter = `drop-shadow(0 0 ${totalGlow}px ${glowRgba})`;
+        }
     }
 
     // --- Render loop ---
