@@ -334,6 +334,45 @@ canvas {
     let blinkUntil = 0;
     let nextBlinkAt = performance.now() + 2000 + Math.random() * 4000;
 
+    // --- Unified emotional state (shared by Corvo AND the world) ---
+    // Arousal: 0=sleepy/dim,  1=alert/bright
+    // Valence: -1=dark/cold,  1=warm/joyful
+    // Energy:  recent activity — decays; flight and speech pump it up
+    // Cumulative "world memory" — trees sway on this, not on random loops
+    const mood = {
+        arousal: 0.50,
+        valence: 0.25,
+        energy:  0.15,
+        curiosity: 0.5,
+        // Lissajous drift — two independent oscillators so mood slides, never snaps
+        phaseA: Math.random() * Math.PI * 2,
+        phaseB: Math.random() * Math.PI * 2,
+        // World memory — grows with activity, decays slowly
+        worldMemory: 0,
+    };
+
+    function updateMood(ts, dt) {
+        // Slow aimless drift — Lissajous-style, two prime-ish frequencies
+        mood.phaseA += dt * 0.00013;
+        mood.phaseB += dt * 0.00019;
+        const tgtArousal = 0.55 + Math.sin(mood.phaseA) * 0.28;
+        const tgtValence = 0.30 + Math.sin(mood.phaseB) * 0.40;
+        // Lazy lerp — mood slides into itself
+        mood.arousal += (tgtArousal - mood.arousal) * 0.004;
+        mood.valence += (tgtValence - mood.valence) * 0.004;
+
+        // Voice + flight bump energy
+        if (state === 'speaking')  mood.energy = Math.min(1, mood.energy + dt * 0.0012);
+        if (state === 'listening') mood.arousal = Math.min(1, mood.arousal + dt * 0.0006);
+        if (flightMode === 'flying') mood.energy = Math.min(1, mood.energy + dt * 0.0006);
+        mood.energy *= Math.pow(0.9994, dt / 16);
+
+        // World memory — slowly accumulates any activity; decays even slower
+        mood.worldMemory += dt * 0.00002 * (mood.energy + (state === 'speaking' ? 0.5 : 0));
+        mood.worldMemory *= Math.pow(0.99996, dt / 16);
+        mood.worldMemory = Math.min(2.0, mood.worldMemory);
+    }
+
     // --- Fireflies (Corvo's forest world) ---
     const fireflies = [];
     const FIREFLY_COUNT = 60;
@@ -343,6 +382,7 @@ canvas {
             fireflies.push({
                 x: Math.random(),
                 y: Math.random(),
+                vx: 0, vy: 0,                             // boid velocity, flees Corvo
                 size: 1 + Math.random() * 2.5,
                 speed: 0.0002 + Math.random() * 0.0005,
                 drift: Math.random() * Math.PI * 2,
@@ -354,6 +394,9 @@ canvas {
             });
         }
     }
+
+    // Corvo's actual rendered position in pixel space — fireflies flee this
+    let corvoPxX = 0, corvoPxY = 0, corvoPrevX = 0, corvoPrevY = 0, corvoSpeed = 0;
 
     // --- Moon ---
     const moon = {
@@ -401,59 +444,66 @@ canvas {
     }
 
     // --- Draw dark forest background ---
-    function drawBackground(ts) {
-        // Deep forest gradient
+    function drawBackground(ts, dt) {
+        // Valence shifts the gradient warmth — cold dark to warm green
+        const warmShift = Math.max(0, mood.valence) * 8;
         const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, '#050510');
-        grad.addColorStop(0.3, '#0a0a18');
-        grad.addColorStop(0.6, '#0d1a0d');
+        grad.addColorStop(0, `rgb(${5 + warmShift}, 5, ${16 - warmShift})`);
+        grad.addColorStop(0.3, `rgb(${10 + warmShift}, 10, ${24 - warmShift})`);
+        grad.addColorStop(0.6, `rgb(${13 + warmShift * 0.5}, ${26 + warmShift * 0.5}, 13)`);
         grad.addColorStop(1, '#060d06');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, W, H);
 
-        // Moon glow
+        // Moon glow — pulses with arousal + voice amplitude
+        const moonPulse = 1 + smoothAmplitude * 0.45 + mood.arousal * 0.18;
         const mx = moon.x * W, my = moon.y * H;
         const mr = moon.radius * Math.min(W, H);
-        const moonGlow = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 8);
-        moonGlow.addColorStop(0, 'rgba(180, 200, 220, 0.12)');
-        moonGlow.addColorStop(0.3, 'rgba(140, 160, 200, 0.05)');
+        const moonGlow = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 8 * moonPulse);
+        const glowAlpha = 0.12 + smoothAmplitude * 0.15 + mood.arousal * 0.04;
+        moonGlow.addColorStop(0, `rgba(200, 210, 230, ${glowAlpha})`);
+        moonGlow.addColorStop(0.3, `rgba(160, 170, 210, ${glowAlpha * 0.4})`);
         moonGlow.addColorStop(1, 'transparent');
         ctx.fillStyle = moonGlow;
         ctx.fillRect(0, 0, W, H);
 
         // Moon disc
-        ctx.fillStyle = 'rgba(200, 210, 230, 0.15)';
+        ctx.fillStyle = `rgba(215, 220, 235, ${0.15 + mood.arousal * 0.08})`;
         ctx.beginPath();
-        ctx.arc(mx, my, mr, 0, Math.PI * 2);
+        ctx.arc(mx, my, mr * (1 + mood.arousal * 0.04), 0, Math.PI * 2);
         ctx.fill();
 
-        // Tree silhouettes at bottom
+        // Tree silhouettes at bottom (sway with world memory + voice)
         drawTrees(ts);
 
         // Fireflies
-        drawFireflies(ts);
+        drawFireflies(ts, dt);
     }
 
     function drawTrees(ts) {
         const treeBaseY = H * 0.75;
+        // Sway amplitude scales with cumulative world activity + instantaneous voice amplitude
+        const swayAmp = (mood.worldMemory * 0.8 + smoothAmplitude * 1.5) * W * 0.006;
+        const swayPhaseBase = ts * 0.0005;
+
         ctx.fillStyle = '#020604';
 
         // Left tree cluster
-        drawTree(W * 0.05, treeBaseY, W * 0.08, H * 0.5);
-        drawTree(W * 0.12, treeBaseY, W * 0.06, H * 0.45);
-        drawTree(W * 0.02, treeBaseY, W * 0.05, H * 0.35);
+        drawTree(W * 0.05, treeBaseY, W * 0.08, H * 0.5, swayAmp, swayPhaseBase + 0.0);
+        drawTree(W * 0.12, treeBaseY, W * 0.06, H * 0.45, swayAmp, swayPhaseBase + 0.3);
+        drawTree(W * 0.02, treeBaseY, W * 0.05, H * 0.35, swayAmp, swayPhaseBase + 0.6);
 
         // Right tree cluster
-        drawTree(W * 0.88, treeBaseY, W * 0.07, H * 0.48);
-        drawTree(W * 0.95, treeBaseY, W * 0.06, H * 0.42);
-        drawTree(W * 0.82, treeBaseY, W * 0.05, H * 0.3);
+        drawTree(W * 0.88, treeBaseY, W * 0.07, H * 0.48, swayAmp, swayPhaseBase + 0.9);
+        drawTree(W * 0.95, treeBaseY, W * 0.06, H * 0.42, swayAmp, swayPhaseBase + 1.2);
+        drawTree(W * 0.82, treeBaseY, W * 0.05, H * 0.3, swayAmp, swayPhaseBase + 1.5);
 
-        // Far background trees (lighter)
+        // Far background trees (lighter) — sway less
         ctx.fillStyle = '#040806';
-        drawTree(W * 0.2, treeBaseY, W * 0.04, H * 0.25);
-        drawTree(W * 0.75, treeBaseY, W * 0.04, H * 0.28);
-        drawTree(W * 0.35, treeBaseY, W * 0.03, H * 0.2);
-        drawTree(W * 0.65, treeBaseY, W * 0.03, H * 0.22);
+        drawTree(W * 0.2, treeBaseY, W * 0.04, H * 0.25, swayAmp * 0.4, swayPhaseBase + 1.8);
+        drawTree(W * 0.75, treeBaseY, W * 0.04, H * 0.28, swayAmp * 0.4, swayPhaseBase + 2.1);
+        drawTree(W * 0.35, treeBaseY, W * 0.03, H * 0.2, swayAmp * 0.4, swayPhaseBase + 2.4);
+        drawTree(W * 0.65, treeBaseY, W * 0.03, H * 0.22, swayAmp * 0.4, swayPhaseBase + 2.7);
 
         // Ground
         const groundGrad = ctx.createLinearGradient(0, treeBaseY, 0, H);
@@ -463,46 +513,82 @@ canvas {
         ctx.fillRect(0, treeBaseY, W, H - treeBaseY);
     }
 
-    function drawTree(x, baseY, width, height) {
+    function drawTree(x, baseY, width, height, swayAmp, swayPhase) {
+        // Sway is applied to the TOP of the tree; base stays planted
+        const topOffset = Math.sin(swayPhase) * swayAmp;
+        const midOffset = topOffset * 0.5;
         ctx.beginPath();
         ctx.moveTo(x - width * 0.1, baseY);
-        ctx.lineTo(x - width * 0.5, baseY - height * 0.4);
-        ctx.lineTo(x - width * 0.3, baseY - height * 0.5);
-        ctx.lineTo(x - width * 0.6, baseY - height * 0.7);
-        ctx.lineTo(x - width * 0.2, baseY - height * 0.8);
-        ctx.lineTo(x, baseY - height);
-        ctx.lineTo(x + width * 0.2, baseY - height * 0.8);
-        ctx.lineTo(x + width * 0.6, baseY - height * 0.7);
-        ctx.lineTo(x + width * 0.3, baseY - height * 0.5);
-        ctx.lineTo(x + width * 0.5, baseY - height * 0.4);
+        ctx.lineTo(x - width * 0.5 + midOffset * 0.3, baseY - height * 0.4);
+        ctx.lineTo(x - width * 0.3 + midOffset * 0.5, baseY - height * 0.5);
+        ctx.lineTo(x - width * 0.6 + midOffset * 0.7, baseY - height * 0.7);
+        ctx.lineTo(x - width * 0.2 + topOffset * 0.85, baseY - height * 0.8);
+        ctx.lineTo(x + topOffset, baseY - height);
+        ctx.lineTo(x + width * 0.2 + topOffset * 0.85, baseY - height * 0.8);
+        ctx.lineTo(x + width * 0.6 + midOffset * 0.7, baseY - height * 0.7);
+        ctx.lineTo(x + width * 0.3 + midOffset * 0.5, baseY - height * 0.5);
+        ctx.lineTo(x + width * 0.5 + midOffset * 0.3, baseY - height * 0.4);
         ctx.lineTo(x + width * 0.1, baseY);
         ctx.closePath();
         ctx.fill();
     }
 
-    function drawFireflies(ts) {
+    function drawFireflies(ts, dt) {
+        // Firefly brightness modulated by Corvo's arousal — world shares his nervous system
+        const moodBright = 0.7 + mood.arousal * 0.6;
+
+        // Flee radius in canvas px (Corvo's pixel position is tracked in render())
+        const FLEE_RADIUS = 180 * devicePixelRatio;
+        const FLEE_R2 = FLEE_RADIUS * FLEE_RADIUS;
+        const speedBoost = Math.min(1.5, corvoSpeed * 0.05);
+
         for (const f of fireflies) {
             const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(ts * 0.001 * f.pulseSpeed + f.pulseOffset));
-            const alpha = f.brightness * pulse;
+            const alpha = f.brightness * pulse * moodBright;
 
-            // Drift movement
-            const dx = Math.sin(ts * 0.001 * f.driftSpeed + f.drift) * 0.02;
-            const dy = Math.cos(ts * 0.001 * f.driftSpeed * 0.7 + f.drift) * 0.015;
-            const fx = (f.x + dx) * W;
-            const fy = (f.y + dy) * H;
+            // Drift (base) + boid-style flee from Corvo when he's close or moving
+            const drift_dx = Math.sin(ts * 0.001 * f.driftSpeed + f.drift) * 0.00012;
+            const drift_dy = Math.cos(ts * 0.001 * f.driftSpeed * 0.7 + f.drift) * 0.00009;
+
+            const fx = f.x * W;
+            const fy = f.y * H;
+            const dxToCorvo = fx - corvoPxX;
+            const dyToCorvo = fy - corvoPxY;
+            const d2 = dxToCorvo * dxToCorvo + dyToCorvo * dyToCorvo;
+            if (d2 < FLEE_R2) {
+                const d = Math.sqrt(d2) + 1;
+                const flee = (FLEE_RADIUS - d) / FLEE_RADIUS; // 0..1
+                const mag = 0.00035 * (1 + speedBoost);
+                f.vx += (dxToCorvo / d) * flee * mag;
+                f.vy += (dyToCorvo / d) * flee * mag;
+            }
+
+            // Integrate + damping + drift
+            f.vx = f.vx * 0.94 + drift_dx;
+            f.vy = f.vy * 0.94 + drift_dy;
+            f.x += f.vx;
+            f.y += f.vy;
+            // Wrap torus so they don't pile up at edges
+            if (f.x < 0) f.x += 1;
+            if (f.x > 1) f.x -= 1;
+            if (f.y < 0) f.y += 1;
+            if (f.y > 1) f.y -= 1;
+
+            const rx = f.x * W;
+            const ry = f.y * H;
 
             // Glow
             const glowR = f.size * 4 * devicePixelRatio;
-            const glow = ctx.createRadialGradient(fx, fy, 0, fx, fy, glowR);
+            const glow = ctx.createRadialGradient(rx, ry, 0, rx, ry, glowR);
             glow.addColorStop(0, `hsla(${f.hue}, 80%, 65%, ${alpha * 0.4})`);
             glow.addColorStop(1, 'transparent');
             ctx.fillStyle = glow;
-            ctx.fillRect(fx - glowR, fy - glowR, glowR * 2, glowR * 2);
+            ctx.fillRect(rx - glowR, ry - glowR, glowR * 2, glowR * 2);
 
             // Core
             ctx.fillStyle = `hsla(${f.hue}, 90%, 75%, ${alpha})`;
             ctx.beginPath();
-            ctx.arc(fx, fy, f.size * devicePixelRatio * 0.5, 0, Math.PI * 2);
+            ctx.arc(rx, ry, f.size * devicePixelRatio * 0.5, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -512,13 +598,14 @@ canvas {
         // Flight first — position comes from here
         const flight = updateFlight(ts, dt);
 
-        // Bob (only while perched)
-        bobPhase += dt * 0.0008;
-        const bob = flight.flying ? 0 : Math.sin(bobPhase) * 8;
+        // Bob — amplitude scales with arousal (sleepy = barely moves, alert = bounces)
+        bobPhase += dt * 0.0008 * (0.7 + mood.arousal * 0.6);
+        const bob = flight.flying ? 0 : Math.sin(bobPhase) * (4 + mood.arousal * 7);
 
-        // Breathe (scale pulse) — only while perched
-        breathePhase += dt * 0.001;
-        const breathe = flight.flying ? 1 : 1 + Math.sin(breathePhase) * 0.008;
+        // Breathe — low arousal: slow deep breath; high arousal: short shallow
+        breathePhase += dt * 0.001 * (0.6 + mood.arousal * 1.2);
+        const breatheDepth = 0.006 + (1 - mood.arousal) * 0.010;
+        const breathe = flight.flying ? 1 : 1 + Math.sin(breathePhase) * breatheDepth;
 
         // Idle variant swap (only when perched & idle)
         if (state === 'idle' && !flight.flying) {
@@ -565,6 +652,10 @@ canvas {
         const px = flight.x * window.innerWidth;
         const py = flight.y * window.innerHeight;
 
+        // Track for firefly flee behavior (canvas is retina-scaled, multiply by dpr)
+        corvoPxX = px * devicePixelRatio;
+        corvoPxY = py * devicePixelRatio;
+
         // Apply transforms
         const thinkPulse = state === 'thinking' ? (1 + Math.sin(ts * 0.003) * 0.02) : 1;
         const speakBounce = state === 'speaking' ? (smoothAmplitude * 3) : 0;
@@ -588,9 +679,9 @@ canvas {
 
         // --- Layer-level rig updates (Corvo) ---
         if (rigReady) {
-            // Wing flap — fast in flight, gentle when perched
-            const flapFreq = flight.flying ? 6.0 : 0.6;                 // Hz
-            const flapMag  = flight.flying ? 28   : 4;                  // degrees
+            // Wing flap — arousal modulates idle ruffle; flight is a harder flap
+            const flapFreq = flight.flying ? 6.0 : (0.5 + mood.arousal * 0.8);
+            const flapMag  = flight.flying ? 28  : (2 + mood.arousal * 4);
             const flapPhase = Math.sin(ts * 0.001 * flapFreq * Math.PI * 2);
             const leftWingDeg  =  flapPhase * flapMag;
             const rightWingDeg = -flapPhase * flapMag;
@@ -601,36 +692,59 @@ canvas {
             const beakScale = 1 + (state === 'speaking' ? smoothAmplitude * 2.5 : 0);
             document.getElementById('l-beak').style.transform = `scaleY(${beakScale})`;
 
-            // Blink — close eye briefly every few seconds
+            // Blink — frequency rises with arousal. High arousal = frequent alert blinks.
+            //         Low arousal = slow heavy-lidded blinks.
             if (ts > nextBlinkAt && blinkUntil <= ts) {
-                blinkUntil = ts + 120;
-                nextBlinkAt = ts + 2200 + Math.random() * 4500;
+                const lidDur = 80 + (1 - mood.arousal) * 140;   // sleepier = slower
+                blinkUntil = ts + lidDur;
+                const gap = 1400 + (1 - mood.arousal) * 5500;
+                nextBlinkAt = ts + gap + Math.random() * 2500;
             }
             const blinking = ts < blinkUntil;
             document.getElementById('l-eye').style.opacity = blinking ? '0' : '1';
 
-            // Head tilt when listening
-            const headTilt = state === 'listening' ? 6 : 0;
-            document.getElementById('l-head').style.transform = `rotate(${headTilt}deg)`;
+            // Head — tilts when listening, continuous curiosity drift otherwise
+            const listenTilt = state === 'listening' ? 6 : 0;
+            const curiosityDrift = Math.sin(ts * 0.0009) * mood.arousal * 3
+                                 + Math.sin(ts * 0.00057) * mood.curiosity * 2;
+            const headDeg = listenTilt + curiosityDrift;
+            document.getElementById('l-head').style.transform = `rotate(${headDeg}deg)`;
 
             // Legs — hide mid-flight
             document.getElementById('l-legs').style.opacity = flight.flying ? '0' : '1';
 
-            // Tail — gentle idle wag
-            const tailPhase = Math.sin(ts * 0.002) * 2;
-            document.getElementById('l-tail').style.transform = `rotate(${tailPhase}deg)`;
+            // Tail — wag scales with energy; two-frequency so it never snaps to a rhythm
+            const tailDeg = Math.sin(ts * 0.0022) * (1 + mood.energy * 3)
+                          + Math.sin(ts * 0.0037) * mood.energy * 1.5;
+            document.getElementById('l-tail').style.transform = `rotate(${tailDeg}deg)`;
         }
 
-        // Glow — brighter during flight
+        // Glow — brighter during flight, tinted by valence
         const glowBase = flight.flying ? 35 : 20;
         const glowExtra = state === 'speaking' ? smoothAmplitude * 40 : 0;
         const glowListening = state === 'listening' ? 20 : 0;
         const glowThinking = state === 'thinking' ? 10 : 0;
-        const totalGlow = glowBase + glowExtra + glowListening + glowThinking;
-        const glowRgba = `rgba(255, 170, 50, ${0.15 + smoothAmplitude * 0.2})`;
+        const totalGlow = glowBase + glowExtra + glowListening + glowThinking
+                        + mood.arousal * 8;
+
+        // Tint: warm amber when valence positive, cool blue-violet when negative
+        const warmR = 255, warmG = 170, warmB = 50;
+        const coolR = 120, coolG = 140, coolB = 220;
+        const t = (mood.valence + 1) * 0.5;       // 0..1
+        const r = Math.round(coolR + (warmR - coolR) * t);
+        const g = Math.round(coolG + (warmG - coolG) * t);
+        const b = Math.round(coolB + (warmB - coolB) * t);
+        const glowRgba = `rgba(${r}, ${g}, ${b}, ${0.15 + smoothAmplitude * 0.2 + mood.arousal * 0.05})`;
         charImg.style.filter = `drop-shadow(0 0 ${totalGlow}px ${glowRgba})`;
         if (rigReady) {
             rigEl.style.filter = `drop-shadow(0 0 ${totalGlow}px ${glowRgba})`;
+        }
+
+        // Listening bumps curiosity, decays slowly — feeds head drift
+        if (state === 'listening') {
+            mood.curiosity = Math.min(1, mood.curiosity + dt * 0.0005);
+        } else {
+            mood.curiosity *= Math.pow(0.9995, dt / 16);
         }
     }
 
@@ -638,11 +752,19 @@ canvas {
     let lastTime = 0;
 
     function render(ts) {
-        const dt = lastTime ? ts - lastTime : 16;
+        const dt = lastTime ? Math.min(80, ts - lastTime) : 16;
         lastTime = ts;
 
-        drawBackground(ts);
+        updateMood(ts, dt);
+        drawBackground(ts, dt);
         updateCharacter(ts, dt);
+
+        // Track Corvo's pixel position + speed for firefly flee behavior
+        const dx = corvoPxX - corvoPrevX;
+        const dy = corvoPxY - corvoPrevY;
+        corvoSpeed = Math.sqrt(dx * dx + dy * dy);
+        corvoPrevX = corvoPxX;
+        corvoPrevY = corvoPxY;
 
         requestAnimationFrame(render);
     }
