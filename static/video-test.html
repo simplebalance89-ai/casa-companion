@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Casa Companion · Corvo video test</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 50% 30%, #0a0a18 0%, #020306 70%);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: auto;
+}
+.wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+}
+h1 {
+    font-size: 1rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    opacity: 0.45;
+    text-align: center;
+    margin-bottom: 40px;
+}
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+.panel {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 20px;
+}
+.panel h2 {
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.55;
+    margin-bottom: 14px;
+}
+.panel img, .panel video {
+    width: 100%;
+    border-radius: 8px;
+    display: block;
+}
+.info {
+    margin-top: 14px;
+    font-size: 0.8rem;
+    opacity: 0.45;
+    line-height: 1.5;
+}
+.info b { opacity: 0.8; color: #d4b080; font-weight: 500; }
+.footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.75rem;
+    opacity: 0.35;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Corvo · Video Test (Wan 2.1 I2V)</h1>
+    <div class="grid">
+        <div class="panel">
+            <h2>Source reference</h2>
+            <img src="/static/images/heroes/crow.webp" alt="Source Corvo">
+            <div class="info">
+                <b>crow.webp</b> — the plush hero image fed to Wan 2.1 as image-conditioning.
+                Character consistency question: does the generated video look like THIS crow?
+            </div>
+        </div>
+        <div class="panel">
+            <h2>Generated clip · idle</h2>
+            <video src="/static/videos/corvo/idle.mp4" autoplay loop muted playsinline></video>
+            <div class="info">
+                <b>idle.mp4</b> · 4s · 512×512 · Wan 2.1 I2V + CausVid LoRA · 4 steps ·
+                ~0.25 MB. Prompt: "plush cartoon crow perched in dark forest at night,
+                gently breathing, soft feather ruffle, slow blinks, warm amber eyes,
+                moonlit, cinematic".
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        If the crow looks right → we scale to the full library (speak, flight, look-around,
+        excited, sad, preen). If it drifts → LoRA fine-tune on Corvo reference pack.
+    </div>
+</div>
+</body>
+</html>
