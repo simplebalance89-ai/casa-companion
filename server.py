@@ -842,6 +842,19 @@ async def corvo3d_page():
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
     )
 
+@app.get("/tv3d")
+async def tv3d_page():
+    p = os.path.join("static", "tv3d.html")
+    if not os.path.exists(p):
+        raise HTTPException(status_code=404, detail="tv3d.html not found")
+    with open(p, "r", encoding="utf-8") as f:
+        content = f.read()
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        content=content,
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
 @app.get("/")
 async def serve_index():
     index_path = os.path.join("static", "index.html")
