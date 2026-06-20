@@ -1,4 +1,4 @@
-app = "casa-web-mobile-jimmy"
+app = "casa-frontend"
 primary_region = "iad"
 
 [build]

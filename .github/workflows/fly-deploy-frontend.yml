@@ -1,0 +1,45 @@
+name: Fly Deploy Frontend
+
+on:
+  push:
+    branches:
+      - frontend-desktop-app
+    paths:
+      - '**'
+      - '.github/workflows/fly-deploy-frontend.yml'
+
+jobs:
+  deploy:
+    name: Deploy casa-frontend
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy-frontend
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        env:
+          NODE_ENV: development
+        run: npm ci
+
+      - name: Build static site
+        env:
+          NODE_ENV: development
+        run: npm run build
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only
