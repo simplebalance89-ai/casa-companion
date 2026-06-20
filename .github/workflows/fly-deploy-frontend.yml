@@ -34,6 +34,8 @@ jobs:
       - name: Build static site
         env:
           NODE_ENV: development
+          VITE_VOICE_SERVER_URL: wss://casa-voice-agent.fly.dev/ws/voice-v3
+          VITE_VOICE_SERVER_API_KEY: ${{ secrets.VITE_VOICE_SERVER_API_KEY }}
         run: npm run build
 
       - name: Set up flyctl
