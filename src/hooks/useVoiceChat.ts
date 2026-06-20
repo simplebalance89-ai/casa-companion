@@ -1,111 +1,183 @@
-import { useState, useCallback, useRef } from 'react';
-import type { VoiceState, ChatMessage } from '@/types';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Character } from '@/data/characters';
+import { useAudioWorklet } from './useAudioWorklet';
+import { useVoiceSocket, type VoiceState } from './useVoiceSocket';
 
-export function useVoiceChat() {
-  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+export type TurnState = 'idle' | 'listening' | 'processing' | 'speaking' | 'error';
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface UseVoiceChatReturn {
+  turnState: TurnState;
+  lastTranscript: string;
+  lastResponse: string;
+  errorMessage: string;
+  messages: ChatMessage[];
+  isConnected: boolean;
+  isConnecting: boolean;
+  isRecording: boolean;
+  isPlaying: boolean;
+  micLevel: number;
+  toggleRecording: () => void;
+  reset: () => void;
+  sendText: (text: string) => Promise<void>;
+}
+
+const VOICE_SERVER_URL =
+  import.meta.env.VITE_VOICE_SERVER_URL ||
+  (typeof window !== 'undefined' && window.location.protocol === 'https:'
+    ? `wss://${window.location.host}`
+    : `ws://${window.location.host}`);
+
+const VOICE_SERVER_TOKEN = import.meta.env.VITE_VOICE_SERVER_API_KEY;
+
+function log(...args: unknown[]) {
+  console.log('[VoiceChat]', ...args);
+}
+
+export function useVoiceChat(character: Character | null): UseVoiceChatReturn {
+  const [turnState, setTurnState] = useState<VoiceState>('idle');
+  const [lastTranscript, setLastTranscript] = useState('');
+  const [lastResponse, setLastResponse] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [currentTranscript, setCurrentTranscript] = useState('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
-  const addMessage = useCallback((role: 'user' | 'character', text: string) => {
-    const msg: ChatMessage = {
-      id: Date.now().toString() + Math.random(),
-      role,
-      text,
-      timestamp: Date.now(),
-    };
-    setMessages(prev => [...prev, msg]);
-    return msg;
+  const characterRef = useRef(character);
+  const turnStateRef = useRef(turnState);
+
+  useEffect(() => {
+    characterRef.current = character;
+  }, [character]);
+
+  useEffect(() => {
+    turnStateRef.current = turnState;
+  }, [turnState]);
+
+  const handleStateChange = useCallback((state: VoiceState) => {
+    log('state', state);
+    setTurnState(state);
+    if (state === 'processing' || state === 'speaking') {
+      audio.stopRecording();
+    }
   }, []);
 
-  const startListening = useCallback(async () => {
-    try {
-      setError(null);
-      setVoiceState('listening');
-      setCurrentTranscript('');
+  const handleTranscript = useCallback((text: string, isFinal: boolean) => {
+    if (!isFinal) return;
+    setLastTranscript(text);
+    setMessages((prev) => [...prev, { role: 'user', text }]);
+  }, []);
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start(100);
-
-      // Simulate transcript for demo
-      setTimeout(() => {
-        setCurrentTranscript('Listening...');
-      }, 500);
-
-    } catch (err) {
-      console.error('Mic error:', err);
-      let msg = 'Could not access microphone';
-      if (err instanceof DOMException) {
-        if (err.name === 'NotFoundError') msg = 'No microphone found. You can still type messages!';
-        else if (err.name === 'NotAllowedError') msg = 'Microphone permission denied. Please allow access in Settings.';
-        else if (err.name === 'NotReadableError') msg = 'Microphone is busy. Close other apps and try again.';
+  const handleAssistantText = useCallback((text: string) => {
+    setLastResponse(text);
+    setMessages((prev) => {
+      if (prev.length > 0 && prev[prev.length - 1].role === 'assistant') {
+        return [...prev.slice(0, -1), { role: 'assistant', text }];
       }
-      setError(msg);
-      setVoiceState('error');
-    }
+      return [...prev, { role: 'assistant', text }];
+    });
   }, []);
 
-  const stopListening = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-    }
-    setVoiceState('processing');
-    setCurrentTranscript('');
-
-    // Simulate processing then response
-    setTimeout(() => {
-      setVoiceState('speaking');
-      setTimeout(() => {
-        setVoiceState('idle');
-      }, 3000);
-    }, 1500);
+  const handleError = useCallback((code: string, message: string) => {
+    log('server error', code, message);
+    setErrorMessage(`${code}: ${message}`);
   }, []);
 
-  const sendTextMessage = useCallback((text: string) => {
-    if (!text.trim()) return;
-    addMessage('user', text.trim());
-    setVoiceState('processing');
+  const audio = useAudioWorklet({
+    onPcmFrame: useCallback((pcm: ArrayBuffer) => {
+      socket.sendBinary(pcm);
+    }, []),
+    onError: useCallback((msg: string) => {
+      setErrorMessage(msg);
+    }, []),
+  });
 
-    // Simulate AI response
-    setTimeout(() => {
-      setVoiceState('speaking');
-      addMessage('character', `That's wonderful! Tell me more about that!`);
-      setTimeout(() => {
-        setVoiceState('idle');
-      }, 2000);
-    }, 1000);
-  }, [addMessage]);
+  const socket = useVoiceSocket({
+    url: VOICE_SERVER_URL,
+    token: VOICE_SERVER_TOKEN,
+    sessionId: 'mobile',
+    deviceType: 'audio',
+    onStateChange: handleStateChange,
+    onTranscript: handleTranscript,
+    onAssistantText: handleAssistantText,
+    onError: handleError,
+    onBinary: useCallback((pcm: ArrayBuffer) => {
+      audio.playPcm(pcm);
+    }, [audio]),
+    reconnect: true,
+  });
 
-  const clearError = useCallback(() => {
-    setError(null);
-    if (voiceState === 'error') setVoiceState('idle');
-  }, [voiceState]);
+  // Send character/mode config when connected.
+  useEffect(() => {
+    if (!socket.connected || !character) return;
+    socket.sendConfigChange({ character: character.id, mode: 'default' });
+  }, [socket.connected, character, socket.sendConfigChange]);
+
+  const toggleRecording = useCallback(() => {
+    const state = turnStateRef.current;
+    setErrorMessage('');
+
+    if (state === 'listening' || state === 'wake_detected') {
+      audio.stopRecording();
+      return;
+    }
+
+    if (state === 'speaking') {
+      socket.sendCommand('interrupt');
+      audio.stopPlayback();
+      return;
+    }
+
+    setLastTranscript('');
+    setLastResponse('');
+
+    socket.sendCommand('wake');
+    void audio.unlockAudio().then(() => audio.startRecording());
+  }, [audio, socket]);
+
+  const reset = useCallback(() => {
+    socket.sendCommand('reset');
+    audio.stopRecording();
+    audio.stopPlayback();
+    setTurnState('idle');
+    setLastTranscript('');
+    setLastResponse('');
+    setErrorMessage('');
+    setMessages([]);
+  }, [socket, audio]);
+
+  const sendText = useCallback(
+    async (text: string) => {
+      if (!text.trim()) return;
+      await audio.unlockAudio();
+
+      setMessages((prev) => [...prev, { role: 'user', text: text.trim() }]);
+      setErrorMessage('');
+
+      if (socket.connected) {
+        socket.sendTextInput(text.trim());
+      } else {
+        setErrorMessage('Not connected to voice server.');
+      }
+    },
+    [socket, audio]
+  );
 
   return {
-    voiceState,
+    turnState: turnState === 'wake_detected' || turnState === 'interrupted' ? 'idle' : turnState,
+    lastTranscript,
+    lastResponse,
+    errorMessage,
     messages,
-    error,
-    currentTranscript,
-    startListening,
-    stopListening,
-    sendTextMessage,
-    addMessage,
-    clearError,
+    isConnected: socket.connected,
+    isConnecting: socket.connecting,
+    isRecording: audio.isRecording,
+    isPlaying: audio.isPlaying,
+    micLevel: audio.micLevel,
+    toggleRecording,
+    reset,
+    sendText,
   };
 }

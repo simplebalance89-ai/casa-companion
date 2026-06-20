@@ -4,26 +4,26 @@
 
 @layer base {
   :root {
-    --background: 220 20% 14%;
-    --foreground: 0 0% 95%;
-    --card: 220 18% 18%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 18% 18%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 43 70% 58%;
-    --primary-foreground: 220 20% 10%;
-    --secondary: 220 15% 24%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 220 12% 28%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 43 70% 58%;
-    --accent-foreground: 220 20% 10%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 95%;
-    --border: 220 15% 26%;
-    --input: 220 15% 22%;
-    --ring: 43 70% 58%;
-    --radius: 1rem;
+    --background: 264 18% 5%;
+    --foreground: 36 33% 90%;
+    --card: 264 15% 10%;
+    --card-foreground: 36 33% 90%;
+    --popover: 264 15% 10%;
+    --popover-foreground: 36 33% 90%;
+    --primary: 41 62% 53%;
+    --primary-foreground: 264 18% 5%;
+    --secondary: 264 12% 14%;
+    --secondary-foreground: 36 33% 90%;
+    --muted: 264 12% 14%;
+    --muted-foreground: 264 8% 55%;
+    --accent: 41 62% 53%;
+    --accent-foreground: 264 18% 5%;
+    --destructive: 350 72% 63%;
+    --destructive-foreground: 36 33% 90%;
+    --border: 36 33% 90% / 0.08;
+    --input: 264 12% 14%;
+    --ring: 41 62% 53%;
+    --radius: 0.625rem;
   }
 
   * {
@@ -31,213 +31,13 @@
   }
 
   body {
-    @apply text-foreground;
-    background: linear-gradient(180deg, #1a2236 0%, #141c2e 50%, #111827 100%);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    min-height: 100vh;
-  }
-}
-
-@layer components {
-  /* Mobile container */
-  .mobile-container {
-    @apply w-full max-w-md mx-auto min-h-screen relative;
-    background: linear-gradient(180deg, #1e293b 0%, #1a2236 30%, #111827 100%);
-    box-shadow: 0 0 60px rgba(0,0,0,0.3);
+    @apply bg-void text-cloud;
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
 
-  /* Touch target sizing - minimum 72px for kids */
-  .touch-target {
-    @apply min-h-[72px] min-w-[72px] flex items-center justify-center;
+  html {
+    scroll-behavior: smooth;
   }
-
-  .touch-target-lg {
-    @apply min-h-[80px] min-w-[80px] flex items-center justify-center;
-  }
-
-  /* Character avatar animations */
-  .avatar-breathe {
-    animation: breathe 4s ease-in-out infinite;
-  }
-
-  .avatar-blink {
-    animation: blink 4s ease-in-out infinite;
-  }
-
-  .avatar-talk {
-    animation: talk 0.3s ease-in-out infinite alternate;
-  }
-
-  .avatar-listen {
-    animation: listen-pulse 1.5s ease-in-out infinite;
-  }
-
-  /* Mic button animations */
-  .mic-idle {
-    animation: mic-glow 3s ease-in-out infinite;
-  }
-
-  .mic-listening {
-    animation: mic-pulse 1s ease-in-out infinite;
-  }
-
-  .mic-processing {
-    animation: mic-spin 2s linear infinite;
-  }
-
-  /* Particle effects */
-  .sparkle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: #D4A853;
-    border-radius: 50%;
-    opacity: 0;
-    animation: sparkle-float 3s ease-in-out infinite;
-  }
-
-  /* Speech bubble */
-  .speech-bubble {
-    position: relative;
-  }
-
-  .speech-bubble::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 8px solid hsl(var(--card));
-  }
-
-  /* Scrollbar hiding */
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Mode carousel snap */
-  .snap-x {
-    scroll-snap-type: x mandatory;
-  }
-  .snap-start {
-    scroll-snap-align: start;
-  }
-
-  /* Glass effect */
-  .glass {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10;
-  }
-
-  /* Gold gradient text */
-  .text-gold {
-    background: linear-gradient(135deg, #D4A853 0%, #F6E05E 50%, #D4A853 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Bottom sheet */
-  .bottom-sheet {
-    @apply fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl transition-transform duration-300 ease-out;
-    max-width: 448px;
-    margin: 0 auto;
-  }
-
-  /* Ripple effect for touch */
-  .ripple {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .ripple::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(212, 168, 83, 0.3);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
-
-  .ripple:active::after {
-    width: 200px;
-    height: 200px;
-  }
-}
-
-@keyframes breathe {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50% { transform: scale(1.02) translateY(-2px); }
-}
-
-@keyframes blink {
-  0%, 96%, 100% { opacity: 1; }
-  98% { opacity: 0.3; }
-}
-
-@keyframes talk {
-  0% { transform: scaleY(1); }
-  100% { transform: scaleY(1.05) scaleX(1.02); }
-}
-
-@keyframes listen-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 168, 83, 0.4); }
-  50% { transform: scale(1.03); box-shadow: 0 0 20px 10px rgba(212, 168, 83, 0.1); }
-}
-
-@keyframes mic-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(212, 168, 83, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(212, 168, 83, 0.4); }
-}
-
-@keyframes mic-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { transform: scale(1.08); box-shadow: 0 0 30px 15px rgba(239, 68, 68, 0.2); }
-}
-
-@keyframes mic-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes sparkle-float {
-  0% { transform: translateY(0) scale(0); opacity: 0; }
-  20% { opacity: 1; transform: translateY(-10px) scale(1); }
-  80% { opacity: 1; transform: translateY(-40px) scale(0.8); }
-  100% { opacity: 0; transform: translateY(-60px) scale(0); }
-}
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes slideDown {
-  from { transform: translateY(0); }
-  to { transform: translateY(100%); }
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out forwards;
-}
-
-.animate-slide-up {
-  animation: slideUp 0.3s ease-out forwards;
 }

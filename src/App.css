@@ -1,73 +1,82 @@
-/* App-specific styles */
-
-/* Ensure mobile container fills viewport */
-.mobile-container {
+/* App Wrapper - Mobile simulation on desktop */
+.app-wrapper {
   min-height: 100vh;
-  min-height: 100dvh;
-  background: hsl(0 0% 4%);
-}
-
-/* Smooth transitions between screens */
-.page-enter {
-  animation: fadeInUp 0.3s ease-out;
-}
-
-/* Mic button glow enhancement */
-.mic-glow-strong {
-  box-shadow: 
-    0 0 20px rgba(212, 168, 83, 0.3),
-    0 0 40px rgba(212, 168, 83, 0.1),
-    0 0 60px rgba(212, 168, 83, 0.05);
-}
-
-/* Character card hover lift */
-.character-card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.character-card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(212, 168, 83, 0.15);
-}
-
-/* Audio wave animation for listening state */
-.audio-wave {
+  width: 100%;
+  background: #0a090c;
   display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 20px;
+  justify-content: center;
+  align-items: flex-start;
 }
 
-.audio-wave span {
-  width: 3px;
-  background: #D4A853;
-  border-radius: 2px;
-  animation: audio-wave 1s ease-in-out infinite;
+.app-container {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  background: #0D0B0F;
+  position: relative;
+  overflow-x: hidden;
 }
 
-.audio-wave span:nth-child(1) { animation-delay: 0s; height: 8px; }
-.audio-wave span:nth-child(2) { animation-delay: 0.1s; height: 14px; }
-.audio-wave span:nth-child(3) { animation-delay: 0.2s; height: 20px; }
-.audio-wave span:nth-child(4) { animation-delay: 0.3s; height: 12px; }
-.audio-wave span:nth-child(5) { animation-delay: 0.4s; height: 16px; }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
 
-@keyframes audio-wave {
-  0%, 100% { transform: scaleY(0.5); opacity: 0.5; }
-  50% { transform: scaleY(1); opacity: 1; }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(240, 230, 211, 0.15);
+  border-radius: 999px;
 }
 
 /* Prevent text selection on interactive elements */
-.no-select {
+button, [role="button"] {
   -webkit-user-select: none;
   user-select: none;
-  -webkit-touch-callout: none;
 }
 
-/* Safe area insets for notched phones */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+/* Smooth transitions for all interactive elements */
+button {
+  transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              background-color 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease;
+}
+
+/* Hide scrollbar for category tabs */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #1E1B24;
+  border-radius: 999px;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #D4A03D;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #0D0B0F;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #D4A03D;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #0D0B0F;
 }
