@@ -71,10 +71,13 @@ export function useVoiceChat(character: Character | null): UseVoiceChatReturn {
   }, []);
 
   const handleAssistantText = useCallback((text: string) => {
-    setLastResponse(text);
+    setLastResponse((prev) => prev + text);
     setMessages((prev) => {
       if (prev.length > 0 && prev[prev.length - 1].role === 'assistant') {
-        return [...prev.slice(0, -1), { role: 'assistant', text }];
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        updated[updated.length - 1] = { ...last, text: last.text + text };
+        return updated;
       }
       return [...prev, { role: 'assistant', text }];
     });
@@ -154,6 +157,7 @@ export function useVoiceChat(character: Character | null): UseVoiceChatReturn {
       await audio.unlockAudio();
 
       setMessages((prev) => [...prev, { role: 'user', text: text.trim() }]);
+      setLastResponse('');
       setErrorMessage('');
 
       if (socket.connected) {

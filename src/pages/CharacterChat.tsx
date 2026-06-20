@@ -38,20 +38,27 @@ export default function CharacterChat() {
   useEffect(() => {
     if (voice.messages.length === 0) return;
     const next = voice.messages[voice.messages.length - 1];
+    const nextSender = next.role === 'user' ? 'user' : 'character';
     setLocalMessages((prev) => {
-      const already = prev.some((m) => m.text === next.text && m.sender === (next.role === 'user' ? 'user' : 'character'));
-      if (already) return prev;
+      const last = prev[prev.length - 1];
+      // Stream into the existing message if the sender hasn't changed.
+      if (last && last.sender === nextSender) {
+        return [
+          ...prev.slice(0, -1),
+          { ...last, text: next.text, timestamp: new Date() },
+        ];
+      }
       return [
         ...prev,
         {
           id: Date.now().toString() + Math.random().toString(36).slice(2),
           text: next.text,
-          sender: next.role === 'user' ? 'user' : 'character',
+          sender: nextSender,
           timestamp: new Date(),
         },
       ];
     });
-    if (voice.messages.length > 0) setShowChat(true);
+    setShowChat(true);
   }, [voice.messages]);
 
   useEffect(() => {
