@@ -13,7 +13,7 @@ export default function Home() {
   const headerRef = useRef<HTMLDivElement>(null);
   const founderRef = useRef<HTMLDivElement>(null);
 
-  const founder = characters.find((c) => c.id === "papa");
+  const founder = characters.find((c) => c.id === "pietro");
 
   const filteredCharacters = characters.filter((c) => {
     const matchesCategory =
